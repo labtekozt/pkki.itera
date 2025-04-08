@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\DocumentRequirement;
 use App\Models\SubmissionType;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowStageRequirement;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -163,24 +165,37 @@ class WorkflowStageSeeder extends Seeder
         $this->createStages($industrialDesign->id, $designStages);
     }
 
-    private function createStages(string $typeId, array $stages): void
+    private function createStages($submissionTypeId, $stages): void
     {
-        foreach ($stages as $stage) {
-            $requiredDocuments = $stage['required_documents'] ?? [];
-
-            WorkflowStage::firstOrCreate(
-                [
-                    'submission_type_id' => $typeId,
-                    'code' => $stage['code']
-                ],
-                array_merge($stage, [
-                    'id' => Str::uuid(),
-                    'submission_type_id' => $typeId,
-                    'required_documents' => json_encode($requiredDocuments),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ])
-            );
+        foreach ($stages as $stageData) {
+            $requiredDocs = $stageData['required_documents'] ?? [];
+            unset($stageData['required_documents']);
+            
+            $stage = WorkflowStage::create([
+                'id' => Str::uuid(),
+                'submission_type_id' => $submissionTypeId,
+                'code' => $stageData['code'],
+                'name' => $stageData['name'],
+                'order' => $stageData['order'],
+                'description' => $stageData['description'] ?? null,
+            ]);
+            
+            // Create relationships with document requirements
+            if (!empty($requiredDocs)) {
+                $order = 1;
+                foreach ($requiredDocs as $docCode) {
+                    $docRequirement = DocumentRequirement::where('code', $docCode)->first();
+                    if ($docRequirement) {
+                        WorkflowStageRequirement::create([
+                            'id' => Str::uuid(),
+                            'workflow_stage_id' => $stage->id,
+                            'document_requirement_id' => $docRequirement->id,
+                            'is_required' => true,
+                            'order' => $order++
+                        ]);
+                    }
+                }
+            }
         }
     }
 }

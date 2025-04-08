@@ -11,32 +11,16 @@ class WorkflowStage extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'submission_type_id',
         'code',
         'name',
         'order',
         'description',
-        'required_documents',
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'order' => 'integer',
-        'required_documents' => 'array',
-    ];
-
-    /**
-     * Get the submission type that owns this stage.
+     * Get the submission type that owns the workflow stage.
      */
     public function submissionType()
     {
@@ -44,7 +28,7 @@ class WorkflowStage extends Model
     }
 
     /**
-     * Get the submissions currently at this stage.
+     * Get the submissions that have this as their current stage.
      */
     public function currentSubmissions()
     {
@@ -58,26 +42,22 @@ class WorkflowStage extends Model
     {
         return $this->hasMany(TrackingHistory::class, 'stage_id');
     }
-
+    
     /**
-     * Get the next stage in the workflow.
+     * Get the document requirements associated with this workflow stage.
      */
-    public function nextStage()
+    public function documentRequirements()
     {
-        return $this->submissionType->workflowStages()
-            ->where('order', '>', $this->order)
-            ->orderBy('order')
-            ->first();
+        return $this->belongsToMany(DocumentRequirement::class, 'workflow_stage_requirements')
+                    ->withPivot('is_required', 'order')
+                    ->orderBy('workflow_stage_requirements.order');
     }
-
+    
     /**
-     * Get the previous stage in the workflow.
+     * Get the stage requirements.
      */
-    public function previousStage()
+    public function stageRequirements()
     {
-        return $this->submissionType->workflowStages()
-            ->where('order', '<', $this->order)
-            ->orderBy('order', 'desc')
-            ->first();
+        return $this->hasMany(WorkflowStageRequirement::class);
     }
 }
