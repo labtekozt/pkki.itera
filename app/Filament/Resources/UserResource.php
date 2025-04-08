@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Models\UserDetail;
 use App\Settings\MailSettings;
 use Exception;
 use Filament\Facades\Filament;
@@ -11,6 +12,7 @@ use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Auth\VerifyEmail;
 use Filament\Notifications\Notification;
@@ -98,15 +100,15 @@ class UserResource extends Resource
                         Forms\Components\Tabs\Tab::make('Details')
                             ->icon('heroicon-o-information-circle')
                             ->schema([
-                                Forms\Components\TextInput::make('username')
+                                Forms\Components\TextInput::make('fullname')
                                     ->required()
                                     ->maxLength(255)
                                     ->live()
                                     ->rules(function ($record) {
                                         $userId = $record?->id;
                                         return $userId
-                                            ? ['unique:users,username,' . $userId]
-                                            : ['unique:users,username'];
+                                            ? ['unique:users,fullname,' . $userId]
+                                            : ['unique:users,fullname'];
                                     }),
 
                                 Forms\Components\TextInput::make('email')
@@ -120,15 +122,9 @@ class UserResource extends Resource
                                             : ['unique:users,email'];
                                     }),
 
-                                Forms\Components\TextInput::make('firstname')
-                                    ->required()
-                                    ->maxLength(255),
+                                    
 
-                                Forms\Components\TextInput::make('lastname')
-                                    ->required()
-                                    ->maxLength(255),
-                            ])
-                            ->columns(2),
+                            ]),
 
                         Forms\Components\Tabs\Tab::make('Roles')
                             ->icon('fluentui-shield-task-48')
@@ -159,7 +155,7 @@ class UserResource extends Resource
                 SpatieMediaLibraryImageColumn::make('media')->label('Avatar')
                     ->collection('avatars')
                     ->wrap(),
-                Tables\Columns\TextColumn::make('username')->label('Username')
+                Tables\Columns\TextColumn::make('fullname')->label('fullname')
                     ->description(fn(Model $record) => $record->firstname . ' ' . $record->lastname)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('roles.name')->label('Role')
@@ -168,6 +164,11 @@ class UserResource extends Resource
                     ->badge(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('provider')->default('local')
+                    ->label('Provider')
+                    ->formatStateUsing(fn($state): string => Str::headline($state))
+                    ->colors(['info'])
+                    ->badge(),
                 Tables\Columns\TextColumn::make('email_verified_at')->label('Verified at')
                     ->dateTime()
                     ->sortable(),
@@ -197,7 +198,6 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
         ];
     }
 
@@ -217,13 +217,14 @@ class UserResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['email', 'firstname', 'lastname'];
+        return ['email', 'fullname'];
     }
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            'name' => $record->firstname . ' ' . $record->lastname,
+            'name' => $record->fullname,
+            'email' => $record->email,
         ];
     }
 
@@ -260,5 +261,27 @@ class UserResource extends Resource
                 ->warning()
                 ->send();
         }
+    }
+
+    public static function getBasicFormSchema(): array
+    {
+        return [
+            TextInput::make('fullname')
+                ->required()
+                ->maxLength(255),
+
+            TextInput::make('email')
+                ->email()
+                ->required()
+                ->unique(table: static::$model, ignorable: fn($record) => $record)
+                ->maxLength(255),
+
+            TextInput::make('password')
+                ->password()
+                ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
+                ->dehydrated(fn(?string $state): bool => filled($state))
+                ->required(fn(string $operation): bool => $operation === 'create')
+                ->maxLength(255),
+        ];
     }
 }
