@@ -19,8 +19,8 @@ class UsersTableSeeder extends Seeder
         $sid = Str::uuid();
         DB::table('users')->insert([
             'id' => $sid,
-            'fullname' => 'superadminpkki',
-            'email' => 'superadmin@hki.itera.ac.id',
+            'fullname' => 'superadmin pkki',
+        'email' => 'superadmin@hki.itera.ac.id',
             'email_verified_at' => now(),
             'password' => Hash::make('superadmin'),
             'created_at' => now(),

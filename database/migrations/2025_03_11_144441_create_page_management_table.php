@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('slug');
             $table->string('title');
             $table->text('content');
+            $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::enableForeignKeyConstraints();

@@ -16,8 +16,10 @@ return new class extends Migration
             $table->string('fullname')->index();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->uuid('sso_id')->nullable();
+            $table->string('avatar')->nullable();
+            $table->string('password')->nullable();
+            $table->string('provider')->nullable();
+            $table->string('provider_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
@@ -29,6 +31,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['provider', 'provider_id', 'avatar']);
+            $table->string('password')->nullable(false)->change();
+        });
         Schema::dropIfExists('users');
     }
 };

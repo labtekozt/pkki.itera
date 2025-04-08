@@ -17,6 +17,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
+
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail, HasAvatar, HasName, HasMedia
 {
     use InteractsWithMedia;
@@ -31,8 +32,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     protected $fillable = [
         'fullname',
         'email',
-        'lastname',
         'password',
+        'provider',
+        'provider_id',
+        'avatar',
+        'sso_id',
     ];
 
     /**
@@ -54,6 +58,31 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Get the detail for this user.
+     */
+    public function detail()
+    {
+        return $this->hasOne(UserDetail::class);
+    }
+
+    /**
+     * Get the submissions for this user.
+     */
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class);
+    }
+
+    /**
+     * Get the tracking history entries processed by this user.
+     */
+    public function processedHistory()
+    {
+        return $this->hasMany(TrackingHistory::class, 'processed_by');
+    }
+
 
     public function getFilamentName(): string
     {

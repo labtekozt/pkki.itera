@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::disableForeignKeyConstraints();
-
-        Schema::create('submission_industrial_design', function (Blueprint $table) {
+        Schema::create('submission_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('draft')->constrained('document');
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
         });
-
-        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('submission_industrial_design');
+        Schema::dropIfExists('submission_types');
     }
 };
