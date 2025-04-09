@@ -27,30 +27,30 @@ class DocumentRequirementsRelationManager extends RelationManager
                                 if (!$state || $this->mountedActionName === 'edit') return;
                                 $set('code', Str::slug($state, '_'));
                             }),
-                            
+
                         Forms\Components\TextInput::make('code')
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
                             ->helperText('Unique identifier for this requirement'),
-                        
+
                         Forms\Components\Toggle::make('Is Required')
                             ->label('Is Required')
                             ->helperText('Is this document mandatory for all submissions?')
                             ->default(true),
-                        
+
                         Forms\Components\TextInput::make('order')
                             ->label('Display Order')
                             ->numeric()
-                            ->default(fn ($livewire) => $livewire->ownerRecord->documentRequirements()->count() + 1),
-                        
+                            ->default(fn($livewire) => $livewire->ownerRecord->documentRequirements()->count() + 1),
+
                         Forms\Components\Textarea::make('description')
                             ->rows(3)
                             ->helperText('Provide details about what this document should contain')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                
+
                 Forms\Components\Section::make('Validation Rules')
                     ->schema([
                         Forms\Components\Select::make('allowed_file_types')
@@ -67,7 +67,7 @@ class DocumentRequirementsRelationManager extends RelationManager
                             ->placeholder('All file types allowed')
                             ->helperText('Leave empty to allow all file types')
                             ->columnSpanFull(),
-                        
+
                         Forms\Components\TextInput::make('max_file_size')
                             ->label('Maximum File Size (MB)')
                             ->numeric()
@@ -88,18 +88,18 @@ class DocumentRequirementsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('order')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->description(fn ($record) => Str::limit($record->description, 40)),
-                    
+                    ->description(fn($record) => Str::limit($record->description, 40)),
+
                 Tables\Columns\TextColumn::make('code')
                     ->searchable(),
-                    
+
                 Tables\Columns\IconColumn::make('required')
                     ->boolean(),
-                
+
                 Tables\Columns\TextColumn::make('stage_count')
                     ->label('Used in Stages')
                     ->getStateUsing(function ($record) {
@@ -115,19 +115,6 @@ class DocumentRequirementsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make(),
-                Tables\Actions\Action::make('import_csv')
-                    ->label('Import from CSV')
-                    ->icon('heroicon-o-arrow-up-tray')
-                    ->form([
-                        Forms\Components\FileUpload::make('csv_file')
-                            ->label('CSV File')
-                            ->acceptedFileTypes(['text/csv'])
-                            ->required(),
-                    ])
-                    ->action(function (array $data) {
-                        // This would be implemented with proper CSV import logic
-                        $this->notify('success', 'Requirements imported successfully');
-                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -135,11 +122,11 @@ class DocumentRequirementsRelationManager extends RelationManager
                 Tables\Actions\Action::make('view_submissions')
                     ->label('View Submissions')
                     ->icon('heroicon-o-document-text')
-                    ->url(fn ($record) => 
-                        route('filament.admin.resources.submissions.index', [
-                            'tableFilters[document_requirement]' => $record->id
-                        ]))
-                    ->visible(fn () => auth()->user()->can('viewAny', \App\Models\Submission::class)),
+                    ->url(fn($record) =>
+                    route('filament.admin.resources.submissions.index', [
+                        'tableFilters[document_requirement]' => $record->id
+                    ]))
+                    ->visible(fn() => auth()->user()->can('viewAny', \App\Models\Submission::class)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

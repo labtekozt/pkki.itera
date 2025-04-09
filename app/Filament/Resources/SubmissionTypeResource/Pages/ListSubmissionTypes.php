@@ -13,7 +13,11 @@ class ListSubmissionTypes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->disabled(!SubmissionTypeResource::canCreate()) // Make create button inactive
+                ->tooltip(SubmissionTypeResource::canCreate() 
+                    ? 'Create a new submission type' 
+                    : 'Creating new submission types is currently disabled'),
         ];
     }
 }
