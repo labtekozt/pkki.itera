@@ -16,10 +16,10 @@ return new class extends Migration
         Schema::create('user_detail', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-            $table->string('alamat');
-            $table->string('phonenumber');
-            $table->string('prodi');
-            $table->string('jurusan');
+            $table->string('alamat')->nullable();
+            $table->string('phonenumber')->nullable();
+            $table->string('prodi')->nullable();
+            $table->string('jurusan')->nullable();
         });
 
         Schema::enableForeignKeyConstraints();

@@ -92,22 +92,20 @@ class EditUser extends EditRecord
     protected function afterSave(): void
     {
         // Get the detail data from the form
-        $detailData = $this->data['detail'] ?? null;
+        $detailData = $this->data['detail'] ?? [];
         
-        if ($detailData) {
-            // Find or create UserDetail for this user
-            $userDetail = $this->record->detail ?? new UserDetail();
-            
-            // Update UserDetail fields
-            $userDetail->user_id = $this->record->id;
-            $userDetail->alamat = $detailData['alamat'] ?? null;
-            $userDetail->phonenumber = $detailData['phonenumber'] ?? null;
-            $userDetail->prodi = $detailData['prodi'] ?? null;
-            $userDetail->jurusan = $detailData['jurusan'] ?? null;
-            
-            // Save the UserDetail
-            $userDetail->save();
-        }
+        // Find or create UserDetail for this user
+        $userDetail = $this->record->detail ?? new UserDetail();
+        
+        // Update UserDetail fields with null handling
+        $userDetail->user_id = $this->record->id;
+        $userDetail->alamat = $detailData['alamat'] ?? $userDetail->alamat ?? null;
+        $userDetail->phonenumber = $detailData['phonenumber'] ?? $userDetail->phonenumber ?? null;
+        $userDetail->prodi = $detailData['prodi'] ?? $userDetail->prodi ?? null;
+        $userDetail->jurusan = $detailData['jurusan'] ?? $userDetail->jurusan ?? null;
+        
+        // Save the UserDetail
+        $userDetail->save();
     }
 
     public function getTitle(): string|Htmlable
