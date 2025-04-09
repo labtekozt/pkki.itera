@@ -37,7 +37,7 @@ class ManageStages extends ManageRelatedRecords
                                 ->maxLength(255)
                                 ->reactive()
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    if (!$state) return;
+                                    if (!$state || $this->mountedActionName === 'edit') return;
                                     $set('code', Str::slug($state, '_'));
                                 }),
 
@@ -50,7 +50,12 @@ class ManageStages extends ManageRelatedRecords
                             Forms\Components\TextInput::make('order')
                                 ->label('Stage Order')
                                 ->numeric()
-                                ->default(fn($livewire) => WorkflowStage::where('submission_type_id', $livewire->ownerRecord->id)->count() + 1)
+                                ->default(function () {
+                                    return WorkflowStage::where(
+                                        'submission_type_id',
+                                        $this->getOwnerRecord()->id
+                                    )->count() + 1;
+                                })
                                 ->helperText('Order in the workflow sequence'),
 
                             Forms\Components\Toggle::make('is_active')
@@ -69,7 +74,7 @@ class ManageStages extends ManageRelatedRecords
                         ->schema([
                             Forms\Components\Select::make('document_requirements')
                                 ->label('Required Documents')
-                                ->relationship('documentRequirements', 'name', function ($query, $get) {
+                                ->relationship('documentRequirements', 'name', function ($query) {
                                     $submissionTypeId = $this->getOwnerRecord()?->id;
 
                                     if ($submissionTypeId) {
@@ -208,8 +213,36 @@ class ManageStages extends ManageRelatedRecords
                                 ])
                                 ->collapsible(),
                         ];
+                    })
+                    ->using(function (WorkflowStage $record, array $data) {
+                        // Update the stage basic data
+                        $record->update([
+                            'name' => $data['name'],
+                            'order' => $data['order'],
+                            'is_active' => $data['is_active'],
+                            'description' => $data['description'],
+                        ]);
+                        
+                        // Handle document requirements with proper UUID generation
+                        if (isset($data['document_requirements'])) {
+                            // First detach all current relationships
+                            $record->documentRequirements()->detach();
+                            
+                            // Then reattach with UUIDs
+                            $attachData = [];
+                            foreach ($data['document_requirements'] as $requirementId) {
+                                $attachData[$requirementId] = [
+                                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                                    'is_required' => true,
+                                    'order' => 1, // Default order - you can modify as needed
+                                ];
+                            }
+                            
+                            $record->documentRequirements()->attach($attachData);
+                        }
+                        
+                        return $record;
                     }),
-
 
                 Tables\Actions\DeleteAction::make()
                     ->requiresConfirmation()

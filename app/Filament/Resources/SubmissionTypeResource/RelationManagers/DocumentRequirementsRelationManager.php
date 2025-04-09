@@ -96,7 +96,8 @@ class DocumentRequirementsRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('code')
                     ->searchable(),
-
+                Tables\Columns\TextColumn::make('standard_code')
+                    ->searchable(),
                 Tables\Columns\IconColumn::make('required')
                     ->boolean(),
 

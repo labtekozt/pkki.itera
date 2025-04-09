@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DocumentRequirement extends Model
 {
@@ -19,6 +21,7 @@ class DocumentRequirement extends Model
     protected $fillable = [
         'submission_type_id',
         'code',
+        'standard_code',
         'name',
         'description',
         'required',
@@ -54,13 +57,11 @@ class DocumentRequirement extends Model
     /**
      * Get the workflow stages that use this document requirement.
      */
-    public function workflowStages()
+    public function workflowStages(): BelongsToMany
     {
-        return $this->belongsToMany(
-            WorkflowStage::class,
-            'workflow_stage_requirements',
-            'document_requirement_id',
-            'workflow_stage_id'
-        )->withPivot('is_required', 'order');
+        return $this->belongsToMany(WorkflowStage::class, 'workflow_stage_requirements')
+            ->using(WorkflowStageRequirement::class)
+            ->withPivot(['id', 'is_required', 'order'])
+            ->withTimestamps();
     }
 }

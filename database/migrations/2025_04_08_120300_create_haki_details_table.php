@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('copyright_details', function (Blueprint $table) {
+        Schema::create('haki_details', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('submission_id')
                   ->constrained('submissions')
                   ->onDelete('cascade');
             $table->string('work_type'); // Type of creation (Jenis Ciptaan)
             $table->string('work_subtype')->nullable(); // Sub-type of creation (Sub Jenis Ciptaan)
-            $table->enum('copyright_category', ['computer', 'non_computer']); // Computer or Non-Computer Copyright
-            $table->string('copyright_title'); // Title of the work being applied for
+            $table->enum('haki_category', ['computer', 'non_computer']); // Computer or Non-Computer Copyright
+            $table->string('haki_title'); // Title of the work being applied for
             $table->text('work_description'); // Brief description of the work
             $table->date('first_publication_date')->nullable(); // When the work was first published in print/mass media
             $table->string('first_publication_place')->nullable(); // Where the work was first published
@@ -40,6 +40,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('copyright_details');
+        Schema::dropIfExists('haki_details');
     }
 };

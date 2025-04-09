@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class WorkflowStage extends Model
 {
@@ -49,16 +51,32 @@ class WorkflowStage extends Model
     }
 
     /**
-     * Get the document requirements associated with this workflow stage.
+     * The document requirements for this stage.
      */
-    public function documentRequirements()
+    public function documentRequirements(): BelongsToMany
     {
-        return $this->belongsToMany(
-            DocumentRequirement::class,
-            'workflow_stage_requirements',
-            'workflow_stage_id',
-            'document_requirement_id'
-        )->withPivot('is_required', 'order')->orderBy('workflow_stage_requirements.order');
+        return $this->belongsToMany(DocumentRequirement::class, 'workflow_stage_requirements')
+            ->using(WorkflowStageRequirement::class)
+            ->withPivot(['id', 'is_required', 'order'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Custom method to attach document requirements with UUID generation
+     */
+    public function attachRequirements(array $requirements)
+    {
+        $attachData = [];
+        
+        foreach ($requirements as $requirementId) {
+            $attachData[$requirementId] = [
+                'id' => Str::uuid()->toString(),
+                'is_required' => true,
+                'order' => 1, // Default order
+            ];
+        }
+        
+        return $this->documentRequirements()->attach($attachData);
     }
 
     /**

@@ -55,7 +55,12 @@ class ManageRequirements extends ManageRelatedRecords
                             Forms\Components\TextInput::make('order')
                                 ->label('Display Order')
                                 ->numeric()
-                                ->default(fn($livewire) => DocumentRequirement::where('submission_type_id', $livewire->ownerRecord->id)->count() + 1),
+                                ->default(function () {
+                                    return DocumentRequirement::where(
+                                        'submission_type_id', 
+                                        $this->getOwnerRecord()->id
+                                    )->count() + 1;
+                                }),
 
                             Forms\Components\Textarea::make('description')
                                 ->rows(3)

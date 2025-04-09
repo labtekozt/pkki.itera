@@ -106,27 +106,27 @@ class Submission extends Model
     }
     
     /**
-     * Get the trademark details for this submission if applicable.
-     */
-    public function trademarkDetail()
-    {
-        return $this->hasOne(TrademarkDetail::class);
-    }
-    
-    /**
-     * Get the copyright details for this submission if applicable.
-     */
-    public function copyrightDetail()
-    {
-        return $this->hasOne(CopyrightDetail::class);
-    }
-    
-    /**
      * Get the industrial design details for this submission if applicable.
      */
     public function industrialDesignDetail()
     {
         return $this->hasOne(IndustrialDesignDetail::class);
+    }
+
+    /**
+     * Get the brand detail associated with the submission.
+     */
+    public function brandDetail()
+    {
+        return $this->hasOne(BrandDetail::class);
+    }
+
+    /**
+     * Get the haki detail associated with the submission.
+     */
+    public function hakiDetail()
+    {
+        return $this->hasOne(HakiDetail::class);
     }
     
     /**
@@ -138,8 +138,8 @@ class Submission extends Model
         
         return match($typeSlug) {
             'paten' => $this->patentDetail,
-            'brand' => $this->trademarkDetail,
-            'haki' => $this->copyrightDetail,
+            'brand' => $this->brandDetail,
+            'haki' => $this->hakiDetail,
             'industrial_design' => $this->industrialDesignDetail,
             default => null,
         };

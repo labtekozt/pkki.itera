@@ -16,16 +16,13 @@ return new class extends Migration
             $table->foreignUuid('submission_id')
                   ->constrained('submissions')
                   ->onDelete('cascade');
-            $table->string('design_type');
-            $table->text('design_description');
-            $table->text('novelty_statement');
-            $table->text('designer_information');
+            $table->string("design_title"); // Title of the industrial design
+            $table->string("inventors_name"); // Name of the inventor(s)
+            $table->string('design_type'); // Type of industrial design (e.g., product, packaging)
+            $table->text('design_description'); // Description of the design
+            $table->text('novelty_statement'); // Statement of novelty
+            $table->text('designer_information'); // Information about the designer
             $table->string('locarno_class')->nullable(); // Locarno Classification
-            $table->date('filing_date')->nullable();
-            $table->string('application_number')->nullable();
-            $table->date('registration_date')->nullable();
-            $table->string('registration_number')->nullable();
-            $table->date('expiration_date')->nullable();
             $table->timestamps();
             
             // Index for faster lookups

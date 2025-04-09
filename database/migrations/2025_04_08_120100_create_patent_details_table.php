@@ -16,16 +16,13 @@ return new class extends Migration
             $table->foreignUuid('submission_id')
                   ->constrained('submissions')
                   ->onDelete('cascade');
-            $table->string('patent_type'); // e.g., utility, design, plant, etc.
-            $table->text('invention_description');
-            $table->text('technical_field')->nullable();
-            $table->text('background')->nullable();
-            $table->string('patent_status')->nullable();
-            $table->text('inventor_details');
-            $table->date('filing_date')->nullable();
-            $table->string('application_number')->nullable();
-            $table->date('publication_date')->nullable();
-            $table->string('publication_number')->nullable();
+            $table->string('application_type'); // 'simple_patent' or 'patent'
+            $table->string('patent_title');
+            $table->text('patent_description');
+            $table->boolean('from_grant_research')->comment('Whether the invention comes from research/community service that received grant funding');
+            $table->boolean('self_funded')->comment('Whether self-funding will be used');
+            $table->text('media_link')->nullable()->comment('Link to video/poster and leaflet (must be accessible). Format: A3 poster containing invention advantages and price');
+            $table->text('inventors')->nullable();
             $table->timestamps();
             
             // Index for faster lookups

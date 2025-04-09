@@ -25,6 +25,8 @@ class StageRequirements extends Page implements HasTable
 
     protected static string $view = 'filament.resources.submission-type-resource.pages.stage-requirements';
 
+    // Explicitly define properties
+    public ?string $record = null;
     public ?WorkflowStage $stage = null;
 
     public function mount(string $record, string $stageId): void

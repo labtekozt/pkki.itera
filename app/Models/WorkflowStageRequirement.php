@@ -3,15 +3,48 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class WorkflowStageRequirement extends Model
-{   
-    use HasFactory, HasUuids, SoftDeletes;
+class WorkflowStageRequirement extends Pivot
+{
+    use HasUuids;
 
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+    
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = true;
+    
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'workflow_stage_requirements';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
+        'id',
         'workflow_stage_id',
         'document_requirement_id',
         'is_required',
@@ -19,43 +52,28 @@ class WorkflowStageRequirement extends Model
     ];
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_required' => 'boolean',
+        'order' => 'integer',
+    ];
+
+    /**
      * Get the workflow stage that owns the requirement.
      */
-    public function workflowStage()
+    public function workflowStage(): BelongsTo
     {
         return $this->belongsTo(WorkflowStage::class);
     }
 
     /**
-     * Get the document requirement that this relationship references.
+     * Get the document requirement that owns this stage requirement.
      */
-    public function documentRequirement()
+    public function documentRequirement(): BelongsTo
     {
         return $this->belongsTo(DocumentRequirement::class);
-    }
-    
-    /**
-     * Check if this requirement is mandatory.
-     *
-     * @return bool
-     */
-    public function isRequired(): bool
-    {
-        return (bool) $this->is_required;
-    }
-    
-    /**
-     * Get all submission documents related to this requirement.
-     */
-    public function submissionDocuments()
-    {
-        return $this->hasManyThrough(
-            SubmissionDocument::class,
-            DocumentRequirement::class,
-            'id', // Foreign key on document_requirements table
-            'requirement_id', // Foreign key on submission_documents table
-            'document_requirement_id', // Local key on workflow_stage_requirements table
-            'id' // Local key on document_requirements table
-        );
     }
 }

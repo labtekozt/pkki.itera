@@ -39,7 +39,9 @@ class WorkflowStagesRelationManager extends RelationManager
                         Forms\Components\TextInput::make('order')
                             ->label('Stage Order')
                             ->numeric()
-                            ->default(fn ($livewire) => $livewire->ownerRecord->workflowStages()->count() + 1)
+                            ->default(function ($livewire) { 
+                                return $livewire->getOwnerRecord()->workflowStages()->count() + 1;
+                            })
                             ->helperText('Order in the workflow sequence'),
                             
                         Forms\Components\Toggle::make('is_active')
@@ -58,8 +60,8 @@ class WorkflowStagesRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Select::make('document_requirements')
                             ->label('Required Documents')
-                            ->relationship('documentRequirements', 'name', function ($query, $get) {
-                                $submissionTypeId = $this->getOwnerRecord()?->id;
+                            ->relationship('documentRequirements', 'name', function ($query, $get, $livewire) {
+                                $submissionTypeId = $livewire->getOwnerRecord()?->id;
                                 
                                 if ($submissionTypeId) {
                                     $query->where('submission_type_id', $submissionTypeId);
