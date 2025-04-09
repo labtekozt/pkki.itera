@@ -10,6 +10,10 @@ use App\Models\SubmissionType;
 use App\Models\TrackingHistory;
 use App\Models\User;
 use App\Models\WorkflowStage;
+use App\Models\PatentDetail;
+use App\Models\TrademarkDetail;
+use App\Models\CopyrightDetail;
+use App\Models\IndustrialDesignDetail;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -56,21 +60,27 @@ class DemoDataSeeder extends Seeder
             ->orderBy('order')
             ->first();
 
-        // Create a new patent submission
+        // Create submission record
         $submission = Submission::create([
             'id' => Str::uuid(),
+            'title' => 'Sistem Pelacakan Kekayaan Intelektual',
             'submission_type_id' => $paten->id,
             'current_stage_id' => $firstStage->id,
-            'title' => 'Sistem Pelacakan Kekayaan Intelektual',
             'status' => 'in_review',
-            'inventor_details' => 'Dr. Budi Santoso, Institut Teknologi Sumatera',
-            'metadata' => json_encode([
-                'invention_type' => 'Software',
-                'technology_field' => 'Information Technology'
-            ]),
             'user_id' => $user->id,
-            'created_at' => now()->subDays(30),
-            'updated_at' => now()->subDays(25),
+            'created_at' => now()->subDays(5),
+            'updated_at' => now(),
+        ]);
+
+        // Create patent-specific details in the patent_details table
+        PatentDetail::create([
+            'id' => Str::uuid(),
+            'submission_id' => $submission->id,
+            'patent_type' => 'utility',
+            'invention_description' => 'Software untuk pelacakan proses kekayaan intelektual',
+            'technical_field' => 'Information Technology',
+            'inventor_details' => 'Dr. Budi Santoso, Institut Teknologi Sumatera',
+            'filing_date' => now()->subDays(5),
         ]);
 
         // Create documents and link them to the submission
@@ -143,19 +153,176 @@ class DemoDataSeeder extends Seeder
 
     private function createBrandSubmission($brand, $user, $admin): void
     {
-        // Same pattern as above, but for brand submission
-        // Implementation details would be similar to createPatentSubmission
-        // with appropriate changes for brand-specific requirements and stages
+        // Get first stage
+        $firstStage = WorkflowStage::where('submission_type_id', $brand->id)
+            ->orderBy('order')
+            ->first();
+
+        // Create submission record
+        $submission = Submission::create([
+            'id' => Str::uuid(),
+            'title' => 'Logo ITERA',
+            'submission_type_id' => $brand->id,
+            'current_stage_id' => $firstStage->id,
+            'status' => 'submitted',
+            'user_id' => $user->id,
+            'created_at' => now()->subDays(3),
+            'updated_at' => now()->subDays(2),
+        ]);
+
+        // Create trademark-specific details
+        TrademarkDetail::create([
+            'id' => Str::uuid(),
+            'submission_id' => $submission->id,
+            'trademark_type' => 'combined',
+            'description' => 'Logo ITERA dengan kombinasi lambang dan teks',
+            'goods_services_description' => 'Layanan pendidikan tingkat universitas',
+            'nice_classes' => '41',
+            'has_color_claim' => true,
+            'color_description' => 'Biru dan Putih',
+        ]);
+
+        // Create documents and link them to the submission
+        $requirements = DocumentRequirement::where('submission_type_id', $brand->id)->get();
+
+        foreach ($requirements as $requirement) {
+            $document = Document::create([
+                'id' => Str::uuid(),
+                'uri' => 'demo/brands/' . Str::slug($requirement->name) . '.pdf',
+                'title' => $requirement->name . ' - Logo ITERA',
+                'mimetype' => 'application/pdf',
+                'size' => rand(100000, 5000000),
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(30),
+            ]);
+
+            SubmissionDocument::create([
+                'id' => Str::uuid(),
+                'submission_id' => $submission->id,
+                'document_id' => $document->id,
+                'requirement_id' => $requirement->id,
+                'status' => 'approved',
+                'notes' => null,
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(25),
+            ]);
+        }
     }
 
     private function createCopyrightSubmission($haki, $user, $admin): void
     {
-        // Similar implementation for copyright submission
+        // Get first stage
+        $firstStage = WorkflowStage::where('submission_type_id', $haki->id)
+            ->orderBy('order')
+            ->first();
+
+        // Create submission record
+        $submission = Submission::create([
+            'id' => Str::uuid(),
+            'title' => 'Buku Panduan Penelitian ITERA',
+            'submission_type_id' => $haki->id,
+            'current_stage_id' => $firstStage->id,
+            'status' => 'approved',
+            'user_id' => $user->id,
+            'created_at' => now()->subMonths(2),
+            'updated_at' => now()->subDays(10),
+        ]);
+
+        // Create copyright-specific details
+        CopyrightDetail::create([
+            'id' => Str::uuid(),
+            'submission_id' => $submission->id,
+            'work_type' => 'literary',
+            'work_description' => 'Buku panduan penelitian untuk dosen dan mahasiswa ITERA',
+            'creation_year' => now()->year - 1,
+            'is_published' => true,
+            'publication_date' => now()->subMonths(3),
+            'publication_place' => 'Lampung',
+            'authors' => 'Tim Penelitian ITERA',
+        ]);
+
+        // Create documents and link them to the submission
+        $requirements = DocumentRequirement::where('submission_type_id', $haki->id)->get();
+
+        foreach ($requirements as $requirement) {
+            $document = Document::create([
+                'id' => Str::uuid(),
+                'uri' => 'demo/copyrights/' . Str::slug($requirement->name) . '.pdf',
+                'title' => $requirement->name . ' - Buku Panduan',
+                'mimetype' => 'application/pdf',
+                'size' => rand(100000, 5000000),
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(30),
+            ]);
+
+            SubmissionDocument::create([
+                'id' => Str::uuid(),
+                'submission_id' => $submission->id,
+                'document_id' => $document->id,
+                'requirement_id' => $requirement->id,
+                'status' => 'approved',
+                'notes' => null,
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(25),
+            ]);
+        }
     }
 
     private function createDesignSubmission($design, $user, $admin): void
     {
-        // Similar implementation for industrial design submission
+        // Get first stage
+        $firstStage = WorkflowStage::where('submission_type_id', $design->id)
+            ->orderBy('order')
+            ->first();
+
+        // Create submission record
+        $submission = Submission::create([
+            'id' => Str::uuid(),
+            'title' => 'Desain Kursi Ergonomis',
+            'submission_type_id' => $design->id,
+            'current_stage_id' => $firstStage->id,
+            'status' => 'revision_needed',
+            'user_id' => $user->id,
+            'created_at' => now()->subDays(15),
+            'updated_at' => now()->subDays(5),
+        ]);
+
+        // Create industrial design-specific details
+        IndustrialDesignDetail::create([
+            'id' => Str::uuid(),
+            'submission_id' => $submission->id,
+            'design_type' => 'furniture',
+            'design_description' => 'Kursi ergonomis untuk penggunaan jangka panjang',
+            'novelty_statement' => 'Desain kursi dengan sandaran dan dukungan lumbar yang inovatif',
+            'designer_information' => 'Tim Desain Teknik Industri ITERA',
+            'locarno_class' => '06-01',
+        ]);
+
+        // Create documents and link them to the submission
+        $requirements = DocumentRequirement::where('submission_type_id', $design->id)->get();
+
+        foreach ($requirements as $requirement) {
+            $document = Document::create([
+                'id' => Str::uuid(),
+                'uri' => 'demo/designs/' . Str::slug($requirement->name) . '.pdf',
+                'title' => $requirement->name . ' - Desain Kursi',
+                'mimetype' => 'application/pdf',
+                'size' => rand(100000, 5000000),
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(30),
+            ]);
+
+            SubmissionDocument::create([
+                'id' => Str::uuid(),
+                'submission_id' => $submission->id,
+                'document_id' => $document->id,
+                'requirement_id' => $requirement->id,
+                'status' => 'approved',
+                'notes' => null,
+                'created_at' => now()->subDays(30),
+                'updated_at' => now()->subDays(25),
+            ]);
+        }
     }
 
     private function createAdditionalUsers(): void

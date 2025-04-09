@@ -50,4 +50,17 @@ class DocumentRequirement extends Model
     {
         return $this->hasMany(SubmissionDocument::class, 'requirement_id');
     }
+
+    /**
+     * Get the workflow stages that use this document requirement.
+     */
+    public function workflowStages()
+    {
+        return $this->belongsToMany(
+            WorkflowStage::class,
+            'workflow_stage_requirements',
+            'document_requirement_id',
+            'workflow_stage_id'
+        )->withPivot('is_required', 'order');
+    }
 }

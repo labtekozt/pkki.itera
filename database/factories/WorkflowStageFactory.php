@@ -13,25 +13,13 @@ class WorkflowStageFactory extends Factory
 
     public function definition(): array
     {
-        $name = $this->faker->unique()->words(2, true);
-
         return [
             'id' => Str::uuid(),
             'submission_type_id' => SubmissionType::factory(),
-            'code' => Str::slug($name),
-            'name' => ucwords($name),
-            'order' => $this->faker->numberBetween(1, 5),
+            'code' => $this->faker->slug(),
+            'name' => $this->faker->name(),
+            'order' => $this->faker->numberBetween(1, 10),
             'description' => $this->faker->sentence(),
-            'required_documents' => json_encode([]),
-            'created_at' => now(),
-            'updated_at' => now(),
         ];
-    }
-
-    public function withRequiredDocuments(array $documentCodes): static
-    {
-        return $this->state(fn(array $attributes) => [
-            'required_documents' => json_encode($documentCodes),
-        ]);
     }
 }

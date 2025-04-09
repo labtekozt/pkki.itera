@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
             
             // Optional seeders for development/testing
             // Demo data seeders (only use in development)
-            DemoDataSeeder::class,
         ]);
     }
 }

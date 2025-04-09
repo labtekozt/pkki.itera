@@ -32,9 +32,7 @@ return new class extends Migration
                 'completed',
                 'cancelled'
             ])->default('draft');
-            $table->text('inventor_details')->nullable();
             $table->string('certificate')->nullable();
-            $table->json('metadata')->nullable();
             $table->foreignUuid('user_id')
                   ->constrained('users')
                   ->onDelete('restrict');
