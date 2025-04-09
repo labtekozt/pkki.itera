@@ -17,6 +17,11 @@ class WorkflowStage extends Model
         'name',
         'order',
         'description',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -42,22 +47,107 @@ class WorkflowStage extends Model
     {
         return $this->hasMany(TrackingHistory::class, 'stage_id');
     }
-    
+
     /**
      * Get the document requirements associated with this workflow stage.
      */
     public function documentRequirements()
     {
-        return $this->belongsToMany(DocumentRequirement::class, 'workflow_stage_requirements')
-                    ->withPivot('is_required', 'order')
-                    ->orderBy('workflow_stage_requirements.order');
+        return $this->belongsToMany(
+            DocumentRequirement::class,
+            'workflow_stage_requirements',
+            'workflow_stage_id',
+            'document_requirement_id'
+        )->withPivot('is_required', 'order')->orderBy('workflow_stage_requirements.order');
     }
-    
+
     /**
-     * Get the stage requirements.
+     * Get the stage requirement relationships.
      */
     public function stageRequirements()
     {
         return $this->hasMany(WorkflowStageRequirement::class);
+    }
+
+    /**
+     * Get the next stage in the workflow.
+     * 
+     * @param bool $skipDisabled Whether to skip disabled stages
+     * @return WorkflowStage|null
+     */
+    public function nextStage(bool $skipDisabled = true)
+    {
+        $query = $this->submissionType->workflowStages()
+            ->where('order', '>', $this->order)
+            ->orderBy('order');
+
+        if ($skipDisabled) {
+            $query->where('is_active', true);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Get the previous stage in the workflow.
+     * 
+     * @param bool $skipDisabled Whether to skip disabled stages
+     * @return WorkflowStage|null
+     */
+    public function previousStage(bool $skipDisabled = true)
+    {
+        $query = $this->submissionType->workflowStages()
+            ->where('order', '<', $this->order)
+            ->orderBy('order', 'desc');
+
+        if ($skipDisabled) {
+            $query->where('is_active', true);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Check if this is the final stage in the workflow.
+     * 
+     * @return bool
+     */
+    public function isFinalStage(): bool
+    {
+        return !$this->nextStage();
+    }
+
+    /**
+     * Check if this is the initial stage in the workflow.
+     * 
+     * @return bool
+     */
+    public function isInitialStage(): bool
+    {
+        return !$this->previousStage();
+    }
+
+    /**
+     * Check if all required documents for this stage are fulfilled for a given submission.
+     * 
+     * @param Submission $submission
+     * @return bool
+     */
+    public function areRequirementsFulfilled(Submission $submission): bool
+    {
+        // Get all required document requirements for this stage
+        $requiredRequirementIds = $this->documentRequirements()
+            ->wherePivot('is_required', true)
+            ->pluck('document_requirements.id');
+
+        // Count how many of the required requirements have approved documents
+        $fulfilledCount = $submission->submissionDocuments()
+            ->whereIn('requirement_id', $requiredRequirementIds)
+            ->where('status', 'approved')
+            ->distinct('requirement_id')
+            ->count('requirement_id');
+
+        // All requirements are fulfilled if the counts match
+        return $fulfilledCount === $requiredRequirementIds->count();
     }
 }
