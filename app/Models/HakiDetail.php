@@ -36,6 +36,7 @@ class HakiDetail extends Model
         'self_funded',
         'registration_number',
         'registration_date',
+        'inventors_name',
     ];
 
     /**

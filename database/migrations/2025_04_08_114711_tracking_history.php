@@ -11,32 +11,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tracking_history', function (Blueprint $table) {
+        Schema::create('tracking_histories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('submission_id')
-                  ->constrained('submissions')
-                  ->onDelete('cascade');
+                ->constrained('submissions')
+                ->onDelete('cascade');
             $table->foreignUuid('stage_id')
-                  ->constrained('workflow_stages')
-                  ->onDelete('restrict');
+                ->constrained('workflow_stages')
+                ->onDelete('restrict');
+            $table->string('action');
+            $table->json('metadata')->nullable();
             $table->enum('status', [
-                'started', 
-                'in_progress', 
-                'approved', 
-                'rejected', 
-                'revision_needed', 
-                'objection', 
+                'started',
+                'in_progress',
+                'approved',
+                'rejected',
+                'revision_needed',
+                'objection',
                 'completed'
             ]);
             $table->text('comment')->nullable();
             $table->foreignUuid('document_id')
-                  ->nullable()
-                  ->constrained('documents')
-                  ->onDelete('set null');
+                ->nullable()
+                ->constrained('documents')
+                ->onDelete('set null');
             $table->foreignUuid('processed_by')
-                  ->nullable()
-                  ->constrained('users')
-                  ->onDelete('set null');
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
             $table->timestamps();
         });
     }
@@ -46,6 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tracking_history');
+        Schema::dropIfExists('tracking_histories');
     }
 };

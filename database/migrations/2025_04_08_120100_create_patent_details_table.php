@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('from_grant_research')->comment('Whether the invention comes from research/community service that received grant funding');
             $table->boolean('self_funded')->comment('Whether self-funding will be used');
             $table->text('media_link')->nullable()->comment('Link to video/poster and leaflet (must be accessible). Format: A3 poster containing invention advantages and price');
-            $table->text('inventors')->nullable();
+            $table->text('inventors_name')->nullable();
             $table->timestamps();
             
             // Index for faster lookups

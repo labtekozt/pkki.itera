@@ -21,6 +21,9 @@ Route::get('/', function () {
     return Inertia::render(component: 'Welcome');
 });
 
+// Add a 'login' named route that redirects to Filament login
+Route::redirect('/login', '/admin/login')->name('login');
+
 // Add document download route for admin panel
 Route::get('/admin/documents/{document}/download', function (Document $document) {
     // Check permissions using Auth facade

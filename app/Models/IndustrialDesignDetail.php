@@ -12,22 +12,13 @@ class IndustrialDesignDetail extends Model
 
     protected $fillable = [
         'submission_id',
+        'design_title',
+        'inventors_name',
         'design_type',
         'design_description',
         'novelty_statement',
         'designer_information',
         'locarno_class',
-        'filing_date',
-        'application_number',
-        'registration_date',
-        'registration_number',
-        'expiration_date',
-    ];
-
-    protected $casts = [
-        'filing_date' => 'date',
-        'registration_date' => 'date',
-        'expiration_date' => 'date',
     ];
 
     /**

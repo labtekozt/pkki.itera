@@ -12,21 +12,18 @@ class PatentDetail extends Model
 
     protected $fillable = [
         'submission_id',
-        'patent_type',
-        'invention_description',
-        'technical_field',
-        'background',
-        'patent_status',
-        'inventor_details',
-        'filing_date',
-        'application_number',
-        'publication_date',
-        'publication_number',
+        'application_type',
+        'patent_title',
+        'patent_description',
+        'from_grant_research',
+        'self_funded',
+        'media_link',
+        'inventors_name',
     ];
 
     protected $casts = [
-        'filing_date' => 'date',
-        'publication_date' => 'date',
+        'from_grant_research' => 'boolean',
+        'self_funded' => 'boolean',
     ];
 
     /**

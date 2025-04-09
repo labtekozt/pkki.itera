@@ -24,6 +24,9 @@ class BrandDetail extends Model
      */
     protected $fillable = [
         'submission_id',
+        'brand_name',
+        'brand_description',
+        "inovators_name",
         'application_type',
         'application_date',
         'application_origin',

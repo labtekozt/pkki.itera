@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('haki_details', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('submission_id')
-                  ->constrained('submissions')
-                  ->onDelete('cascade');
+                ->constrained('submissions')
+                ->onDelete('cascade');
             $table->string('work_type'); // Type of creation (Jenis Ciptaan)
             $table->string('work_subtype')->nullable(); // Sub-type of creation (Sub Jenis Ciptaan)
             $table->enum('haki_category', ['computer', 'non_computer']); // Computer or Non-Computer Copyright
@@ -28,8 +28,9 @@ return new class extends Migration
             $table->boolean('self_funded')->default(false); // Whether it will use self-funding
             $table->string('registration_number')->nullable();
             $table->date('registration_date')->nullable();
+            $table->string("inventors_name")->nullable(); // Names of the inventors
             $table->timestamps();
-            
+
             // Index for faster lookups
             $table->index('submission_id');
         });

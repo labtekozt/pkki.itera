@@ -10,29 +10,22 @@ class TrackingHistory extends Model
 {
     use HasFactory, HasUuids;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'tracking_history';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'submission_id',
         'stage_id',
+        'action',
         'status',
-        'comment',
-        'document_id',
         'processed_by',
+        'comment',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
     ];
 
     /**
-     * Get the submission that owns this tracking entry.
+     * Get the submission that owns this tracking history.
      */
     public function submission()
     {
@@ -40,44 +33,30 @@ class TrackingHistory extends Model
     }
 
     /**
-     * Get the workflow stage for this tracking entry.
+     * Get the stage associated with this tracking history.
      */
     public function stage()
     {
-        return $this->belongsTo(WorkflowStage::class, 'stage_id');
+        return $this->belongsTo(WorkflowStage::class);
     }
 
     /**
-     * Get the document attached to this tracking entry.
-     */
-    public function document()
-    {
-        return $this->belongsTo(Document::class);
-    }
-
-    /**
-     * Get the user who processed this tracking entry.
+     * Get the user who processed this tracking history.
      */
     public function processor()
     {
         return $this->belongsTo(User::class, 'processed_by');
     }
-
+    
     /**
-     * Get a human-readable description of the status change.
+     * Get the document associated with this history entry if it's a document update.
      */
-    public function getStatusDescriptionAttribute()
+    public function document()
     {
-        $descriptions = [
-            'started' => 'Started',
-            'in_progress' => 'In Progress',
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
-            'revision_needed' => 'Revision Needed',
-            'objection' => 'Objection Raised',
-            'completed' => 'Completed',
-        ];
-
-        return $descriptions[$this->status] ?? $this->status;
+        if ($this->action !== 'document_update' || empty($this->metadata['document_id'])) {
+            return null;
+        }
+        
+        return $this->belongsTo(SubmissionDocument::class, 'metadata->document_id');
     }
 }

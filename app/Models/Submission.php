@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 class Submission extends Model
 {
@@ -15,39 +16,25 @@ class Submission extends Model
         'submission_type_id',
         'current_stage_id',
         'title',
+        'description',
         'status',
         'certificate',
         'user_id',
     ];
 
     /**
-     * Handle custom attributes and relationships during creation/updates
+     * The allowed status values
      */
-    protected static function booted()
-    {
-        parent::booted();
-
-        // When a submission is created
-        static::created(function (Submission $submission) {
-            // Create related type-specific detail records based on the submission type
-            $typeSlug = $submission->submissionType->slug ?? null;
-            
-            if ($typeSlug === 'paten' && isset($submission->attributes['inventor_details'])) {
-                // Create patent details
-                PatentDetail::create([
-                    'submission_id' => $submission->id,
-                    'inventor_details' => $submission->attributes['inventor_details'] ?? null,
-                    'patent_type' => 'utility', // Default type
-                    'invention_description' => $submission->attributes['metadata']['invention_type'] ?? '',
-                    'technical_field' => $submission->attributes['metadata']['technology_field'] ?? null,
-                ]);
-                
-                // Remove these attributes as they're now stored in the related model
-                unset($submission->attributes['inventor_details']);
-                unset($submission->attributes['metadata']);
-            }
-        });
-    }
+    public static $statusOptions = [
+        'draft' => 'Draft',
+        'submitted' => 'Submitted',
+        'in_review' => 'In Review',
+        'revision_needed' => 'Revision Needed',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ];
 
     /**
      * Get the user that owns the submission.
@@ -122,7 +109,7 @@ class Submission extends Model
     }
 
     /**
-     * Get the haki detail associated with the submission.
+     * Get the HAKI (copyright) detail associated with the submission.
      */
     public function hakiDetail()
     {
@@ -130,18 +117,83 @@ class Submission extends Model
     }
     
     /**
-     * Get the type-specific details for this submission.
+     * Scope a query to only include submissions of a specific type.
      */
-    public function getDetailsAttribute()
+    public function scopeOfType(Builder $query, string $typeSlug): Builder
     {
-        $typeSlug = $this->submissionType->slug ?? null;
+        return $query->whereHas('submissionType', function ($query) use ($typeSlug) {
+            $query->where('slug', $typeSlug);
+        });
+    }
+    
+    /**
+     * Scope a query to only include submissions with a specific status.
+     */
+    public function scopeWithStatus(Builder $query, string $status): Builder
+    {
+        return $query->where('status', $status);
+    }
+    
+    /**
+     * Scope a query to only include submissions that are in active stages.
+     */
+    public function scopeInActiveStages(Builder $query): Builder
+    {
+        return $query->whereHas('currentStage', function ($query) {
+            $query->where('is_active', true);
+        });
+    }
+    
+    /**
+     * Check if the submission can be edited by a user
+     */
+    public function canBeEditedBy(User $user): bool
+    {
+        // Admin can always edit
+        if ($user->can('review_submissions')) {
+            return true;
+        }
         
-        return match($typeSlug) {
-            'paten' => $this->patentDetail,
-            'brand' => $this->brandDetail,
-            'haki' => $this->hakiDetail,
-            'industrial_design' => $this->industrialDesignDetail,
-            default => null,
-        };
+        // Owner can edit if it's a draft or needs revision
+        if ($this->user_id === $user->id && in_array($this->status, ['draft', 'revision_needed'])) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if the submission has all required documents for the current stage
+     */
+    public function hasAllRequiredDocuments(): bool
+    {
+        if (!$this->currentStage) {
+            return false;
+        }
+        
+        $requirements = $this->currentStage->documentRequirements()
+            ->wherePivot('is_required', true)
+            ->get();
+            
+        if ($requirements->isEmpty()) {
+            return true;
+        }
+        
+        $approvedCount = 0;
+        
+        foreach ($requirements as $requirement) {
+            $document = $this->submissionDocuments()
+                ->where('requirement_id', $requirement->id)
+                ->where('status', 'approved')
+                ->first();
+                
+            if (!$document) {
+                return false;
+            }
+            
+            $approvedCount++;
+        }
+        
+        return $approvedCount === $requirements->count();
     }
 }

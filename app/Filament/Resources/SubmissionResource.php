@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\SubmissionFormFactory;
 use App\Filament\Resources\SubmissionResource\Pages;
 use App\Models\Submission;
 use App\Models\SubmissionType;
@@ -36,266 +37,89 @@ class SubmissionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Basic Information')
-                    ->schema([
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(fn() => Auth::id()),
+                Forms\Components\Tabs::make('Submission')
+                    ->tabs([
+                        Forms\Components\Tabs\Tab::make('Basic Information')
+                            ->schema([
+                                Forms\Components\Hidden::make('user_id')
+                                    ->default(fn() => Auth::id()),
 
-                        Forms\Components\Select::make('submission_type_id')
-                            ->relationship('submissionType', 'name')
-                            ->required()
-                            ->reactive()
-                            ->afterStateUpdated(function (Set $set) {
-                                $set('current_stage_id', null);
-                            }),
+                                Forms\Components\Select::make('submission_type_id')
+                                    ->relationship('submissionType', 'name')
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(function (Set $set, ?string $state) {
+                                        $set('current_stage_id', null);
 
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255)
-                            ->columnSpanFull(),
+                                        if ($state) {
+                                            $submissionType = SubmissionType::find($state);
+                                        }
+                                    }),
 
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'submitted' => 'Submitted',
-                                'in_review' => 'In Review',
-                                'revision_needed' => 'Revision Needed',
-                                'approved' => 'Approved',
-                                'rejected' => 'Rejected',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
+                                Forms\Components\TextInput::make('title')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Select::make('status')
+                                    ->options([
+                                        'draft' => 'Draft',
+                                        'submitted' => 'Submitted',
+                                        'in_review' => 'In Review',
+                                        'revision_needed' => 'Revision Needed',
+                                        'approved' => 'Approved',
+                                        'rejected' => 'Rejected',
+                                        'completed' => 'Completed',
+                                        'cancelled' => 'Cancelled',
+                                    ])
+                                    ->default('draft')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('certificate')
+                                    ->maxLength(255)
+                                    ->placeholder('Certificate number (if issued)')
+                                    ->visible(fn(Get $get) => in_array($get('status'), ['approved', 'completed'])),
+
+                                Forms\Components\Select::make('current_stage_id')
+                                    ->relationship('currentStage', 'name', function (Builder $query, Get $get) {
+                                        $submissionTypeId = $get('submission_type_id');
+                                        if ($submissionTypeId) {
+                                            $query->where('submission_type_id', $submissionTypeId)
+                                                ->orderBy('order');
+                                        }
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->label('Current Stage')
+                                    ->visible(function (Get $get) {
+                                        return (bool) $get('submission_type_id') && $get('status') !== 'draft';
+                                    }),
                             ])
-                            ->default('draft')
-                            ->required(),
+                            ->columns(2),
 
-                        Forms\Components\TextInput::make('certificate')
-                            ->maxLength(255)
-                            ->placeholder('Certificate number (if issued)'),
-
-                        Forms\Components\Select::make('current_stage_id')
-                            ->relationship('currentStage', 'name', function (Builder $query, Get $get) {
+                        Forms\Components\Tabs\Tab::make('Type Details')
+                            ->schema(function (Get $get) {
                                 $submissionTypeId = $get('submission_type_id');
-                                if ($submissionTypeId) {
-                                    $query->where('submission_type_id', $submissionTypeId)
-                                        ->orderBy('order');
+
+                                if (!$submissionTypeId) {
+                                    return [
+                                        Forms\Components\Placeholder::make('select_type')
+                                            ->content('Please select a submission type first')
+                                            ->columnSpanFull(),
+                                    ];
                                 }
+
+                                $submissionType = SubmissionType::find($submissionTypeId);
+
+                                if (!$submissionType) {
+                                    return [];
+                                }
+
+                                return SubmissionFormFactory::getFormForSubmissionType($submissionType->slug);
                             })
-                            ->searchable()
-                            ->preload()
-                            ->label('Current Stage')
-                            ->visible(function (Get $get) {
-                                return (bool) $get('submission_type_id');
-                            }),
+                            ->visible(fn(Get $get) => (bool) $get('submission_type_id')),
                     ])
-                    ->columns(2),
-
-                // Patent Form
-                Forms\Components\Section::make('Patent Details')
-                    ->schema([
-                        Forms\Components\Select::make('patentDetail.patent_type')
-                            ->options([
-                                'utility' => 'Utility Patent',
-                                'design' => 'Design Patent',
-                                'plant' => 'Plant Patent',
-                                'process' => 'Process Patent',
-                            ])
-                            ->required(),
-
-                        Forms\Components\Textarea::make('patentDetail.invention_description')
-                            ->label('Invention Description')
-                            ->required()
-                            ->columnSpanFull(),
-
-                        Forms\Components\Textarea::make('patentDetail.technical_field')
-                            ->label('Technical Field'),
-
-                        Forms\Components\Textarea::make('patentDetail.background')
-                            ->label('Background'),
-
-                        Forms\Components\Textarea::make('patentDetail.inventor_details')
-                            ->label('Inventor Details')
-                            ->required(),
-
-                        Forms\Components\DatePicker::make('patentDetail.filing_date')
-                            ->label('Filing Date'),
-
-                        Forms\Components\TextInput::make('patentDetail.application_number')
-                            ->label('Application Number'),
-
-                        Forms\Components\DatePicker::make('patentDetail.publication_date')
-                            ->label('Publication Date'),
-
-                        Forms\Components\TextInput::make('patentDetail.publication_number')
-                            ->label('Publication Number'),
-                    ])
-                    ->columns(2)
-                    ->visible(function (Get $get) {
-                        return $get('submission_type_id') &&
-                            SubmissionType::find($get('submission_type_id'))?->slug === 'paten';
-                    }),
-
-                // Trademark Form
-                Forms\Components\Section::make('Trademark Details')
-                    ->schema([
-                        Forms\Components\Select::make('trademarkDetail.trademark_type')
-                            ->options([
-                                'word' => 'Word Mark',
-                                'design' => 'Design Mark',
-                                'combined' => 'Combined Mark',
-                                'sound' => 'Sound Mark',
-                                'collective' => 'Collective Mark',
-                                'certification' => 'Certification Mark',
-                            ])
-                            ->required(),
-
-                        Forms\Components\Textarea::make('trademarkDetail.description')
-                            ->label('Description')
-                            ->required()
-                            ->columnSpanFull(),
-
-                        Forms\Components\Textarea::make('trademarkDetail.goods_services_description')
-                            ->label('Goods & Services Description')
-                            ->required(),
-
-                        Forms\Components\TextInput::make('trademarkDetail.nice_classes')
-                            ->label('Nice Classification Classes')
-                            ->required()
-                            ->placeholder('e.g., 9, 42'),
-
-                        Forms\Components\Checkbox::make('trademarkDetail.has_color_claim')
-                            ->label('Has Color Claim?'),
-
-                        Forms\Components\TextInput::make('trademarkDetail.color_description')
-                            ->label('Color Description')
-                            ->visible(function (Get $get) {
-                                return $get('trademarkDetail.has_color_claim');
-                            }),
-
-                        Forms\Components\DatePicker::make('trademarkDetail.first_use_date')
-                            ->label('Date of First Use'),
-
-                        Forms\Components\TextInput::make('trademarkDetail.registration_number')
-                            ->label('Registration Number'),
-
-                        Forms\Components\DatePicker::make('trademarkDetail.registration_date')
-                            ->label('Registration Date'),
-
-                        Forms\Components\DatePicker::make('trademarkDetail.expiration_date')
-                            ->label('Expiration Date'),
-                    ])
-                    ->columns(2)
-                    ->visible(function (Get $get) {
-                        return $get('submission_type_id') &&
-                            SubmissionType::find($get('submission_type_id'))?->slug === 'brand';
-                    }),
-
-                // Copyright Form
-                Forms\Components\Section::make('Copyright Details')
-                    ->schema([
-                        Forms\Components\Select::make('copyrightDetail.work_type')
-                            ->options([
-                                'literary' => 'Literary Work',
-                                'musical' => 'Musical Work',
-                                'dramatic' => 'Dramatic Work',
-                                'artistic' => 'Artistic Work',
-                                'audiovisual' => 'Audiovisual Work',
-                                'sound_recording' => 'Sound Recording',
-                                'architectural' => 'Architectural Work',
-                                'computer_program' => 'Computer Program',
-                            ])
-                            ->required(),
-
-                        Forms\Components\Textarea::make('copyrightDetail.work_description')
-                            ->label('Work Description')
-                            ->required()
-                            ->columnSpanFull(),
-
-                        Forms\Components\TextInput::make('copyrightDetail.creation_year')
-                            ->label('Year of Creation')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1900)
-                            ->maxValue(date('Y')),
-
-                        Forms\Components\Checkbox::make('copyrightDetail.is_published')
-                            ->label('Is Published?'),
-
-                        Forms\Components\DatePicker::make('copyrightDetail.publication_date')
-                            ->label('Publication Date')
-                            ->visible(function (Get $get) {
-                                return $get('copyrightDetail.is_published');
-                            }),
-
-                        Forms\Components\TextInput::make('copyrightDetail.publication_place')
-                            ->label('Place of Publication')
-                            ->visible(function (Get $get) {
-                                return $get('copyrightDetail.is_published');
-                            }),
-
-                        Forms\Components\Textarea::make('copyrightDetail.authors')
-                            ->label('Authors'),
-
-                        Forms\Components\Textarea::make('copyrightDetail.previous_registrations')
-                            ->label('Previous Registrations'),
-
-                        Forms\Components\Textarea::make('copyrightDetail.derivative_works')
-                            ->label('Derivative Works'),
-
-                        Forms\Components\TextInput::make('copyrightDetail.registration_number')
-                            ->label('Registration Number'),
-
-                        Forms\Components\DatePicker::make('copyrightDetail.registration_date')
-                            ->label('Registration Date'),
-                    ])
-                    ->columns(2)
-                    ->visible(function (Get $get) {
-                        return $get('submission_type_id') &&
-                            SubmissionType::find($get('submission_type_id'))?->slug === 'haki';
-                    }),
-
-                // Industrial Design Form
-                Forms\Components\Section::make('Industrial Design Details')
-                    ->schema([
-                        Forms\Components\TextInput::make('industrialDesignDetail.design_type')
-                            ->label('Design Type')
-                            ->required(),
-
-                        Forms\Components\Textarea::make('industrialDesignDetail.design_description')
-                            ->label('Design Description')
-                            ->required()
-                            ->columnSpanFull(),
-
-                        Forms\Components\Textarea::make('industrialDesignDetail.novelty_statement')
-                            ->label('Novelty Statement')
-                            ->required(),
-
-                        Forms\Components\Textarea::make('industrialDesignDetail.designer_information')
-                            ->label('Designer Information')
-                            ->required(),
-
-                        Forms\Components\TextInput::make('industrialDesignDetail.locarno_class')
-                            ->label('Locarno Classification'),
-
-                        Forms\Components\DatePicker::make('industrialDesignDetail.filing_date')
-                            ->label('Filing Date'),
-
-                        Forms\Components\TextInput::make('industrialDesignDetail.application_number')
-                            ->label('Application Number'),
-
-                        Forms\Components\DatePicker::make('industrialDesignDetail.registration_date')
-                            ->label('Registration Date'),
-
-                        Forms\Components\TextInput::make('industrialDesignDetail.registration_number')
-                            ->label('Registration Number'),
-
-                        Forms\Components\DatePicker::make('industrialDesignDetail.expiration_date')
-                            ->label('Expiration Date'),
-                    ])
-                    ->columns(2)
-                    ->visible(function (Get $get) {
-                        return $get('submission_type_id') &&
-                            SubmissionType::find($get('submission_type_id'))?->slug === 'industrial_design';
-                    }),
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -372,6 +196,17 @@ class SubmissionResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('process')
+                    ->label('Process')
+                    ->color('warning')
+                    ->icon('heroicon-o-cog')
+                    ->url(fn(Submission $record) => route('filament.admin.resources.submissions.process', $record))
+                    ->visible(
+                        fn(Submission $record) =>
+                        $record->status !== 'draft' &&
+                            $record->status !== 'completed' &&
+                            auth()->user()->can('review_submissions')
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -383,139 +218,235 @@ class SubmissionResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
-            ->schema([
-                Section::make('Basic Information')
-                    ->schema([
-                        TextEntry::make('submissionType.name')
-                            ->label('Submission Type'),
+            ->schema(function ($record) {
+                return self::getInfolistSchema($record);
+            });
+    }
 
-                        TextEntry::make('title')
-                            ->columnSpanFull(),
+    /**
+     * Get the infolist schema for a submission record
+     * This is separated so it can be reused in the ViewSubmission page
+     */
+    public static function getInfolistSchema($record): array
+    {
+        return [
+            Section::make('Basic Information')
+                ->schema([
+                    TextEntry::make('submissionType.name')
+                        ->label('Submission Type'),
 
-                        TextEntry::make('status')
-                            ->badge()
-                            ->color(fn(string $state): string => match ($state) {
-                                'draft' => 'gray',
-                                'submitted' => 'info',
-                                'in_review' => 'warning',
-                                'revision_needed' => 'danger',
-                                'approved' => 'success',
-                                'rejected' => 'danger',
-                                'completed' => 'success',
-                                'cancelled' => 'gray',
-                                default => 'gray',
-                            }),
+                    TextEntry::make('title')
+                        ->columnSpanFull(),
 
-                        TextEntry::make('currentStage.name')
-                            ->label('Current Stage'),
+                    TextEntry::make('description')
+                        ->columnSpanFull()
+                        ->visible(fn($record) => !empty($record->description)),
 
-                        TextEntry::make('certificate')
-                            ->visible(fn($record) => (bool) $record->certificate),
+                    TextEntry::make('status')
+                        ->badge()
+                        ->color(fn(string $state): string => match ($state) {
+                            'draft' => 'gray',
+                            'submitted' => 'info',
+                            'in_review' => 'warning',
+                            'revision_needed' => 'danger',
+                            'approved' => 'success',
+                            'rejected' => 'danger',
+                            'completed' => 'success',
+                            'cancelled' => 'gray',
+                            default => 'gray',
+                        }),
 
-                        TextEntry::make('user.fullname')
-                            ->label('Submitted By'),
+                    TextEntry::make('currentStage.name')
+                        ->label('Current Stage')
+                        ->visible(fn($record) => !empty($record->current_stage_id)),
 
-                        TextEntry::make('created_at')
-                            ->dateTime()
-                            ->label('Submission Date'),
-                    ])
-                    ->columns(2),
+                    TextEntry::make('certificate')
+                        ->visible(fn($record) => !empty($record->certificate)),
 
-                // Patent Details Section
-                Section::make('Patent Details')
-                    ->schema([
-                        TextEntry::make('patentDetail.patent_type')
-                            ->formatStateUsing(fn(string $state): string => match ($state) {
-                                'utility' => 'Utility Patent',
-                                'design' => 'Design Patent',
-                                'plant' => 'Plant Patent',
-                                'process' => 'Process Patent',
-                                default => $state,
-                            }),
+                    TextEntry::make('user.fullname')
+                        ->label('Submitted By'),
 
-                        TextEntry::make('patentDetail.invention_description')
-                            ->columnSpanFull(),
+                    TextEntry::make('created_at')
+                        ->dateTime()
+                        ->label('Submission Date'),
 
-                        TextEntry::make('patentDetail.technical_field')
-                            ->columnSpanFull()
-                            ->visible(fn($record) => isset($record->patentDetail->technical_field)),
+                    TextEntry::make('updated_at')
+                        ->dateTime()
+                        ->label('Last Updated')
+                        ->visible(fn($record) => $record->updated_at->ne($record->created_at)),
+                ])
+                ->columns(2)
+                ->collapsible(false),
 
-                        TextEntry::make('patentDetail.background')
-                            ->columnSpanFull()
-                            ->visible(fn($record) => isset($record->patentDetail->background)),
+            // Type-specific section
+            Section::make('Type Details')
+                ->schema(function () use ($record) {
+                    if (!$record->submissionType) {
+                        return [];
+                    }
 
-                        TextEntry::make('patentDetail.inventor_details')
-                            ->columnSpanFull(),
+                    return match ($record->submissionType->slug) {
+                        'paten' => self::getPatentInfolist($record),
+                        'brand' => self::getBrandInfolist($record),
+                        'haki' => self::getHakiInfolist($record),
+                        'industrial_design' => self::getIndustrialDesignInfolist($record),
+                        default => [],
+                    };
+                })
+                ->columns(2)
+                ->visible(fn($record) => $record->submissionType !== null)
+                ->collapsible(),
+        ];
+    }
 
-                        TextEntry::make('patentDetail.filing_date')
-                            ->date()
-                            ->visible(fn($record) => isset($record->patentDetail->filing_date)),
+    private static function getPatentInfolist($record): array
+    {
+        if (!$record->patentDetail) {
+            return [];
+        }
 
-                        TextEntry::make('patentDetail.application_number')
-                            ->visible(fn($record) => isset($record->patentDetail->application_number)),
+        return [
+            TextEntry::make('patentDetail.application_type')
+                ->formatStateUsing(fn(string $state): string => match ($state) {
+                    'simple_patent' => 'Simple Patent',
+                    'patent' => 'Standard Patent',
+                    default => $state,
+                }),
 
-                        TextEntry::make('patentDetail.publication_date')
-                            ->date()
-                            ->visible(fn($record) => isset($record->patentDetail->publication_date)),
+            TextEntry::make('patentDetail.patent_title')
+                ->label('Patent Title')
+                ->columnSpanFull(),
 
-                        TextEntry::make('patentDetail.publication_number')
-                            ->visible(fn($record) => isset($record->patentDetail->publication_number)),
-                    ])
-                    ->columns(2)
-                    ->visible(fn($record) => $record->submissionType->slug === 'paten' && $record->patentDetail),
+            TextEntry::make('patentDetail.patent_description')
+                ->label('Description')
+                ->columnSpanFull(),
 
-                // Similar sections for other submission types would follow here
-                // I'll include one more example for Trademark
+            TextEntry::make('patentDetail.from_grant_research')
+                ->label('From Grant Research')
+                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No'),
 
-                Section::make('Trademark Details')
-                    ->schema([
-                        TextEntry::make('trademarkDetail.trademark_type')
-                            ->formatStateUsing(fn(string $state): string => match ($state) {
-                                'word' => 'Word Mark',
-                                'design' => 'Design Mark',
-                                'combined' => 'Combined Mark',
-                                'sound' => 'Sound Mark',
-                                'collective' => 'Collective Mark',
-                                'certification' => 'Certification Mark',
-                                default => $state,
-                            }),
+            TextEntry::make('patentDetail.self_funded')
+                ->label('Self Funded')
+                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No'),
 
-                        TextEntry::make('trademarkDetail.description')
-                            ->columnSpanFull(),
+            TextEntry::make('patentDetail.inventors_name')
+                ->label('Inventors'),
 
-                        TextEntry::make('trademarkDetail.goods_services_description')
-                            ->columnSpanFull(),
+            TextEntry::make('patentDetail.media_link')
+                ->label('Media Link')
+                ->url()
+                ->visible(fn($record) => !empty($record->patentDetail->media_link)),
+        ];
+    }
 
-                        TextEntry::make('trademarkDetail.nice_classes')
-                            ->label('Nice Classification Classes'),
+    private static function getBrandInfolist($record): array
+    {
+        if (!$record->brandDetail) {
+            return [];
+        }
 
-                        TextEntry::make('trademarkDetail.has_color_claim')
-                            ->formatStateUsing(fn(bool $state): string => $state ? 'Yes' : 'No')
-                            ->label('Has Color Claim'),
+        return [
+            TextEntry::make('brandDetail.brand_name')
+                ->label('Brand Name'),
 
-                        TextEntry::make('trademarkDetail.color_description')
-                            ->visible(fn($record) => isset($record->trademarkDetail->color_description)),
+            TextEntry::make('brandDetail.brand_type')
+                ->label('Brand Type'),
 
-                        TextEntry::make('trademarkDetail.first_use_date')
-                            ->date()
-                            ->visible(fn($record) => isset($record->trademarkDetail->first_use_date)),
+            TextEntry::make('brandDetail.brand_description')
+                ->label('Description')
+                ->columnSpanFull(),
 
-                        TextEntry::make('trademarkDetail.registration_number')
-                            ->visible(fn($record) => isset($record->trademarkDetail->registration_number)),
+            TextEntry::make('brandDetail.inovators_name')
+                ->label('Innovators'),
 
-                        TextEntry::make('trademarkDetail.registration_date')
-                            ->date()
-                            ->visible(fn($record) => isset($record->trademarkDetail->registration_date)),
+            TextEntry::make('brandDetail.application_type')
+                ->label('Application Type'),
 
-                        TextEntry::make('trademarkDetail.expiration_date')
-                            ->date()
-                            ->visible(fn($record) => isset($record->trademarkDetail->expiration_date)),
-                    ])
-                    ->columns(2)
-                    ->visible(fn($record) => $record->submissionType->slug === 'brand' && $record->trademarkDetail),
+            TextEntry::make('brandDetail.nice_classes')
+                ->label('Nice Classification')
+                ->visible(fn($record) => !empty($record->brandDetail->nice_classes)),
 
-                // Add similar sections for Copyright and Industrial Design
-            ]);
+            TextEntry::make('brandDetail.goods_services_search')
+                ->label('Goods & Services')
+                ->columnSpanFull()
+                ->visible(fn($record) => !empty($record->brandDetail->goods_services_search)),
+        ];
+    }
+
+    private static function getHakiInfolist($record): array
+    {
+        if (!$record->hakiDetail) {
+            return [];
+        }
+
+        return [
+            TextEntry::make('hakiDetail.haki_title')
+                ->label('Work Title')
+                ->columnSpanFull(),
+
+            TextEntry::make('hakiDetail.work_type')
+                ->label('Work Type')
+                ->formatStateUsing(fn(string $state): string => match ($state) {
+                    'literary' => 'Literary Work',
+                    'musical' => 'Musical Work',
+                    'dramatic' => 'Dramatic Work',
+                    'artistic' => 'Artistic Work',
+                    'audiovisual' => 'Audiovisual Work',
+                    'sound_recording' => 'Sound Recording',
+                    'computer_program' => 'Computer Program',
+                    default => $state,
+                }),
+
+            TextEntry::make('hakiDetail.work_description')
+                ->label('Work Description')
+                ->columnSpanFull(),
+
+            TextEntry::make('hakiDetail.inventors_name')
+                ->label('Creators/Authors'),
+
+            TextEntry::make('hakiDetail.registration_number')
+                ->label('Registration Number')
+                ->visible(fn($record) => !empty($record->hakiDetail->registration_number)),
+
+            TextEntry::make('hakiDetail.registration_date')
+                ->label('Registration Date')
+                ->date()
+                ->visible(fn($record) => !empty($record->hakiDetail->registration_date)),
+        ];
+    }
+
+    private static function getIndustrialDesignInfolist($record): array
+    {
+        if (!$record->industrialDesignDetail) {
+            return [];
+        }
+
+        return [
+            TextEntry::make('industrialDesignDetail.design_title')
+                ->label('Design Title')
+                ->columnSpanFull(),
+
+            TextEntry::make('industrialDesignDetail.design_type')
+                ->label('Design Type'),
+
+            TextEntry::make('industrialDesignDetail.design_description')
+                ->label('Design Description')
+                ->columnSpanFull(),
+
+            TextEntry::make('industrialDesignDetail.novelty_statement')
+                ->label('Novelty Statement')
+                ->columnSpanFull(),
+
+            TextEntry::make('industrialDesignDetail.inventors_name')
+                ->label('Inventors'),
+
+            TextEntry::make('industrialDesignDetail.designer_information')
+                ->label('Designer Information'),
+
+            TextEntry::make('industrialDesignDetail.locarno_class')
+                ->label('Locarno Classification')
+                ->visible(fn($record) => !empty($record->industrialDesignDetail->locarno_class)),
+        ];
     }
 
     public static function getRelations(): array
@@ -533,6 +464,8 @@ class SubmissionResource extends Resource
             'create' => Pages\CreateSubmission::route('/create'),
             'view' => Pages\ViewSubmission::route('/{record}'),
             'edit' => Pages\EditSubmission::route('/{record}/edit'),
+            'documents' => Pages\ManageSubmissionDocuments::route('/{record}/documents'),
+            'process' => Pages\ProcessSubmission::route('/{record}/process'),
         ];
     }
 }
