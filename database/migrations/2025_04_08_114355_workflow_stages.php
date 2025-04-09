@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('name');
             $table->integer('order');
             $table->text('description')->nullable();
-            $table->json('required_documents')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

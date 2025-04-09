@@ -1,0 +1,102 @@
+{
+  "type": {
+    "name": "Geographical Indication",
+    "slug": "geographical-indication",
+    "description": "Protection for products with specific geographical origin"
+  },
+  "detail_fields": [
+    {
+      "name": "product_name",
+      "type": "string",
+      "nullable": false,
+      "cast": "string"
+    },
+    {
+      "name": "geographical_area",
+      "type": "string",
+      "nullable": false,
+      "cast": "string"
+    },
+    {
+      "name": "product_description",
+      "type": "text",
+      "nullable": true
+    },
+    {
+      "name": "production_method",
+      "type": "text",
+      "nullable": true
+    },
+    {
+      "name": "registration_date",
+      "type": "date",
+      "nullable": true,
+      "cast": "date"
+    }
+  ],
+  "requirements": [
+    {
+      "name": "Product Description Document",
+      "code": "product_description",
+      "description": "Detailed description of the product characteristics",
+      "required": true,
+      "order": 1
+    },
+    {
+      "name": "Geographical Connection Evidence",
+      "code": "geographical_connection",
+      "description": "Documentation proving connection to geographic location",
+      "required": true,
+      "order": 2
+    },
+    {
+      "name": "Production Method Document",
+      "code": "production_method",
+      "description": "Description of how the product is produced",
+      "required": true,
+      "order": 3
+    }
+  ],
+  "stages": [
+    {
+      "name": "Initial Submission",
+      "code": "geo_submission",
+      "description": "Initial filing of geographical indication",
+      "order": 1,
+      "is_active": true,
+      "requirements": [
+        {
+          "code": "product_description",
+          "is_required": true,
+          "order": 1
+        },
+        {
+          "code": "geographical_connection",
+          "is_required": true,
+          "order": 2
+        }
+      ]
+    },
+    {
+      "name": "Examination",
+      "code": "geo_examination",
+      "description": "Technical examination of geographical indication",
+      "order": 2,
+      "is_active": true,
+      "requirements": [
+        {
+          "code": "production_method",
+          "is_required": true,
+          "order": 1
+        }
+      ]
+    },
+    {
+      "name": "Final Decision",
+      "code": "geo_decision",
+      "description": "Final decision on geographical indication",
+      "order": 3,
+      "is_active": true
+    }
+  ]
+}

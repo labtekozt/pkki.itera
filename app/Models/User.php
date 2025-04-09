@@ -66,6 +66,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     {
         return $this->hasOne(UserDetail::class);
     }
+    
 
     /**
      * Get the submissions for this user.

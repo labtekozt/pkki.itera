@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Filament\Resources\Shield\RoleResource;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -19,7 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // create permissions
         Permission::create(['name' => 'access_log_viewer']);
 
-        $roles = ["super-admin", "admin", "civitas", "non-civitas"];
+        $roles = ["super_admin", "admin", "civitas", "non-civitas"];
 
         foreach ($roles as $key => $role) {
             $roleCreated = (new (RoleResource::getModel()))->create(
@@ -31,7 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 ]
             );
 
-            if ($role == 'super-admin') {
+            if ($role == 'super_admin') {
                 $roleCreated->givePermissionTo('access_log_viewer');
             }
         }

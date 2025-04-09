@@ -11,13 +11,14 @@ use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Auth\VerifyEmail;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
@@ -53,7 +54,6 @@ class UserResource extends Resource
                                 ->color('info')
                                 ->action(fn(MailSettings $settings, Model $record) => static::doResendEmailVerification($settings, $record)),
                         ])
-                            // ->hidden(fn (User $user) => $user->email_verified_at != null)
                             ->hiddenOn('create')
                             ->fullWidth(),
 
@@ -90,6 +90,14 @@ class UserResource extends Resource
                             ])
                             ->compact()
                             ->hidden(fn(string $operation): bool => $operation === 'create'),
+                        Forms\Components\Section::make('Provider Information')
+                            ->schema([
+                                Forms\Components\Placeholder::make('provider')
+                                    ->label("Layanan Penyedia Akun")
+                                    ->content(fn(User $record): ?string => new HtmlString("$record->provider")),
+                            ])
+                            ->compact()
+                            ->hidden(fn(string $operation): bool => $operation === 'create'),
                     ])
                     ->columnSpan(1),
 
@@ -98,49 +106,69 @@ class UserResource extends Resource
                         Forms\Components\Tabs\Tab::make('Details')
                             ->icon('heroicon-o-information-circle')
                             ->schema([
-                                Forms\Components\TextInput::make('username')
+                                Forms\Components\TextInput::make('fullname')
                                     ->required()
                                     ->maxLength(255)
                                     ->live()
-                                    ->rules(function ($record) {
-                                        $userId = $record?->id;
-                                        return $userId
-                                            ? ['unique:users,username,' . $userId]
-                                            : ['unique:users,username'];
-                                    }),
+                                    ->placeholder('Full Name')
+                                    ->dehydrated(fn(?string $state): bool => filled($state)),
 
                                 Forms\Components\TextInput::make('email')
                                     ->email()
                                     ->required()
                                     ->maxLength(255)
-                                    ->rules(function ($record) {
-                                        $userId = $record?->id;
-                                        return $userId
-                                            ? ['unique:users,email,' . $userId]
-                                            : ['unique:users,email'];
-                                    }),
+                                    ->unique(
+                                        table: 'users',
+                                        column: 'email',
+                                        ignorable: fn($record) => $record
+                                    ),
 
-                                Forms\Components\TextInput::make('firstname')
-                                    ->required()
-                                    ->maxLength(255),
+                                // User Detail Section
+                                Forms\Components\Section::make('User Details')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('detail.phonenumber')
+                                            ->label('Phone Number')
+                                            ->tel()
+                                            ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
+                                            ->placeholder('+62 812 3456 7890')
+                                            ->maxLength(255),
 
-                                Forms\Components\TextInput::make('lastname')
-                                    ->required()
-                                    ->maxLength(255),
-                            ])
-                            ->columns(2),
+                                        Forms\Components\Textarea::make('detail.alamat')
+                                            ->label('Address')
+                                            ->placeholder('Enter complete address')
+                                            ->rows(3)
+                                            ->columnSpanFull()
+                                            ->maxLength(255),
+
+
+                                        // Academic Information subsection
+                                        Forms\Components\Fieldset::make('Academic Information')
+                                            ->schema([
+                                                Forms\Components\TextInput::make('detail.jurusan')
+                                                    ->label('Department')
+                                                    ->placeholder('e.g., Computer Science')
+                                                    ->maxLength(255),
+
+                                                Forms\Components\TextInput::make('detail.prodi')
+                                                    ->label('Program Studi')
+                                                    ->placeholder('e.g., Software Engineering')
+                                                    ->maxLength(255),
+                                            ])
+                                            ->columns(2),
+                                    ]),
+                            ]),
 
                         Forms\Components\Tabs\Tab::make('Roles')
                             ->icon('fluentui-shield-task-48')
+                            ->visible(fn() => auth()->user()->isSuperAdmin())
                             ->schema([
                                 Select::make('roles')
                                     ->hiddenLabel()
                                     ->relationship('roles', 'name')
                                     ->getOptionLabelFromRecordUsing(fn(Model $record) => Str::headline($record->name))
-                                    ->multiple()
                                     ->preload()
                                     ->searchable()
-                                    ->optionsLimit(5)
+                                    ->disabled(fn() => !auth()->user()->isSuperAdmin())
                                     ->columnSpanFull(),
                             ])
                     ])
@@ -159,7 +187,7 @@ class UserResource extends Resource
                 SpatieMediaLibraryImageColumn::make('media')->label('Avatar')
                     ->collection('avatars')
                     ->wrap(),
-                Tables\Columns\TextColumn::make('username')->label('Username')
+                Tables\Columns\TextColumn::make('fullname')->label('fullname')
                     ->description(fn(Model $record) => $record->firstname . ' ' . $record->lastname)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('roles.name')->label('Role')
@@ -168,6 +196,11 @@ class UserResource extends Resource
                     ->badge(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('provider')->default('local')
+                    ->label('Provider')
+                    ->formatStateUsing(fn($state): string => Str::headline($state))
+                    ->colors(['info'])
+                    ->badge(),
                 Tables\Columns\TextColumn::make('email_verified_at')->label('Verified at')
                     ->dateTime()
                     ->sortable(),
@@ -184,7 +217,14 @@ class UserResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->mutateRecordDataUsing(function (array $data) {
+                        // Remove roles data for non-super admins to prevent changes
+                        if (!auth()->user()->isSuperAdmin()) {
+                            unset($data['roles']);
+                        }
+                        return $data;
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -196,9 +236,7 @@ class UserResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
@@ -217,13 +255,14 @@ class UserResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['email', 'firstname', 'lastname'];
+        return ['email', 'fullname'];
     }
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            'name' => $record->firstname . ' ' . $record->lastname,
+            'name' => $record->fullname,
+            'email' => $record->email,
         ];
     }
 
@@ -260,5 +299,27 @@ class UserResource extends Resource
                 ->warning()
                 ->send();
         }
+    }
+
+    public static function getBasicFormSchema(): array
+    {
+        return [
+            TextInput::make('fullname')
+                ->required()
+                ->maxLength(255),
+
+            TextInput::make('email')
+                ->email()
+                ->required()
+                ->unique(table: static::$model, ignorable: fn($record) => $record)
+                ->maxLength(255),
+
+            TextInput::make('password')
+                ->password()
+                ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
+                ->dehydrated(fn(?string $state): bool => filled($state))
+                ->required(fn(string $operation): bool => $operation === 'create')
+                ->maxLength(255),
+        ];
     }
 }

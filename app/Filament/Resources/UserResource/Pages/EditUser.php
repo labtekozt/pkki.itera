@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
+use App\Models\UserDetail;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Pages\EditRecord;
@@ -70,9 +71,48 @@ class EditUser extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        // Fetch the related UserDetail if it exists
+        $userDetail = $this->record->detail;
+        
+        if ($userDetail) {
+            // Add UserDetail data to the form data
+            $data['detail'] = [
+                'alamat' => $userDetail->alamat,
+                'phonenumber' => $userDetail->phonenumber,
+                'prodi' => $userDetail->prodi,
+                'jurusan' => $userDetail->jurusan,
+            ];
+        }
+        
+        return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        // Get the detail data from the form
+        $detailData = $this->data['detail'] ?? null;
+        
+        if ($detailData) {
+            // Find or create UserDetail for this user
+            $userDetail = $this->record->detail ?? new UserDetail();
+            
+            // Update UserDetail fields
+            $userDetail->user_id = $this->record->id;
+            $userDetail->alamat = $detailData['alamat'] ?? null;
+            $userDetail->phonenumber = $detailData['phonenumber'] ?? null;
+            $userDetail->prodi = $detailData['prodi'] ?? null;
+            $userDetail->jurusan = $detailData['jurusan'] ?? null;
+            
+            // Save the UserDetail
+            $userDetail->save();
+        }
+    }
+
     public function getTitle(): string|Htmlable
     {
-        $title = $this->record->name;
+        $title = $this->record->fullname ?? $this->record->name;
         $badge = $this->getBadgeStatus();
 
         return new HtmlString("

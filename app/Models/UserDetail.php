@@ -35,6 +35,7 @@ class UserDetail extends Model
         'phonenumber',
         'prodi',
         'jurusan',
+        
     ];
 
     /**

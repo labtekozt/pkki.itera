@@ -11,33 +11,46 @@ class Submission extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'submission_type_id',
         'current_stage_id',
         'title',
         'status',
-        'inventor_details',
         'certificate',
-        'metadata',
         'user_id',
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Handle custom attributes and relationships during creation/updates
      */
-    protected $casts = [
-        'metadata' => 'array',
-    ];
+    protected static function booted()
+    {
+        parent::booted();
+
+        // When a submission is created
+        static::created(function (Submission $submission) {
+            // Create related type-specific detail records based on the submission type
+            $typeSlug = $submission->submissionType->slug ?? null;
+            
+            if ($typeSlug === 'paten' && isset($submission->attributes['inventor_details'])) {
+                // Create patent details
+                PatentDetail::create([
+                    'submission_id' => $submission->id,
+                    'inventor_details' => $submission->attributes['inventor_details'] ?? null,
+                    'patent_type' => 'utility', // Default type
+                    'invention_description' => $submission->attributes['metadata']['invention_type'] ?? '',
+                    'technical_field' => $submission->attributes['metadata']['technology_field'] ?? null,
+                ]);
+                
+                // Remove these attributes as they're now stored in the related model
+                unset($submission->attributes['inventor_details']);
+                unset($submission->attributes['metadata']);
+            }
+        });
+    }
 
     /**
-     * Get the user that owns this submission.
+     * Get the user that owns the submission.
      */
     public function user()
     {
@@ -45,7 +58,7 @@ class Submission extends Model
     }
 
     /**
-     * Get the submission type for this submission.
+     * Get the submission type of this submission.
      */
     public function submissionType()
     {
@@ -53,7 +66,7 @@ class Submission extends Model
     }
 
     /**
-     * Get the current workflow stage for this submission.
+     * Get the current workflow stage of this submission.
      */
     public function currentStage()
     {
@@ -61,7 +74,7 @@ class Submission extends Model
     }
 
     /**
-     * Get the documents for this submission.
+     * Get the submission documents for this submission.
      */
     public function submissionDocuments()
     {
@@ -69,7 +82,7 @@ class Submission extends Model
     }
 
     /**
-     * Get the tracking history for this submission.
+     * Get the tracking history entries for this submission.
      */
     public function trackingHistory()
     {
@@ -77,61 +90,58 @@ class Submission extends Model
     }
 
     /**
-     * Get the latest tracking history entry.
+     * Get the latest tracking history entry for this submission.
      */
     public function latestTracking()
     {
         return $this->hasOne(TrackingHistory::class)->latest();
     }
-
+    
     /**
-     * Advance to the next stage in the workflow.
+     * Get the patent details for this submission if applicable.
      */
-    public function advanceStage($status = 'started', $comment = null, $processedBy = null, $document = null)
+    public function patentDetail()
     {
-        $nextStage = $this->currentStage->nextStage();
-        
-        if (!$nextStage) {
-            return false;
-        }
-        
-        $this->update(['current_stage_id' => $nextStage->id]);
-        
-        // Create tracking history entry
-        $this->trackingHistory()->create([
-            'stage_id' => $nextStage->id,
-            'status' => $status,
-            'comment' => $comment,
-            'document_id' => $document?->id,
-            'processed_by' => $processedBy?->id,
-        ]);
-        
-        return true;
+        return $this->hasOne(PatentDetail::class);
     }
-
+    
     /**
-     * Initiate a submission with the first stage.
+     * Get the trademark details for this submission if applicable.
      */
-    public function initiateSubmission($comment = null)
+    public function trademarkDetail()
     {
-        $firstStage = $this->submissionType->firstStage();
+        return $this->hasOne(TrademarkDetail::class);
+    }
+    
+    /**
+     * Get the copyright details for this submission if applicable.
+     */
+    public function copyrightDetail()
+    {
+        return $this->hasOne(CopyrightDetail::class);
+    }
+    
+    /**
+     * Get the industrial design details for this submission if applicable.
+     */
+    public function industrialDesignDetail()
+    {
+        return $this->hasOne(IndustrialDesignDetail::class);
+    }
+    
+    /**
+     * Get the type-specific details for this submission.
+     */
+    public function getDetailsAttribute()
+    {
+        $typeSlug = $this->submissionType->slug ?? null;
         
-        if (!$firstStage) {
-            return false;
-        }
-        
-        $this->update([
-            'current_stage_id' => $firstStage->id,
-            'status' => 'submitted'
-        ]);
-        
-        // Create tracking history entry
-        $this->trackingHistory()->create([
-            'stage_id' => $firstStage->id,
-            'status' => 'started',
-            'comment' => $comment ?? 'Submission initiated',
-        ]);
-        
-        return true;
+        return match($typeSlug) {
+            'paten' => $this->patentDetail,
+            'brand' => $this->trademarkDetail,
+            'haki' => $this->copyrightDetail,
+            'industrial_design' => $this->industrialDesignDetail,
+            default => null,
+        };
     }
 }
