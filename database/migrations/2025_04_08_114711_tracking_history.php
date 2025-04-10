@@ -39,7 +39,17 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('users')
                 ->onDelete('set null');
+            // Track both previous and next stage for transitions
+            $table->foreignUuid('previous_stage_id')
+                ->nullable()
+                ->constrained('workflow_stages')
+                ->onDelete('set null');
+            $table->string('source_status')->nullable();
+            $table->string('target_status')->nullable();
+            $table->string('event_type')->nullable();
+            $table->timestamp('resolved_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

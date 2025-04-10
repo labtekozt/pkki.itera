@@ -51,6 +51,14 @@ class WorkflowStage extends Model
     }
 
     /**
+     * Get all tracking entries where this stage was the previous stage.
+     */
+    public function previousTrackingHistory()
+    {
+        return $this->hasMany(TrackingHistory::class, 'previous_stage_id');
+    }
+
+    /**
      * The document requirements for this stage.
      */
     public function documentRequirements(): BelongsToMany
@@ -167,5 +175,87 @@ class WorkflowStage extends Model
 
         // All requirements are fulfilled if the counts match
         return $fulfilledCount === $requiredRequirementIds->count();
+    }
+
+    /**
+     * Check if a submission should transition to this stage based on
+     * completion of requirements in the previous stage.
+     * 
+     * @param Submission $submission
+     * @return bool
+     */
+    public function shouldTransitionTo(Submission $submission): bool
+    {
+        // Can't transition if this is the initial stage
+        if ($this->isInitialStage()) {
+            return false;
+        }
+        
+        // Get the previous stage
+        $previousStage = $this->previousStage();
+        if (!$previousStage) {
+            return false;
+        }
+        
+        // Check if all requirements of the previous stage are fulfilled
+        return $previousStage->areRequirementsFulfilled($submission);
+    }
+
+    /**
+     * Check if the submission can exit this stage (all requirements are fulfilled)
+     *
+     * @param Submission $submission
+     * @return bool
+     */
+    public function canExit(Submission $submission): bool
+    {
+        return $this->areRequirementsFulfilled($submission);
+    }
+
+    /**
+     * Get available transitions from this stage.
+     *
+     * @return array
+     */
+    public function getAvailableTransitions(): array
+    {
+        $transitions = [];
+        
+        // Next stage transition
+        $nextStage = $this->nextStage();
+        if ($nextStage) {
+            $transitions[] = [
+                'action' => 'advance',
+                'target_stage' => $nextStage,
+                'description' => 'Advance to ' . $nextStage->name,
+            ];
+        }
+        
+        // Previous stage transition
+        $previousStage = $this->previousStage();
+        if ($previousStage) {
+            $transitions[] = [
+                'action' => 'return',
+                'target_stage' => $previousStage,
+                'description' => 'Return to ' . $previousStage->name,
+            ];
+        }
+        
+        // Final transitions
+        if ($this->isFinalStage()) {
+            $transitions[] = [
+                'action' => 'complete',
+                'target_stage' => null,
+                'description' => 'Complete submission',
+            ];
+            
+            $transitions[] = [
+                'action' => 'reject',
+                'target_stage' => null,
+                'description' => 'Reject submission',
+            ];
+        }
+        
+        return $transitions;
     }
 }

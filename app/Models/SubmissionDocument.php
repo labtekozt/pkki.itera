@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class SubmissionDocument extends Model
+class SubmissionDocument extends Model implements HasMedia
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes, InteractsWithMedia;
 
     /**
      * The attributes that are mass assignable.
@@ -74,5 +76,16 @@ class SubmissionDocument extends Model
             'status' => 'pending',
             'notes' => 'Replacement for document #' . $this->id,
         ]);
+    }
+
+    /**
+     * Register media collections for this model
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('document')
+            ->singleFile();
+            
+        $this->addMediaCollection('attachments');
     }
 }

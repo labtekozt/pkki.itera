@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\TrackingService;
 
 class Submission extends Model
 {
@@ -16,25 +16,39 @@ class Submission extends Model
         'submission_type_id',
         'current_stage_id',
         'title',
-        'description',
         'status',
         'certificate',
         'user_id',
     ];
 
     /**
-     * The allowed status values
+     * Handle custom attributes and relationships during creation/updates
      */
-    public static $statusOptions = [
-        'draft' => 'Draft',
-        'submitted' => 'Submitted',
-        'in_review' => 'In Review',
-        'revision_needed' => 'Revision Needed',
-        'approved' => 'Approved',
-        'rejected' => 'Rejected',
-        'completed' => 'Completed',
-        'cancelled' => 'Cancelled',
-    ];
+    protected static function booted()
+    {
+        parent::booted();
+
+        // When a submission is created
+        static::created(function (Submission $submission) {
+            // Create related type-specific detail records based on the submission type
+            $typeSlug = $submission->submissionType->slug ?? null;
+
+            if ($typeSlug === 'paten' && isset($submission->attributes['inventor_details'])) {
+                // Create patent details
+                PatentDetail::create([
+                    'submission_id' => $submission->id,
+                    'inventor_details' => $submission->attributes['inventor_details'] ?? null,
+                    'patent_type' => 'utility', // Default type
+                    'invention_description' => $submission->attributes['metadata']['invention_type'] ?? '',
+                    'technical_field' => $submission->attributes['metadata']['technology_field'] ?? null,
+                ]);
+
+                // Remove these attributes as they're now stored in the related model
+                unset($submission->attributes['inventor_details']);
+                unset($submission->attributes['metadata']);
+            }
+        });
+    }
 
     /**
      * Get the user that owns the submission.
@@ -77,13 +91,152 @@ class Submission extends Model
     }
 
     /**
+     * Get the tracking history entries for this submission ordered chronologically.
+     */
+    public function orderedTrackingHistory()
+    {
+        return $this->hasMany(TrackingHistory::class)->orderBy('created_at', 'asc');
+    }
+
+    /**
      * Get the latest tracking history entry for this submission.
      */
     public function latestTracking()
     {
         return $this->hasOne(TrackingHistory::class)->latest();
     }
-    
+
+    /**
+     * Get the state machine for the submission workflow.
+     */
+    public function getWorkflowStateMachine()
+    {
+        // This would return a state machine instance that defines
+        // all possible transitions for this submission type
+        // For now we'll use the tracking service directly
+
+        return app(TrackingService::class);
+    }
+
+    /**
+     * Get tracking entries that require action.
+     */
+    public function getPendingActionsAttribute()
+    {
+        return $this->trackingHistory()
+            ->where('status', 'revision_needed')
+            ->whereNull('resolved_at')
+            ->get();
+    }
+
+    /**
+     * Check if the submission can be advanced to the next stage.
+     */
+    public function canAdvanceToNextStage(): bool
+    {
+        if (!$this->currentStage) {
+            return false;
+        }
+
+        // Check if current stage requirements are fulfilled
+        if (!$this->currentStage->canExit($this)) {
+            return false;
+        }
+
+        // Check if there's a next stage
+        $nextStage = $this->currentStage->nextStage();
+        if (!$nextStage) {
+            return false;
+        }
+
+        // Can't advance if submission status is not appropriate
+        return in_array($this->status, ['in_review', 'approved']);
+    }
+
+    /**
+     * Advance to the next stage.
+     */
+    public function advanceToNextStage(?string $comment = null): self
+    {
+        if (!$this->canAdvanceToNextStage()) {
+            throw new \Exception("This submission cannot be advanced to the next stage.");
+        }
+
+        return app(TrackingService::class)->advanceToNextStage(
+            $this,
+            auth()->user(),
+            $comment
+        );
+    }
+
+    /**
+     * Request revisions for this submission.
+     */
+    public function requestRevisions(string $comment): self
+    {
+        return app(TrackingService::class)->requestRevisions(
+            $this,
+            auth()->user(),
+            $comment
+        );
+    }
+
+    /**
+     * Get all transitions that are currently available for this submission.
+     */
+    public function getAvailableTransitions(): array
+    {
+        if (!$this->currentStage) {
+            return [];
+        }
+
+        // Get possible transitions from the stage
+        $transitions = $this->currentStage->getAvailableTransitions();
+
+        // Filter transitions based on submission state
+        return array_filter($transitions, function ($transition) {
+            switch ($transition['action']) {
+                case 'advance':
+                    return $this->canAdvanceToNextStage();
+                case 'return':
+                    return in_array($this->status, ['in_review']);
+                case 'complete':
+                    return in_array($this->status, ['in_review']) && $this->currentStage->isFinalStage();
+                case 'reject':
+                    return in_array($this->status, ['in_review']);
+                default:
+                    return false;
+            }
+        });
+    }
+
+    /**
+     * Get the workflow timeline for this submission.
+     */
+    public function getTimelineAttribute()
+    {
+        $history = $this->orderedTrackingHistory;
+        $stages = $this->submissionType->workflowStages;
+
+        $timeline = [];
+
+        foreach ($stages as $stage) {
+            $stageHistory = $history->where('stage_id', $stage->id);
+
+            $timeline[] = [
+                'stage' => $stage,
+                'is_current' => $stage->id === $this->current_stage_id,
+                'started' => $stageHistory->isNotEmpty(),
+                'start_date' => $stageHistory->first()?->created_at,
+                'end_date' => $stageHistory->where('event_type', 'stage_transition')->first()?->created_at,
+                'actions' => $stageHistory->toArray(),
+                'completed' => $stageHistory->where('status', 'completed')->isNotEmpty(),
+            ];
+        }
+
+        return $timeline;
+    }
+
     /**
      * Get the patent details for this submission if applicable.
      */
@@ -91,7 +244,7 @@ class Submission extends Model
     {
         return $this->hasOne(PatentDetail::class);
     }
-    
+
     /**
      * Get the industrial design details for this submission if applicable.
      */
@@ -100,100 +253,29 @@ class Submission extends Model
         return $this->hasOne(IndustrialDesignDetail::class);
     }
 
-    /**
-     * Get the brand detail associated with the submission.
-     */
     public function brandDetail()
     {
         return $this->hasOne(BrandDetail::class);
     }
 
-    /**
-     * Get the HAKI (copyright) detail associated with the submission.
-     */
     public function hakiDetail()
     {
         return $this->hasOne(HakiDetail::class);
     }
-    
+
     /**
-     * Scope a query to only include submissions of a specific type.
+     * Get the type-specific details for this submission.
      */
-    public function scopeOfType(Builder $query, string $typeSlug): Builder
+    public function getDetailsAttribute()
     {
-        return $query->whereHas('submissionType', function ($query) use ($typeSlug) {
-            $query->where('slug', $typeSlug);
-        });
-    }
-    
-    /**
-     * Scope a query to only include submissions with a specific status.
-     */
-    public function scopeWithStatus(Builder $query, string $status): Builder
-    {
-        return $query->where('status', $status);
-    }
-    
-    /**
-     * Scope a query to only include submissions that are in active stages.
-     */
-    public function scopeInActiveStages(Builder $query): Builder
-    {
-        return $query->whereHas('currentStage', function ($query) {
-            $query->where('is_active', true);
-        });
-    }
-    
-    /**
-     * Check if the submission can be edited by a user
-     */
-    public function canBeEditedBy(User $user): bool
-    {
-        // Admin can always edit
-        if ($user->can('review_submissions')) {
-            return true;
-        }
-        
-        // Owner can edit if it's a draft or needs revision
-        if ($this->user_id === $user->id && in_array($this->status, ['draft', 'revision_needed'])) {
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Check if the submission has all required documents for the current stage
-     */
-    public function hasAllRequiredDocuments(): bool
-    {
-        if (!$this->currentStage) {
-            return false;
-        }
-        
-        $requirements = $this->currentStage->documentRequirements()
-            ->wherePivot('is_required', true)
-            ->get();
-            
-        if ($requirements->isEmpty()) {
-            return true;
-        }
-        
-        $approvedCount = 0;
-        
-        foreach ($requirements as $requirement) {
-            $document = $this->submissionDocuments()
-                ->where('requirement_id', $requirement->id)
-                ->where('status', 'approved')
-                ->first();
-                
-            if (!$document) {
-                return false;
-            }
-            
-            $approvedCount++;
-        }
-        
-        return $approvedCount === $requirements->count();
+        $typeSlug = $this->submissionType->slug ?? null;
+
+        return match ($typeSlug) {
+            'paten' => $this->patentDetail,
+            'brand' => $this->brandDetail,
+            'haki' => $this->hakiDetail,
+            'industrial_design' => $this->industrialDesignDetail,
+            default => null,
+        };
     }
 }

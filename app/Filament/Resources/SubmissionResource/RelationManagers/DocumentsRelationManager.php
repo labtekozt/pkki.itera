@@ -10,6 +10,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Support\Enums\IconPosition;
 
 class DocumentsRelationManager extends RelationManager
 {
@@ -30,8 +31,9 @@ class DocumentsRelationManager extends RelationManager
                     ->preload()
                     ->required(),
                 
-                Forms\Components\SpatieMediaLibraryFileUpload::make('document')
-                    ->collection('submission_documents')
+                Forms\Components\FileUpload::make('document')
+                    ->disk('public')
+                    ->directory('submission-documents')
                     ->acceptedFileTypes(['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                     ->maxSize(10240) // 10MB
                     ->required()
@@ -66,7 +68,22 @@ class DocumentsRelationManager extends RelationManager
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('document.title')
-                    ->searchable(),
+                    ->searchable()
+                    ->url(fn ($record) => route('filament.admin.documents.download', $record->document_id))
+                    ->openUrlInNewTab()
+                    ->icon('heroicon-m-document')
+                    ->iconPosition(IconPosition::After)
+                    ->tooltip('Click to download'),
+                
+                Tables\Columns\ImageColumn::make('document.preview_url')
+                    ->label('Preview')
+                    ->visibility(fn ($record) => 
+                        $record->document && 
+                        str_contains($record->document->mimetype ?? '', 'image/')
+                    )
+                    ->square()
+                    ->extraImgAttributes(['class' => 'object-contain'])
+                    ->size(60),
                 
                 Tables\Columns\TextColumn::make('document.mimetype')
                     ->label('File Type')
@@ -110,10 +127,21 @@ class DocumentsRelationManager extends RelationManager
                     ->preload()
                     ->label('Document Type'),
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
-            ])
             ->actions([
+                Tables\Actions\Action::make('view')
+                    ->label('View File')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn ($record) => route('filament.admin.documents.view', $record->document_id))
+                    ->openUrlInNewTab()
+                    ->visible(fn ($record) => $record->document && in_array($record->document->mimetype, [
+                        'application/pdf',
+                        'image/jpeg', 
+                        'image/png', 
+                        'image/gif', 
+                        'image/svg+xml',
+                        'text/plain',
+                        'text/html',
+                    ])),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

@@ -82,7 +82,7 @@ class TrackingHistoryRelationManager extends RelationManager
                     ->limit(50)
                     ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
                         $state = $column->getState();
-                        if (strlen($state) <= $column->getLimit()) {
+                        if (!$state || strlen($state) <= 50) {
                             return null;
                         }
                         return $state;
@@ -119,9 +119,6 @@ class TrackingHistoryRelationManager extends RelationManager
                     ->searchable()
                     ->preload()
                     ->label('Processor'),
-            ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

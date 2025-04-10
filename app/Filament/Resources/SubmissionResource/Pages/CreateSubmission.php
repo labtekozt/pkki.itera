@@ -20,14 +20,14 @@ use Illuminate\Support\Facades\Auth;
 class CreateSubmission extends CreateRecord
 {
     use HasWizard;
-    
+
     protected static string $resource = SubmissionResource::class;
-    
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('view', ['record' => $this->record]);
     }
-    
+
     protected function getSteps(): array
     {
         return [
@@ -53,21 +53,15 @@ class CreateSubmission extends CreateRecord
                         ->required()
                         ->helperText('Provide a clear and concise title for your submission')
                         ->maxLength(255)
-                        ->columnSpanFull(),
-
-                    Textarea::make('description')
-                        ->maxLength(1000)
-                        ->helperText('Brief overview of your submission that summarizes its key aspects')
                         ->columnSpanFull()
-                        ->placeholder('Brief description about this submission')
                 ]),
-                
+
             Step::make('Type Details')
                 ->description('Enter type-specific information')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->schema(function (Get $get) {
                     $submissionTypeId = $get('submission_type_id');
-                    
+
                     if (!$submissionTypeId) {
                         return [
                             \Filament\Forms\Components\Placeholder::make('select_type')
@@ -75,17 +69,17 @@ class CreateSubmission extends CreateRecord
                                 ->columnSpanFull(),
                         ];
                     }
-                    
+
                     $submissionType = SubmissionType::find($submissionTypeId);
-                    
+
                     if (!$submissionType) {
                         return [];
                     }
-                    
+
                     return SubmissionFormFactory::getFormForSubmissionType($submissionType->slug);
                 })
-                ->visible(fn (Get $get): bool => (bool) $get('submission_type_id')),
-                
+                ->visible(fn(Get $get): bool => (bool) $get('submission_type_id')),
+
             Step::make('Documents')
                 ->description('Upload required documents')
                 ->icon('heroicon-o-document-arrow-up')
@@ -93,26 +87,26 @@ class CreateSubmission extends CreateRecord
                     \Filament\Forms\Components\Placeholder::make('documents_info')
                         ->content('You can add required supporting documents after creating the submission. Each submission type has specific document requirements that will be shown there.')
                         ->columnSpanFull(),
-                        
+
                     \Filament\Forms\Components\Section::make('Document Requirements')
                         ->schema(function (Get $get) {
                             $submissionTypeId = $get('submission_type_id');
-                            
+
                             if (!$submissionTypeId) {
                                 return [];
                             }
-                            
+
                             $submissionType = SubmissionType::find($submissionTypeId);
-                            
+
                             if (!$submissionType) {
                                 return [];
                             }
-                            
+
                             $content = "### Required Documents for {$submissionType->name}\n\n";
                             $content .= "You will be able to upload these documents in the next step after submission is created:\n\n";
-                            
+
                             // This could be dynamically populated from document requirements
-                            switch($submissionType->slug) {
+                            switch ($submissionType->slug) {
                                 case 'paten':
                                     $content .= "- Patent application form\n";
                                     $content .= "- Invention description document\n";
@@ -120,30 +114,30 @@ class CreateSubmission extends CreateRecord
                                     $content .= "- Abstract\n";
                                     $content .= "- Drawings (if applicable)\n";
                                     break;
-                                    
+
                                 case 'brand':
                                     $content .= "- Brand registration form\n";
                                     $content .= "- Brand label/logo\n";
                                     $content .= "- Owner ID\n";
                                     break;
-                                    
+
                                 case 'haki':
                                     $content .= "- Copyright registration form\n";
                                     $content .= "- Copy of the work\n";
                                     $content .= "- Author's statement\n";
                                     break;
-                                    
+
                                 case 'industrial_design':
                                     $content .= "- Design registration form\n";
                                     $content .= "- Design representations\n";
                                     $content .= "- Design description\n";
                                     break;
-                                    
+
                                 default:
                                     $content .= "- Submission form\n";
                                     $content .= "- Supporting documents\n";
                             }
-                            
+
                             return [
                                 \Filament\Forms\Components\Placeholder::make('document_requirements')
                                     ->content(new \Illuminate\Support\HtmlString(\Illuminate\Support\Str::markdown($content)))
@@ -152,8 +146,8 @@ class CreateSubmission extends CreateRecord
                         })
                         ->columnSpanFull(),
                 ])
-                ->visible(fn (Get $get): bool => (bool) $get('submission_type_id')),
-                
+                ->visible(fn(Get $get): bool => (bool) $get('submission_type_id')),
+
             Step::make('Review & Submit')
                 ->description('Review submission information')
                 ->icon('heroicon-o-check-circle')
@@ -162,26 +156,25 @@ class CreateSubmission extends CreateRecord
                         ->content(function (Get $get) {
                             $typeId = $get('submission_type_id');
                             if (!$typeId) return 'Please select a submission type first.';
-                            
+
                             $type = SubmissionType::find($typeId);
-                            
+
                             $content = "## Submission Summary\n\n";
                             $content .= "**Type:** " . ($type ? $type->name : 'Unknown') . "\n\n";
                             $content .= "**Title:** " . $get('title') . "\n\n";
                             $content .= "**Description:** " . $get('description') . "\n\n";
                             $content .= "---\n\n";
                             $content .= "Please review your information carefully before submitting. You can go back to previous steps to make changes.";
-                            
+
                             return new \Illuminate\Support\HtmlString(
                                 \Illuminate\Support\Str::markdown($content)
                             );
                         })
                         ->columnSpanFull(),
-                        
+
                     Select::make('status')
                         ->options([
                             'draft' => 'Save as Draft',
-                            'submitted' => 'Submit for Review',
                         ])
                         ->default('draft')
                         ->required()
@@ -190,26 +183,26 @@ class CreateSubmission extends CreateRecord
                 ]),
         ];
     }
-    
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Make sure user_id is set if not already
         if (!isset($data['user_id'])) {
             $data['user_id'] = Auth::id();
         }
-        
+
         return $data;
     }
-    
+
     protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
     {
         // Use the SubmissionRepository to create the submission
         $submissionRepo = app(SubmissionRepository::class);
-        
+
         // Extract documents data if present
         $documents = $data['documents'] ?? [];
         unset($data['documents']);
-        
+
         return $submissionRepo->createSubmission($data, $documents);
     }
 }

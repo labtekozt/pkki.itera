@@ -34,7 +34,7 @@ class DocumentRequirementsRelationManager extends RelationManager
                             ->maxLength(255)
                             ->helperText('Unique identifier for this requirement'),
 
-                        Forms\Components\Toggle::make('Is Required')
+                        Forms\Components\Toggle::make('required')
                             ->label('Is Required')
                             ->helperText('Is this document mandatory for all submissions?')
                             ->default(true),
@@ -73,6 +73,25 @@ class DocumentRequirementsRelationManager extends RelationManager
                             ->numeric()
                             ->placeholder('5')
                             ->helperText('Leave empty for system default'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
+
+                Forms\Components\Section::make('Example Document')
+                    ->schema([
+                        Forms\Components\FileUpload::make('example_document')
+                            ->label('Example Document')
+                            ->disk('public')
+                            ->directory('document-requirements/examples')
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword', 
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'image/jpeg',
+                                'image/png',
+                                'text/plain'
+                            ])
+                            ->helperText('Upload an example document that users can reference')
                     ])
                     ->collapsible()
                     ->collapsed(),

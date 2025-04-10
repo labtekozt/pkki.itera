@@ -256,9 +256,63 @@ class SubmissionRepository
     }
     
     /**
+     * Check if all required documents are present and valid
+     * 
+     * @param Submission $submission
+     * @return array with status info
+     */
+    public function checkRequiredDocuments(Submission $submission): array
+    {
+        if (!$submission->submissionType) {
+            return [
+                'complete' => false,
+                'missing' => [],
+                'message' => 'No submission type defined'
+            ];
+        }
+        
+        $requirements = $submission->submissionType->documentRequirements()
+            ->where('required', true)
+            ->get();
+        
+        if ($requirements->isEmpty()) {
+            return [
+                'complete' => true,
+                'missing' => [],
+                'message' => 'No document requirements defined'
+            ];
+        }
+        
+        $missingDocuments = [];
+        
+        foreach ($requirements as $requirement) {
+            $document = $submission->submissionDocuments()
+                ->where('requirement_id', $requirement->id)
+                ->where('status', '!=', 'replaced')
+                ->latest()
+                ->first();
+            
+            if (!$document) {
+                $missingDocuments[] = [
+                    'id' => $requirement->id,
+                    'name' => $requirement->name
+                ];
+            }
+        }
+        
+        return [
+            'complete' => empty($missingDocuments),
+            'missing' => $missingDocuments,
+            'message' => empty($missingDocuments) 
+                ? 'All required documents uploaded' 
+                : count($missingDocuments) . ' required document(s) missing'
+        ];
+    }
+
+    /**
      * Attach documents to a submission
      */
-    protected function attachDocuments(Submission $submission, array $documents): void
+    public function attachDocuments(Submission $submission, array $documents): void
     {
         $submissionType = $submission->submissionType;
         $documentRequirements = $submissionType->documentRequirements;
@@ -267,13 +321,24 @@ class SubmissionRepository
             // Find the requirement if a requirement_id is specified
             $requirementId = $document['requirement_id'] ?? null;
             
+            // Set initial status based on submission status
+            $initialStatus = $submission->status === 'draft' ? 'draft' : 'pending';
+            
             $submissionDocument = $submission->submissionDocuments()->create([
                 'document_id' => $document['document_id'],
                 'requirement_id' => $requirementId,
-                'status' => $document['status'] ?? 'pending',
+                'status' => $document['status'] ?? $initialStatus,
                 'notes' => $document['notes'] ?? null,
             ]);
         }
+    }
+
+    /**
+     * Add documents to a submission
+     */
+    public function addDocumentsToSubmission(Submission $submission, array $documents): void
+    {
+        $this->attachDocuments($submission, $documents);
     }
     
     /**

@@ -3,81 +3,172 @@
 namespace App\Filament\Resources\SubmissionResource\Pages;
 
 use App\Filament\Resources\SubmissionResource;
-use App\Models\Document;
-use App\Models\SubmissionDocument;
-use App\Repositories\SubmissionRepository;
-use Filament\Actions;
+use App\Filament\Widgets\SubmissionProgressWidget;
+use App\Services\WorkflowService;
 use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\ViewRecord;
+use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Model;
 
-class ProcessSubmission extends ViewRecord
+class ProcessSubmission extends Page
 {
     protected static string $resource = SubmissionResource::class;
+    protected static string $view = 'filament.resources.submission-resource.pages.process-submission';
 
-    protected static ?string $title = 'Process Submission';
+    public ?string $action = null;
+    public ?string $comment = null;
+    public ?string $rejectReason = null;
+    public ?string $targetStageId = null;
 
-    public function getSubheading(): string
+    public function mount(string $record): void
     {
-        return "Current Stage: {$this->record->currentStage->name} | Status: {$this->record->status}";
+        $this->record = $this->resolveRecord($record);
+        
+        $this->authorizeAccess();
     }
-
-    protected function getHeaderActions(): array
+    
+    /**
+     * Resolve the record for the page using the provided key.
+     */
+    protected function resolveRecord(string $key): Model
     {
-        $actions = [];
-
-        // Check if current user can process this submission
-        if (Auth::user()->can('review_submissions')) {
-            // Only show advance action if submission is in review and has a current stage
-            if ($this->record->status === 'in_review' && $this->record->currentStage) {
-                $actions[] = Actions\Action::make('advanceStage')
-                    ->label('Advance to Next Stage')
-                    ->color('success')
-                    ->icon('heroicon-o-arrow-right')
-                    ->requiresConfirmation()
-                    ->modalHeading('Advance Submission')
-                    ->modalDescription('Are you sure you want to advance this submission to the next stage?')
-                    ->modalSubmitActionLabel('Yes, Advance')
-                    ->form([
-                        Forms\Components\Textarea::make('comment')
-                            ->label('Comments')
-                            ->required(),
-                    ])
-                    ->action(function (array $data) {
-                        $submissionRepo = app(SubmissionRepository::class);
-
-                        try {
-                            $submissionRepo->advanceSubmission($this->record, [
-                                'comment' => $data['comment'],
-                                'processed_by' => Auth::id(),
-                            ]);
-
-                            Notification::make()
-                                ->title('Submission advanced successfully')
-                                ->success()
-                                ->send();
-
-                            $this->redirect(SubmissionResource::getUrl('view', ['record' => $this->record]));
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Error advancing submission')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    });
-            }
-
-            // Document review actions
-            $actions[] = Actions\Action::make('reviewDocuments')
-                ->label('Review Documents')
-                ->color('warning')
-                ->icon('heroicon-o-document-magnifying-glass')
-                ->url(fn() => SubmissionResource::getUrl('documents', ['record' => $this->record]));
+        $model = static::getResource()::getModel();
+        
+        $record = $model::find($key);
+        
+        if ($record === null) {
+            abort(404);
         }
-
-        return $actions;
+        
+        return $record;
+    }
+    
+    protected function authorizeAccess(): void
+    {
+        static::authorizeResourceAccess();
+        
+        abort_unless(
+            Auth::user()->can('review_submissions'),
+            403
+        );
+        
+        abort_if(
+            in_array($this->record->status, ['draft', 'completed']),
+            404
+        );
+    }
+    
+    public function getWorkflowStatus()
+    {
+        return match($this->record->status) {
+            'draft' => ['label' => 'Draft', 'color' => 'gray'],
+            'submitted' => ['label' => 'Submitted', 'color' => 'info'],
+            'in_review' => ['label' => 'In Review', 'color' => 'primary'],
+            'revision_needed' => ['label' => 'Revision Needed', 'color' => 'warning'],
+            'approved' => ['label' => 'Approved', 'color' => 'success'],
+            'rejected' => ['label' => 'Rejected', 'color' => 'danger'],
+            'completed' => ['label' => 'Completed', 'color' => 'success'],
+            default => ['label' => ucfirst($this->record->status), 'color' => 'gray'],
+        };
+    }
+    
+    public function getAvailableActions()
+    {
+        $workflowService = app(WorkflowService::class);
+        return $workflowService->getAvailableActions($this->record);
+    }
+    
+    public function getNextStages()
+    {
+        if (!$this->record->currentStage) {
+            return [];
+        }
+        
+        return $this->record->submissionType->workflowStages()
+            ->where('order', '>', $this->record->currentStage->order)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+    
+    public function getPreviousStages()
+    {
+        if (!$this->record->currentStage) {
+            return [];
+        }
+        
+        return $this->record->submissionType->workflowStages()
+            ->where('order', '<', $this->record->currentStage->order)
+            ->where('is_active', true)
+            ->orderBy('order', 'desc')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+    
+    public function getRejectReasons()
+    {
+        return [
+            'incomplete' => 'Incomplete Documentation',
+            'ineligible' => 'Does Not Meet Eligibility Requirements',
+            'duplicate' => 'Duplicate Submission',
+            'inappropriate' => 'Inappropriate Content',
+            'technical' => 'Technical Issues',
+            'other' => 'Other (Please Specify)',
+        ];
+    }
+    
+    public function processAction()
+    {
+        $this->validate([
+            'action' => 'required|string',
+            'comment' => 'required|string',
+        ]);
+        
+        try {
+            $workflowService = app(WorkflowService::class);
+            $options = [
+                'comment' => $this->comment,
+                'processor' => Auth::user(),
+            ];
+            
+            if ($this->targetStageId) {
+                $options['target_stage_id'] = $this->targetStageId;
+            }
+            
+            if ($this->rejectReason) {
+                $options['reason'] = $this->rejectReason;
+            }
+            
+            $submission = $workflowService->processAction($this->record, $this->action, $options);
+            
+            Notification::make()
+                ->title('Workflow action processed successfully')
+                ->success()
+                ->send();
+                
+            // Redirect to view page after processing
+            return redirect()->to(
+                SubmissionResource::getUrl('view', ['record' => $this->record])
+            );
+            
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error processing workflow action')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+    
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            SubmissionProgressWidget::make([
+                'submission' => $this->record,
+            ]),
+        ];
     }
 }

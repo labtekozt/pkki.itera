@@ -334,7 +334,6 @@ class SubmissionResource extends Resource
 
             TextEntry::make('patentDetail.media_link')
                 ->label('Media Link')
-                ->url()
                 ->visible(fn($record) => !empty($record->patentDetail->media_link)),
         ];
     }
@@ -464,7 +463,6 @@ class SubmissionResource extends Resource
             'create' => Pages\CreateSubmission::route('/create'),
             'view' => Pages\ViewSubmission::route('/{record}'),
             'edit' => Pages\EditSubmission::route('/{record}/edit'),
-            'documents' => Pages\ManageSubmissionDocuments::route('/{record}/documents'),
             'process' => Pages\ProcessSubmission::route('/{record}/process'),
         ];
     }
