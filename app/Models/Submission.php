@@ -91,6 +91,41 @@ class Submission extends Model
     }
 
     /**
+     * Get the workflow assignments for this submission.
+     */
+    public function reviewerAssignments()
+    {
+        return $this->hasMany(WorkflowAssignment::class);
+    }
+
+    /**
+     * Get active reviewer assignments for this submission.
+     */
+    public function activeReviewerAssignments()
+    {
+        return $this->reviewerAssignments()
+            ->whereNull('completed_at');
+    }
+
+    /**
+     * Get reviewer assignments for the current stage.
+     */
+    public function currentStageAssignments()
+    {
+        return $this->reviewerAssignments()
+            ->where('stage_id', $this->current_stage_id);
+    }
+
+    /**
+     * Get active reviewer assignments for the current stage.
+     */
+    public function activeCurrentStageAssignments()
+    {
+        return $this->currentStageAssignments()
+            ->whereNull('completed_at');
+    }
+
+    /**
      * Get the tracking history entries for this submission ordered chronologically.
      */
     public function orderedTrackingHistory()

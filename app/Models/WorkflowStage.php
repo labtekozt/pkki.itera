@@ -258,4 +258,46 @@ class WorkflowStage extends Model
         
         return $transitions;
     }
+
+    /**
+     * Get the workflow assignments for this stage.
+     */
+    public function reviewerAssignments()
+    {
+        return $this->hasMany(WorkflowAssignment::class, 'stage_id');
+    }
+
+    /**
+     * Get active reviewer assignments for this stage.
+     */
+    public function activeReviewerAssignments()
+    {
+        return $this->reviewerAssignments()
+            ->whereNull('completed_at');
+    }
+
+    /**
+     * Get reviewer assignments for a specific submission in this stage.
+     */
+    public function submissionAssignments(Submission $submission)
+    {
+        return $this->reviewerAssignments()
+            ->where('submission_id', $submission->id);
+    }
+
+    /**
+     * Assign a reviewer to this stage for a specific submission.
+     */
+    public function assignReviewer(Submission $submission, User $reviewer, ?string $notes = null): WorkflowAssignment
+    {
+        return WorkflowAssignment::create([
+            'submission_id' => $submission->id,
+            'stage_id' => $this->id,
+            'reviewer_id' => $reviewer->id,
+            'assigned_by' => auth()->id(),
+            'status' => 'pending',
+            'notes' => $notes,
+            'assigned_at' => now(),
+        ]);
+    }
 }

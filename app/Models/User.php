@@ -84,6 +84,31 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         return $this->hasMany(TrackingHistory::class, 'processed_by');
     }
 
+    /**
+     * Get the workflow assignments where this user is a reviewer.
+     */
+    public function reviewerAssignments()
+    {
+        return $this->hasMany(WorkflowAssignment::class, 'reviewer_id');
+    }
+
+    /**
+     * Get the workflow assignments created by this user.
+     */
+    public function assignedWorkflows()
+    {
+        return $this->hasMany(WorkflowAssignment::class, 'assigned_by');
+    }
+
+    /**
+     * Get pending review assignments for this user.
+     */
+    public function pendingReviews()
+    {
+        return $this->reviewerAssignments()
+            ->whereNull('completed_at')
+            ->where('status', 'pending');
+    }
 
     public function getFilamentName(): string
     {
