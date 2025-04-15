@@ -5,26 +5,24 @@ namespace App\Observers;
 use App\Models\Document;
 use App\Models\SubmissionDocument;
 use App\Models\TrackingHistory;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
 
 class SubmissionDocumentObserver
 {
     /**
-     * Handle the SubmissionDocument "created" event.
+     * @var TrackingHistoryService
      */
-    public function created(SubmissionDocument $submissionDocument): void
+    protected $trackingService;
+    
+    /**
+     * Create a new observer instance.
+     */
+    public function __construct(TrackingHistoryService $trackingService)
     {
-        // Create a tracking history entry for document upload
-        if ($submissionDocument->document) {
-            $this->createTrackingEntry(
-                $submissionDocument,
-                'document_uploaded',
-                'pending',
-                'Document uploaded: ' . $submissionDocument->document->title
-            );
-        }
+        $this->trackingService = $trackingService;
     }
-
+    
     /**
      * Handle the SubmissionDocument "updated" event.
      */
@@ -34,31 +32,50 @@ class SubmissionDocumentObserver
         if ($submissionDocument->isDirty('status')) {
             $oldStatus = $submissionDocument->getOriginal('status');
             $newStatus = $submissionDocument->status;
-            
+
+            // Determine the action based on the new status
+            $action = match ($newStatus) {
+                'approved' => 'approve',
+                'rejected' => 'reject',
+                'revision_needed' => 'revision',
+                default => 'update'
+            };
+
             // Determine the event type based on the new status
-            $eventType = match($newStatus) {
+            $eventType = match ($newStatus) {
                 'approved' => 'document_approved',
                 'rejected' => 'document_rejected',
                 'revision_needed' => 'document_revision_needed',
                 default => 'status_change'
             };
-            
-            $comment = 'Document status changed from ' . 
-                       ucfirst(str_replace('_', ' ', $oldStatus)) . 
-                       ' to ' . 
-                       ucfirst(str_replace('_', ' ', $newStatus));
-                       
+
+            // Map document status to tracking status
+            $trackingStatus = match ($newStatus) {
+                'approved' => 'approved',
+                'rejected' => 'rejected',
+                'revision_needed' => 'revision_needed',
+                default => 'in_progress'
+            };
+
+            $comment = 'Document status changed from ' .
+                ucfirst(str_replace('_', ' ', $oldStatus)) .
+                ' to ' .
+                ucfirst(str_replace('_', ' ', $newStatus));
+
             if ($submissionDocument->notes) {
                 $comment .= "\n\nNotes: " . $submissionDocument->notes;
             }
-            
+
             $this->createTrackingEntry(
                 $submissionDocument,
+                $action,
                 $eventType,
-                $newStatus,
-                $comment
+                $trackingStatus,
+                $comment,
+                $oldStatus,
+                $newStatus
             );
-            
+
             // Dispatch the status changed event for tracking
             event(new \App\Events\SubmissionDocumentStatusChanged(
                 $submissionDocument,
@@ -77,8 +94,9 @@ class SubmissionDocumentObserver
         if ($submissionDocument->document) {
             $this->createTrackingEntry(
                 $submissionDocument,
+                'delete',
                 'document_deleted',
-                'deleted',
+                'completed',
                 'Document removed: ' . $submissionDocument->document->title
             );
         }
@@ -88,27 +106,40 @@ class SubmissionDocumentObserver
      * Create a tracking history entry for a document event.
      *
      * @param SubmissionDocument $submissionDocument
+     * @param string $action
      * @param string $eventType
      * @param string $status
      * @param string $comment
+     * @param string|null $sourceStatus
+     * @param string|null $targetStatus
      * @return TrackingHistory
      */
     private function createTrackingEntry(
-        SubmissionDocument $submissionDocument, 
-        string $eventType, 
-        string $status, 
-        string $comment
+        SubmissionDocument $submissionDocument,
+        string $action,
+        string $eventType,
+        string $status,
+        string $comment,
+        ?string $sourceStatus = null,
+        ?string $targetStatus = null
     ): TrackingHistory {
         $submission = $submissionDocument->submission;
-        
-        return TrackingHistory::create([
+
+        return $this->trackingService->createTrackingRecord([
             'submission_id' => $submission->id,
             'stage_id' => $submission->current_stage_id,
+            'action' => $action,
             'document_id' => $submissionDocument->document_id,
             'event_type' => $eventType,
             'status' => $status,
             'comment' => $comment,
             'processed_by' => Auth::id() ?? $submission->user_id,
+            'source_status' => $sourceStatus,
+            'target_status' => $targetStatus,
+            'metadata' => [
+                'document_type' => $submissionDocument->document_type,
+                'original_filename' => $submissionDocument->document->original_filename ?? null,
+            ],
         ]);
     }
 }

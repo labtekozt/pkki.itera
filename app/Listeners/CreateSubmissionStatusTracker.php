@@ -3,18 +3,22 @@
 namespace App\Listeners;
 
 use App\Events\SubmissionStatusChanged;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CreateSubmissionStatusTracker
 {
     /**
+     * @var TrackingHistoryService
+     */
+    protected $trackingService;
+
+    /**
      * Create the event listener.
      */
-    public function __construct()
+    public function __construct(TrackingHistoryService $trackingService)
     {
-        //
+        $this->trackingService = $trackingService;
     }
 
     /**
@@ -31,26 +35,23 @@ class CreateSubmissionStatusTracker
         // Determine the event type based on status transition
         $eventType = $this->determineEventType($event->oldStatus, $event->newStatus);
         
-        // Create the tracking record
-        DB::table('tracking_history')->insert([
-            'id' => Str::uuid()->toString(),
+        // Create the tracking record using the service
+        $this->trackingService->createTrackingRecord([
             'submission_id' => $submission->id,
             'stage_id' => $submission->current_stage_id,
             'event_type' => $eventType,
             'status' => $event->newStatus,
             'comment' => "Submission status changed from {$oldStatusFormatted} to {$newStatusFormatted}",
             'processed_by' => Auth::id() ?? $submission->user_id,
-            'created_at' => now(),
-            'updated_at' => now(),
             'source_status' => $event->oldStatus,
             'target_status' => $event->newStatus,
-            'metadata' => json_encode([
+            'metadata' => [
                 'submission_title' => $submission->title,
                 'submission_type' => $submission->submissionType->name ?? 'Unknown',
                 'old_status' => $event->oldStatus,
                 'new_status' => $event->newStatus,
                 'stage_name' => $submission->currentStage->name ?? 'No stage',
-            ]),
+            ],
         ]);
     }
     

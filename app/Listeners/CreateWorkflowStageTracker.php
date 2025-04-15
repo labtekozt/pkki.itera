@@ -3,18 +3,22 @@
 namespace App\Listeners;
 
 use App\Events\WorkflowStageChanged;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CreateWorkflowStageTracker
 {
     /**
+     * @var TrackingHistoryService
+     */
+    protected $trackingService;
+    
+    /**
      * Create the event listener.
      */
-    public function __construct()
+    public function __construct(TrackingHistoryService $trackingService)
     {
-        //
+        $this->trackingService = $trackingService;
     }
 
     /**
@@ -31,22 +35,19 @@ class CreateWorkflowStageTracker
         
         // Create tracking entry for each affected submission
         foreach ($affectedSubmissions as $submission) {
-            DB::table('tracking_history')->insert([
-                'id' => Str::uuid()->toString(),
+            $this->trackingService->createTrackingRecord([
                 'submission_id' => $submission->id,
                 'stage_id' => $workflowStage->id,
                 'event_type' => 'workflow_stage_' . $changeType,
                 'status' => $submission->status,
                 'comment' => $this->generateChangeComment($changeType, $workflowStage, $metadata),
                 'processed_by' => Auth::id() ?? $metadata['updated_by'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-                'metadata' => json_encode(array_merge($metadata, [
+                'metadata' => array_merge($metadata, [
                     'stage_id' => $workflowStage->id,
                     'stage_name' => $workflowStage->name,
                     'submission_type' => $workflowStage->submissionType->name ?? 'Unknown',
                     'submission_title' => $submission->title,
-                ])),
+                ]),
             ]);
         }
     }

@@ -4,10 +4,24 @@ namespace App\Observers;
 
 use App\Events\DocumentStatusChanged;
 use App\Models\Document;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
 
 class DocumentObserver
 {
+    /**
+     * @var TrackingHistoryService
+     */
+    protected $trackingService;
+    
+    /**
+     * Create a new observer instance.
+     */
+    public function __construct(TrackingHistoryService $trackingService)
+    {
+        $this->trackingService = $trackingService;
+    }
+
     /**
      * Handle the Document "created" event.
      */

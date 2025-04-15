@@ -3,18 +3,22 @@
 namespace App\Listeners;
 
 use App\Events\SubmissionStateChanged;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CreateSubmissionStateTracker
 {
     /**
+     * @var TrackingHistoryService
+     */
+    protected $trackingService;
+
+    /**
      * Create the event listener.
      */
-    public function __construct()
+    public function __construct(TrackingHistoryService $trackingService)
     {
-        //
+        $this->trackingService = $trackingService;
     }
 
     /**
@@ -31,26 +35,23 @@ class CreateSubmissionStateTracker
         
         // Only create additional tracking record for certain significant events
         if (in_array($event->action, ['approve', 'reject', 'advance_stage', 'return_stage', 'complete'])) {
-            DB::table('tracking_history')->insert([
-                'id' => Str::uuid()->toString(),
+            $this->trackingService->createTrackingRecord([
                 'submission_id' => $submission->id,
                 'stage_id' => $submission->current_stage_id,
                 'event_type' => 'state_change_' . $event->action,
                 'status' => $event->status,
                 'comment' => "State change action: {$event->action} - " . $trackingEntry->comment,
                 'processed_by' => Auth::id() ?? $submission->user_id,
-                'created_at' => now(),
-                'updated_at' => now(),
                 'source_status' => $trackingEntry->source_status ?? null,
                 'target_status' => $trackingEntry->target_status ?? $event->status,
-                'metadata' => json_encode([
+                'metadata' => [
                     'submission_title' => $submission->title,
                     'submission_type' => $submission->submissionType->name ?? 'Unknown',
                     'action' => $event->action,
                     'status' => $event->status,
                     'original_tracking_id' => $trackingEntry->id,
                     'stage_name' => $submission->currentStage->name ?? 'No stage',
-                ]),
+                ],
             ]);
         }
     }

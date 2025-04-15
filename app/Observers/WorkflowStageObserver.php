@@ -3,12 +3,25 @@
 namespace App\Observers;
 
 use App\Events\WorkflowStageChanged;
-use App\Models\TrackingHistory;
 use App\Models\WorkflowStage;
+use App\Services\TrackingHistoryService;
 use Illuminate\Support\Facades\Auth;
 
 class WorkflowStageObserver
 {
+    /**
+     * @var TrackingHistoryService
+     */
+    protected $trackingService;
+    
+    /**
+     * Create a new observer instance.
+     */
+    public function __construct(TrackingHistoryService $trackingService)
+    {
+        $this->trackingService = $trackingService;
+    }
+
     /**
      * Handle the WorkflowStage "created" event.
      */
@@ -101,8 +114,8 @@ class WorkflowStageObserver
         $affectedSubmissions = $workflowStage->currentSubmissions;
         
         foreach ($affectedSubmissions as $submission) {
-            // Create tracking history for each affected submission
-            TrackingHistory::create([
+            // Create tracking history for each affected submission using the service
+            $this->trackingService->createTrackingRecord([
                 'submission_id' => $submission->id,
                 'stage_id' => $workflowStage->id,
                 'event_type' => 'workflow_stage_changed',
