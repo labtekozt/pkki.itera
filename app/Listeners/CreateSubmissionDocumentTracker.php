@@ -25,20 +25,21 @@ class CreateSubmissionDocumentTracker
         $submissionDocument = $event->submissionDocument;
         $submission = $submissionDocument->submission;
         $document = $submissionDocument->document;
-
+        
         if (!$submission || !$document) {
             return; // Can't proceed without valid relations
         }
-
+        
         // Format status for better readability
         $oldStatusFormatted = ucfirst(str_replace('_', ' ', $event->oldStatus ?? 'none'));
         $newStatusFormatted = ucfirst(str_replace('_', ' ', $event->newStatus));
-
-        // Get default tracking values
-        $defaultValues = $this->getDefaultTrackingValues($submission, $document, $submissionDocument);
-
-        // Create the tracking record with default values
-        DB::table('tracking_histories')->insert(array_merge($defaultValues, [
+        
+        // Create the tracking record
+        DB::table('tracking_history')->insert([
+            'id' => Str::uuid()->toString(),
+            'submission_id' => $submission->id,
+            'document_id' => $document->id,
+            'stage_id' => $submission->current_stage_id,
             'event_type' => $this->determineEventType($event->newStatus),
             'status' => $event->newStatus,
             'comment' => "Document '{$document->title}' status changed from {$oldStatusFormatted} to {$newStatusFormatted}",
@@ -55,33 +56,15 @@ class CreateSubmissionDocumentTracker
                 'new_status' => $event->newStatus,
                 'notes' => $submissionDocument->notes,
             ]),
-        ]));
+        ]);
     }
-
-    /**
-     * Get default tracking values based on the submission and document.
-     * 
-     * @param \App\Models\Submission $submission
-     * @param \App\Models\Document $document
-     * @param \App\Models\SubmissionDocument $submissionDocument
-     * @return array
-     */
-    private function getDefaultTrackingValues($submission, $document, $submissionDocument): array
-    {
-        return [
-            'id' => Str::uuid()->toString(),
-            'submission_id' => $submission->id,
-            'stage_id' => $submission->current_stage_id,
-            'action' => 'document_status_update',
-        ];
-    }
-
+    
     /**
      * Determine the event type based on the new status.
      */
     private function determineEventType(string $status): string
     {
-        return match ($status) {
+        return match($status) {
             'approved' => 'document_approved',
             'rejected' => 'document_rejected',
             'revision_needed' => 'document_revision_needed',

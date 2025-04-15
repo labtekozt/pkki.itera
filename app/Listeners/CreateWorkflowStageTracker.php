@@ -25,15 +25,13 @@ class CreateWorkflowStageTracker
         $workflowStage = $event->workflowStage;
         $changeType = $event->changeType;
         $metadata = $event->metadata;
-
+        
         // Get affected submissions (those currently at this stage)
         $affectedSubmissions = $workflowStage->currentSubmissions;
-
+        
         // Create tracking entry for each affected submission
         foreach ($affectedSubmissions as $submission) {
-            $defaultValues = $this->getDefaultTrackingValues($submission);
-
-            DB::table('tracking_histories')->insert(array_merge($defaultValues, [
+            DB::table('tracking_history')->insert([
                 'id' => Str::uuid()->toString(),
                 'submission_id' => $submission->id,
                 'stage_id' => $workflowStage->id,
@@ -49,10 +47,10 @@ class CreateWorkflowStageTracker
                     'submission_type' => $workflowStage->submissionType->name ?? 'Unknown',
                     'submission_title' => $submission->title,
                 ])),
-            ]));
+            ]);
         }
     }
-
+    
     /**
      * Generate a human-readable comment for the workflow stage change.
      */
@@ -61,38 +59,18 @@ class CreateWorkflowStageTracker
         switch ($changeType) {
             case 'created':
                 return "New workflow stage '{$workflowStage->name}' was created.";
-
+            
             case 'updated':
                 if (isset($metadata['description']) && !empty($metadata['description'])) {
                     return "Workflow stage '{$workflowStage->name}' was updated: {$metadata['description']}";
                 }
                 return "Workflow stage '{$workflowStage->name}' was updated.";
-
+            
             case 'deleted':
                 return "Workflow stage '{$workflowStage->name}' was deleted.";
-
+                
             default:
                 return "Workflow stage '{$workflowStage->name}' {$changeType}.";
         }
-    }
-
-    /**
-     * Get default tracking values based on the submission's documents.
-     * 
-     * @param \App\Models\Submission $submission
-     * @return array
-     */
-    private function getDefaultTrackingValues($submission): array
-    {
-        $defaultValues = [
-            'action' => 'workflow_update',
-        ];
-
-        // If submission has documents, use the first one as default
-        if ($submission->documents && $submission->documents->count() > 0) {
-            $primaryDocument = $submission->documents->first();
-        }
-
-        return $defaultValues;
     }
 }

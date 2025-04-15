@@ -31,10 +31,7 @@ class CreateSubmissionStateTracker
         
         // Only create additional tracking record for certain significant events
         if (in_array($event->action, ['approve', 'reject', 'advance_stage', 'return_stage', 'complete'])) {
-            // Get default tracking values
-            $defaultValues = $this->getDefaultTrackingValues($submission);
-            
-            DB::table('tracking_histories')->insert(array_merge($defaultValues, [
+            DB::table('tracking_history')->insert([
                 'id' => Str::uuid()->toString(),
                 'submission_id' => $submission->id,
                 'stage_id' => $submission->current_stage_id,
@@ -54,26 +51,7 @@ class CreateSubmissionStateTracker
                     'original_tracking_id' => $trackingEntry->id,
                     'stage_name' => $submission->currentStage->name ?? 'No stage',
                 ]),
-            ]));
+            ]);
         }
-    }
-    
-    /**
-     * Get default tracking values based on the submission's documents.
-     * 
-     * @param \App\Models\Submission $submission
-     * @return array
-     */
-    private function getDefaultTrackingValues($submission): array
-    {
-        $defaultValues = [
-            'action' => 'state_update',
-        ];
-        
-        if ($submission->documents && $submission->documents->count() > 0) {
-            $primaryDocument = $submission->documents->first();
-        }
-        
-        return $defaultValues;
     }
 }
