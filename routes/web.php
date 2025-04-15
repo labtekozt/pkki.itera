@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\DocumentController;
 use App\Models\Document;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,20 +28,20 @@ Route::redirect('/login', '/admin/login')->name('login');
 // Add document download route for admin panel
 Route::get('/admin/documents/{document}/download', function (Document $document) {
     // Check permissions using Auth facade
-    // use public folder for document storage
-
-
-    // Check if the document is public
-
-    $path = "storage/" . $document->uri;
-
-    // Check if file exists
-    if (!file_exists($path)) {
-        abort(404);
+    if (!Auth::check()) {
+        abort(403, 'Unauthorized');
     }
 
-    // Return the file for download
-    return response()->download($path, $document->title . '.' . $document->extension);
+    // Check if the file exists in the storage
+    if (!Storage::disk('public')->exists($document->uri)) {
+        abort(404, 'File not found');
+    }
+
+    // Return the file for download using Storage facade
+    return Storage::disk('public')->download(
+        $document->uri, 
+        $document->title . '.' . $document->extension
+    );
 })->name('filament.admin.documents.download');
 
 // Document routes

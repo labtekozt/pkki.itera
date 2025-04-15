@@ -124,16 +124,28 @@ class SubmissionService
         switch ($typeSlug) {
             case 'paten':
                 if (isset($data['patentDetail']) && $submission->patentDetail) {
+                    $detailData = $data['patentDetail'];
+                    foreach (['is_kkn_output', 'from_grant_research', 'self_funded'] as $boolField) {
+                        if (isset($detailData[$boolField]) && is_string($detailData[$boolField])) {
+                            $detailData[$boolField] = $detailData[$boolField] === 'true' || $detailData[$boolField] === '1';
+                        }
+                    }
                     $submission->patentDetail->update(
-                        $this->filterArrayData($data['patentDetail'])
+                        $this->filterArrayData($detailData)
                     );
                 }
                 break;
 
             case 'brand':
                 if (isset($data['brandDetail']) && $submission->brandDetail) {
+                    $detailData = $data['brandDetail'];
+                    foreach (['is_kkn_output', 'from_grant_research', 'self_funded'] as $boolField) {
+                        if (isset($detailData[$boolField]) && is_string($detailData[$boolField])) {
+                            $detailData[$boolField] = $detailData[$boolField] === 'true' || $detailData[$boolField] === '1';
+                        }
+                    }
                     $submission->brandDetail->update(
-                        $this->filterArrayData($data['brandDetail'])
+                        $this->filterArrayData($detailData)
                     );
                 }
                 break;
@@ -156,8 +168,16 @@ class SubmissionService
 
             case 'industrial_design':
                 if (isset($data['industrialDesignDetail']) && $submission->industrialDesignDetail) {
+                    // Cast boolean fields properly
+                    $detailData = $data['industrialDesignDetail'];
+                    foreach (['is_kkn_output', 'from_grant_research', 'self_funded'] as $boolField) {
+                        if (isset($detailData[$boolField]) && is_string($detailData[$boolField])) {
+                            $detailData[$boolField] = $detailData[$boolField] === 'true' || $detailData[$boolField] === '1';
+                        }
+                    }
+                    // Update the industrial design detail
                     $submission->industrialDesignDetail->update(
-                        $this->filterArrayData($data['industrialDesignDetail'])
+                        $this->filterArrayData($detailData)
                     );
                 }
                 break;
@@ -204,9 +224,7 @@ class SubmissionService
      */
     protected function filterArrayData(array $data): array
     {
-        return array_filter($data, function ($value) {
-            return !is_null($value);
-        });
+        return $data;
     }
 
     /**

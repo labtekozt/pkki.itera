@@ -181,6 +181,21 @@ class EditSubmission extends EditRecord
                     'size' => $uploadedFile instanceof TemporaryUploadedFile ? $uploadedFile->getSize() : Storage::disk('public')->size($uploadedFile),
                 ]);
 
+                // Move file from temporary storage to permanent storage
+                if ($uploadedFile instanceof TemporaryUploadedFile) {
+                    // Get the proper URI for storage
+                    $uri = $this->formatDocumentUri($requirementId, $uploadedFile->getClientOriginalName());
+                    
+                    // Store the file using public disk
+                    Storage::disk('public')->put(
+                        $uri, 
+                        file_get_contents($uploadedFile->getRealPath())
+                    );
+                    
+                    // Update document record with correct URI
+                    $document->update(['uri' => $uri]);
+                }
+
                 // Create the submission document record
                 $this->record->submissionDocuments()->create([
                     'document_id' => $document->id,
@@ -371,8 +386,6 @@ class EditSubmission extends EditRecord
                                                     array_map(fn($type) => ".$type", explode(',', $requirement->allowed_file_types)) :
                                                     ['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
                                             )
-                                            ->directory("submissions/{$this->record->id}/{$requirement->id}")
-                                            ->visibility('public')
                                             ->preserveFilenames()
                                             ->maxSize($requirement->max_file_size ?? 10240)
                                             ->live()
@@ -389,6 +402,21 @@ class EditSubmission extends EditRecord
                                                     'mimetype' => $state instanceof TemporaryUploadedFile ? $state->getMimeType() : Storage::disk('public')->mimeType($state),
                                                     'size' => $state instanceof TemporaryUploadedFile ? $state->getSize() : Storage::disk('public')->size($state),
                                                 ]);
+
+                                                // Move file from temporary storage to permanent storage
+                                                if ($state instanceof TemporaryUploadedFile) {
+                                                    // Get the proper URI for storage
+                                                    $uri = $this->formatDocumentUri($requirement->id, $state->getClientOriginalName());
+                                                    
+                                                    // Store the file using public disk
+                                                    Storage::disk('public')->put(
+                                                        $uri, 
+                                                        file_get_contents($state->getRealPath())
+                                                    );
+                                                    
+                                                    // Update document record with correct URI
+                                                    $document->update(['uri' => $uri]);
+                                                }
 
                                                 // Create submission document relationship
                                                 $this->record->submissionDocuments()->create([
