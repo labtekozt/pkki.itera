@@ -623,7 +623,7 @@ class EditSubmission extends EditRecord
 
                     Section::make('Tracking History')
                         ->schema([
-                            Placeholder::make('tracking_history')
+                            Placeholder::make('tracking_histories')
                                 ->content(function () {
                                     $history = $this->record->trackingHistory()
                                         ->with(['stage', 'processor'])

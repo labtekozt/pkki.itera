@@ -198,7 +198,7 @@ class WorkflowService
         $tracking = $submission->trackingHistory()->get();
         
         $stats = [
-            'total_days' => $submission->created_at->diffInDays(now()),
+            'total_days' => $submission->created_at,
             'stages_completed' => 0,
             'current_stage_days' => 0,
             'documents_approved' => $submission->submissionDocuments()->where('status', 'approved')->count(),

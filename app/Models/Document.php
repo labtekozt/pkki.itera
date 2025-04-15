@@ -30,6 +30,14 @@ class Document extends Model
         'size',
     ];
 
+    public const ACTION_DOCUMENT = 'document_action';
+    public const ACTION_DOCUMENT_STATUS_CHANGED = 'document_status_changed';
+    public const ACTION_DOCUMENT_STATUS_TRACKER = 'document_status_tracker';
+    public const ACTION_DOCUMENT_STATUS_TRACKER_RESOLVED = 'document_status_tracker_resolved';
+    public const ACTION_DOCUMENT_STATUS_TRACKER_UNRESOLVED = 'document_status_tracker_unresolved';
+    public const ACTION_DOCUMENT_STATUS_TRACKER_REOPENED = 'document_status_tracker_reopened';
+    public const ACTION_DOCUMENT_STATUS_TRACKER_CLOSED = 'document_status_tracker_closed';
+
     /**
      * The attributes that should be cast.
      *

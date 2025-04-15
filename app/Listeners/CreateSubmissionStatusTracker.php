@@ -31,8 +31,11 @@ class CreateSubmissionStatusTracker
         // Determine the event type based on status transition
         $eventType = $this->determineEventType($event->oldStatus, $event->newStatus);
         
+        // Get default tracking values
+        $defaultValues = $this->getDefaultTrackingValues($submission);
+        
         // Create the tracking record
-        DB::table('tracking_history')->insert([
+        DB::table('tracking_histories')->insert(array_merge($defaultValues, [
             'id' => Str::uuid()->toString(),
             'submission_id' => $submission->id,
             'stage_id' => $submission->current_stage_id,
@@ -51,7 +54,7 @@ class CreateSubmissionStatusTracker
                 'new_status' => $event->newStatus,
                 'stage_name' => $submission->currentStage->name ?? 'No stage',
             ]),
-        ]);
+        ]));
     }
     
     /**
@@ -82,5 +85,25 @@ class CreateSubmissionStatusTracker
         
         // Default case
         return 'status_change';
+    }
+    
+    /**
+     * Get default tracking values based on the submission's documents.
+     * 
+     * @param \App\Models\Submission $submission
+     * @return array
+     */
+    private function getDefaultTrackingValues($submission): array
+    {
+        $defaultValues = [
+            'action' => 'status_update',
+        ];
+        
+        // If submission has documents, use the first one as default
+        if ($submission->documents && $submission->documents->count() > 0) {
+            $primaryDocument = $submission->documents->first();
+        }
+        
+        return $defaultValues;
     }
 }
