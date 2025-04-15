@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Submission;
+use App\Models\SubmissionDocument;
 use App\Observers\SubmissionObserver;
+use App\Observers\SubmissionDocumentObserver;
 use App\Services\WorkflowService;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +34,6 @@ class TrackingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Submission::observe(SubmissionObserver::class);
+        SubmissionDocument::observe(SubmissionDocumentObserver::class);
     }
 }

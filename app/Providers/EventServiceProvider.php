@@ -2,6 +2,16 @@
 
 namespace App\Providers;
 
+use App\Events\DocumentStatusChanged;
+use App\Events\SubmissionDocumentStatusChanged;
+use App\Events\SubmissionStateChanged;
+use App\Events\SubmissionStatusChanged;
+use App\Events\WorkflowStageChanged;
+use App\Listeners\CreateDocumentStatusTracker;
+use App\Listeners\CreateSubmissionDocumentTracker;
+use App\Listeners\CreateSubmissionStateTracker;
+use App\Listeners\CreateSubmissionStatusTracker;
+use App\Listeners\CreateWorkflowStageTracker;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -18,6 +28,31 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        
+        // Document Status Events
+        DocumentStatusChanged::class => [
+            CreateDocumentStatusTracker::class,
+        ],
+        
+        // Submission Document Status Events
+        SubmissionDocumentStatusChanged::class => [
+            CreateSubmissionDocumentTracker::class,
+        ],
+        
+        // Submission Status Events
+        SubmissionStatusChanged::class => [
+            CreateSubmissionStatusTracker::class,
+        ],
+        
+        // Submission State Changed Events
+        SubmissionStateChanged::class => [
+            CreateSubmissionStateTracker::class,
+        ],
+        
+        // Workflow Stage Events
+        WorkflowStageChanged::class => [
+            CreateWorkflowStageTracker::class,
+        ],
     ];
 
     /**
@@ -25,7 +60,11 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register model observers
+        \App\Models\Document::observe(\App\Observers\DocumentObserver::class);
+        \App\Models\SubmissionDocument::observe(\App\Observers\SubmissionDocumentObserver::class);
+        \App\Models\Submission::observe(\App\Observers\SubmissionObserver::class);
+        \App\Models\WorkflowStage::observe(\App\Observers\WorkflowStageObserver::class);
     }
 
     /**

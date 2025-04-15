@@ -15,11 +15,11 @@ class TrackingHistory extends Model
         'submission_id',
         'stage_id',
         'action',
-        'status',
-        'processed_by',
-        'comment',
         'metadata',
+        'status',
+        'comment',
         'document_id',
+        'processed_by',
         'previous_stage_id',
         'source_status',
         'target_status',
@@ -33,7 +33,7 @@ class TrackingHistory extends Model
     ];
 
     /**
-     * Get the submission that owns this tracking history.
+     * Get the submission this tracking entry belongs to.
      */
     public function submission()
     {
@@ -41,7 +41,7 @@ class TrackingHistory extends Model
     }
 
     /**
-     * Get the stage associated with this tracking history.
+     * Get the workflow stage this tracking entry belongs to.
      */
     public function stage()
     {
@@ -49,7 +49,7 @@ class TrackingHistory extends Model
     }
 
     /**
-     * Get the previous stage if this was a transition.
+     * Get the previous workflow stage if this was a transition.
      */
     public function previousStage()
     {
@@ -57,15 +57,7 @@ class TrackingHistory extends Model
     }
 
     /**
-     * Get the user who processed this tracking history.
-     */
-    public function processor()
-    {
-        return $this->belongsTo(User::class, 'processed_by');
-    }
-    
-    /**
-     * Get the document associated with this history entry.
+     * Get the document associated with this tracking entry, if any.
      */
     public function document()
     {
@@ -73,51 +65,93 @@ class TrackingHistory extends Model
     }
 
     /**
-     * Check if this tracking entry requires action.
+     * Get the user who processed this tracking entry.
      */
-    public function requiresAction(): bool
+    public function processor()
     {
-        return in_array($this->status, ['revision_needed', 'objection']) && !$this->resolved_at;
+        return $this->belongsTo(User::class, 'processed_by');
     }
-
+    
     /**
-     * Mark this tracking entry as resolved.
+     * Determine if this tracking entry represents a stage transition
      */
-    public function markResolved(?string $comment = null): self
+    public function isTransition(): bool
     {
-        $this->resolved_at = now();
-        if ($comment) {
-            $this->comment = $comment;
-        }
-        $this->save();
+        return $this->previous_stage_id !== null;
+    }
+    
+    /**
+     * Get a human-readable description of this tracking entry
+     */
+    public function getDescriptionAttribute(): string
+    {
+        $description = match($this->action) {
+            'approve' => 'Approved current stage',
+            'reject' => 'Rejected submission',
+            'request_revision' => 'Requested revisions',
+            'submit_revision' => 'Submitted revisions',
+            'advance_stage' => 'Advanced to next stage',
+            'return_stage' => 'Returned to previous stage',
+            'complete' => 'Completed submission',
+            default => 'Updated submission'
+        };
         
-        return $this;
+        if ($this->isTransition() && $this->previousStage) {
+            $description .= " (from {$this->previousStage->name} to {$this->stage->name})";
+        }
+        
+        return $description;
     }
 
     /**
-     * Quick create method for stage transitions.
+     * Get the status badge color
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match($this->status) {
+            'started' => 'blue',
+            'in_progress' => 'orange',
+            'approved' => 'green',
+            'rejected' => 'red',
+            'revision_needed' => 'yellow',
+            'objection' => 'pink',
+            'completed' => 'emerald',
+            default => 'gray'
+        };
+    }
+
+    /**
+     * Get time elapsed since this event
+     */
+    public function getTimeElapsedAttribute(): string
+    {
+        return $this->created_at->diffForHumans();
+    }
+
+    /**
+     * Create a new tracking entry for a stage transition
      */
     public static function createTransition(
-        Submission $submission, 
-        WorkflowStage $fromStage, 
-        WorkflowStage $toStage, 
-        string $action, 
-        string $status, 
-        ?string $comment = null, 
+        Submission $submission,
+        WorkflowStage $sourceStage,
+        WorkflowStage $targetStage,
+        string $action,
+        string $status,
+        ?string $comment = null,
         ?User $processor = null,
         array $metadata = []
     ): self {
         return self::create([
             'submission_id' => $submission->id,
-            'stage_id' => $toStage->id,
-            'previous_stage_id' => $fromStage->id,
-            'source_status' => $submission->status,
-            'target_status' => $status,
+            'stage_id' => $targetStage->id,
+            'previous_stage_id' => $sourceStage->id,
             'action' => $action,
             'status' => $status,
             'comment' => $comment,
-            'processed_by' => $processor?->id,
             'metadata' => $metadata,
+            'processed_by' => $processor?->id,
+            'source_status' => $submission->getOriginal('status'),
+            'target_status' => $status,
             'event_type' => 'stage_transition',
         ]);
     }

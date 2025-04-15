@@ -6,6 +6,7 @@ use App\Http\Controllers\DocumentController;
 use App\Models\Document;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\TrackingHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,4 +51,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('filament.admin.documents.download');
     Route::get('/documents/{document}/view', [App\Http\Controllers\DocumentController::class, 'view'])
         ->name('filament.admin.documents.view');
+});
+
+/*
+ * Tracking History Routes
+ */
+Route::middleware(['auth'])->group(function () {
+    Route::get('/tracking/detail', [TrackingHistoryController::class, 'showDetail'])->name('tracking.detail');
+    Route::get('/tracking/api/history', [TrackingHistoryController::class, 'getTrackingHistoryJson'])->name('tracking.api.history');
 });
