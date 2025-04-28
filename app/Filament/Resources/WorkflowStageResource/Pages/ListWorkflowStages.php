@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\WorkflowStageResource\Pages;
 
 use App\Filament\Resources\WorkflowStageResource;
-use Filament\Resources\Pages\ListRecords;
 use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
 
 class ListWorkflowStages extends ListRecords
 {

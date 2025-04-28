@@ -12,6 +12,8 @@ class ListSubmissionReviews extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            // No create action needed for review listing
+        ];
     }
 }

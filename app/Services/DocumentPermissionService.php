@@ -46,10 +46,8 @@ class DocumentPermissionService
             return false;
         }
         
-        // Check if user has permission to review submissions
-        // This could be a specific permission or based on roles
-        return $user->can('review_submissions') || 
-               $user->hasRole('admin') || 
+        // Check if user has admin or super_admin role
+        return $user->hasRole('admin') || 
                $user->hasRole('super_admin') || 
                $user->isSuperAdmin();
     }

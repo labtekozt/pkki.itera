@@ -238,10 +238,6 @@ class SubmissionResource extends Resource
                     TextEntry::make('title')
                         ->columnSpanFull(),
 
-                    TextEntry::make('description')
-                        ->columnSpanFull()
-                        ->visible(fn($record) => !empty($record->description)),
-
                     TextEntry::make('status')
                         ->badge()
                         ->color(fn(string $state): string => match ($state) {
@@ -256,6 +252,12 @@ class SubmissionResource extends Resource
                             default => 'gray',
                         }),
 
+                    TextEntry::make('reviewer_notes')
+                        ->label('Reviewer Notes')
+                        ->markdown()
+                        ->columnSpanFull()
+                        ->visible(fn($record) => !empty($record->reviewer_notes) && in_array($record->status, ['revision_needed', 'rejected'])),
+                    
                     TextEntry::make('currentStage.name')
                         ->label('Current Stage')
                         ->visible(fn($record) => !empty($record->current_stage_id)),

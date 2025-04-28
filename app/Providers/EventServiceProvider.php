@@ -37,6 +37,7 @@ class EventServiceProvider extends ServiceProvider
         // Submission Document Status Events
         SubmissionDocumentStatusChanged::class => [
             CreateSubmissionDocumentTracker::class,
+            \App\Listeners\UpdateSubmissionDocumentActiveStatus::class,
         ],
         
         // Submission Status Events

@@ -50,7 +50,7 @@ class ProcessSubmission extends Page
         static::authorizeResourceAccess();
         
         abort_unless(
-            Auth::user()->can('review_submissions'),
+            Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('admin'),
             403
         );
         

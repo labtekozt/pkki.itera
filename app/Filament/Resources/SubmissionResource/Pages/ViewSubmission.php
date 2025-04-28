@@ -50,6 +50,22 @@ class ViewSubmission extends ViewRecord
             ->schema([
                 // Use the basic schema from the Resource
                 ...SubmissionResource::getInfolistSchema($this->record),
+                
+                // Add reviewer notes section if available and submission needs revision or was rejected
+                Section::make('Reviewer Notes')
+                    ->description('Notes from reviewers regarding required revisions')
+                    ->schema([
+                        TextEntry::make('reviewer_notes')
+                            ->label('Revision Notes')
+                            ->html()
+                            ->formatStateUsing(fn ($state) => nl2br(e($state)))
+                            ->placeholder('No revision notes provided'),
+                    ])
+                    ->columns(1)
+                    ->visible(fn () => 
+                        !empty($this->record->reviewer_notes) && 
+                        in_array($this->record->status, ['revision_needed', 'rejected'])
+                    ),
             ]);
     }
 

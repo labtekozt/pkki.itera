@@ -87,6 +87,12 @@ class SubmissionObserver
         if ($submission->isDirty('current_stage_id')) {
             $oldStageId = $submission->getOriginal('current_stage_id');
             $newStageId = $submission->current_stage_id;
+            
+            // If new stage is null, get the first stage of the submission type
+            if (!$newStageId && $submission->submissionType) {
+                $firstStage = $submission->submissionType->firstStage();
+                $newStageId = $firstStage ? $firstStage->id : null;
+            }
 
             $oldStageName = $oldStageId ?
                 \App\Models\WorkflowStage::find($oldStageId)?->name ?? 'Previous stage' :

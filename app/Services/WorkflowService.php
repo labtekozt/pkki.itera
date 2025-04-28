@@ -244,7 +244,7 @@ class WorkflowService
             case 'submitted':
             case 'in_review':
                 // Admin actions
-                if (Auth::user() && Auth::user()->can('review_submissions')) {
+                if (Auth::user() && (Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('admin'))) {
                     $actions[] = [
                         'id' => 'approve',
                         'label' => 'Approve',

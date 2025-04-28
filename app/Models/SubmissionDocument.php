@@ -23,7 +23,17 @@ class SubmissionDocument extends Model implements HasMedia
         'document_id',
         'requirement_id',
         'status',
+        'is_active',
         'notes',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     /**

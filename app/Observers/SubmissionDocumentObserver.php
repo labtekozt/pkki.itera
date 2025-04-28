@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\SubmissionDocumentStatusChanged;
 use App\Models\Document;
 use App\Models\SubmissionDocument;
 use App\Models\TrackingHistory;
@@ -14,7 +15,7 @@ class SubmissionDocumentObserver
      * @var TrackingHistoryService
      */
     protected $trackingService;
-    
+
     /**
      * Create a new observer instance.
      */
@@ -22,12 +23,32 @@ class SubmissionDocumentObserver
     {
         $this->trackingService = $trackingService;
     }
-    
+
     /**
      * Handle the SubmissionDocument "updated" event.
      */
+
+    public function created(SubmissionDocument $submissionDocument): void
+    {
+        // Fire an event when a new document is created with a non-pending status
+        if ($submissionDocument->status !== 'pending') {
+            event(new SubmissionDocumentStatusChanged($submissionDocument));
+        }
+    }
     public function updated(SubmissionDocument $submissionDocument): void
     {
+
+        // Check if the status has changed
+        if ($submissionDocument->isDirty('status')) {
+            $oldStatus = $submissionDocument->getOriginal('status');
+            $newStatus = $submissionDocument->status;
+
+            // Only fire the event if the status has changed
+            if ($oldStatus !== $newStatus) {
+                event(new SubmissionDocumentStatusChanged($submissionDocument, $oldStatus));
+            }
+        }
+
         // Only track status changes
         if ($submissionDocument->isDirty('status')) {
             $oldStatus = $submissionDocument->getOriginal('status');

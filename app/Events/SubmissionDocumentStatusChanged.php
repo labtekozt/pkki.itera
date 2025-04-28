@@ -13,26 +13,26 @@ class SubmissionDocumentStatusChanged
 
     /**
      * The submission document instance.
+     *
+     * @var \App\Models\SubmissionDocument
      */
-    public SubmissionDocument $submissionDocument;
+    public $submissionDocument;
 
     /**
-     * The old status.
+     * The old status before the update.
+     *
+     * @var string|null
      */
-    public ?string $oldStatus;
-
-    /**
-     * The new status.
-     */
-    public string $newStatus;
+    public $oldStatus;
 
     /**
      * Create a new event instance.
+     *
+     * @return void
      */
-    public function __construct(SubmissionDocument $submissionDocument, ?string $oldStatus, string $newStatus)
+    public function __construct(SubmissionDocument $submissionDocument, ?string $oldStatus = null)
     {
         $this->submissionDocument = $submissionDocument;
         $this->oldStatus = $oldStatus;
-        $this->newStatus = $newStatus;
     }
 }

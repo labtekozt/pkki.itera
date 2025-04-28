@@ -33,6 +33,7 @@ return new class extends Migration
                 'cancelled'
             ])->default('draft');
             $table->string('certificate')->nullable();
+            $table->text('reviewer_notes')->nullable(); // Add reviewer notes field
             $table->foreignUuid('user_id')
                 ->constrained('users')
                 ->onDelete('restrict');

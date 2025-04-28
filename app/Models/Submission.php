@@ -18,6 +18,7 @@ class Submission extends Model
         'title',
         'status',
         'certificate',
+        'reviewer_notes',
         'user_id',
     ];
 
@@ -312,5 +313,36 @@ class Submission extends Model
             'industrial_design' => $this->industrialDesignDetail,
             default => null,
         };
+    }
+
+    /**
+     * Check if a review can be submitted for this submission.
+     * 
+     * @return bool True if the submission is in a reviewable state
+     */
+    public function canSubmitReview(): bool
+    {
+        // Only certain statuses can be reviewed
+        if (!in_array($this->status, ['submitted', 'in_review', 'revision_needed'])) {
+            return false;
+        }
+
+        // Must have a current stage
+        if (!$this->currentStage) {
+            return false;
+        }
+
+        // Check if the current user has permission to review
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        // Only super_admin and admin can review submissions
+        if (!$user->hasRole('super_admin') && !$user->hasRole('admin')) {
+            return false;
+        }
+
+        return true;
     }
 }

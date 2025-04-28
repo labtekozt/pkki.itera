@@ -3,47 +3,123 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SubmissionReviewResource\Pages;
-use App\Models\Document;
 use App\Models\Submission;
-use App\Models\TrackingHistory;
 use App\Models\User;
-use App\Models\WorkflowAssignment;
 use App\Models\WorkflowStage;
-use App\Notifications\ReviewActionNotification;
-use App\Notifications\RevisionRequestedNotification;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class SubmissionReviewResource extends Resource
 {
     protected static ?string $model = Submission::class;
-    
-    protected static ?string $slug = 'reviews';
 
-    
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+
     protected static ?string $navigationGroup = 'Review Management';
-    
-    protected static ?string $navigationLabel = 'My Review Tasks';
-    
-    protected static ?int $navigationSort = 10;
-    
-    public static function canAccess(): bool
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationLabel(): string
     {
-        return auth()->user()->hasAnyRole(['reviewer', 'admin', 'super_admin']);
+        return 'Pending Reviews';
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::whereIn('status', [
+            'submitted',
+            'in_review',
+            'revision_needed',
+            'approved',
+            'rejected',
+        ])->count();
+    }
+
+    public static function getNavigationBadgeColor(): string
+    {
+        return 'warning';
     }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                // Empty form as we'll create a custom review page
+                Forms\Components\Section::make('Submission Details')
+                    ->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->label('Submission Title')
+                            ->disabled(),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'in_review' => 'In Review',
+                                'approved' => 'Approved',
+                                'revision_needed' => 'Revision Needed',
+                                'rejected' => 'Rejected',
+                            ])
+                            ->required(),
+
+                        Forms\Components\Select::make('current_stage_id')
+                            ->label('Current Stage')
+                            ->relationship('currentStage', 'name')
+                            ->disabled(),
+                    ])
+                    ->columns(3),
+
+                Forms\Components\Section::make('Review Decision')
+                    ->schema([
+                        Forms\Components\Textarea::make('review_comments')
+                            ->label('Comments')
+                            ->placeholder('Enter your review comments here...')
+                            ->required(),
+                            
+                        Forms\Components\Textarea::make('reviewer_notes')
+                            ->label('Reviewer Notes for Submitter')
+                            ->helperText('These notes will be visible to the submitter when revision is needed or submission is rejected')
+                            ->placeholder('Enter notes for the submitter regarding required revisions or reasons for rejection')
+                            ->columnSpanFull()
+                            ->visible(fn(Forms\Get $get) => in_array($get('status'), ['revision_needed', 'rejected'])),
+                    ]),
+
+                Forms\Components\Section::make('Assign Next Reviewer')
+                    ->schema([
+                        Forms\Components\Select::make('next_stage_id')
+                            ->label('Next Stage')
+                            ->options(function (Submission $record) {
+                                // Get current stage
+                                $currentStage = $record->currentStage;
+                                if (!$currentStage) {
+                                    return [];
+                                }
+
+                                // Get next stage based on order
+                                return WorkflowStage::where('submission_type_id', $record->submission_type_id)
+                                    ->where('order', '>', $currentStage->order)
+                                    ->where('is_active', true)
+                                    ->orderBy('order')
+                                    ->pluck('name', 'id')
+                                    ->toArray();
+                            })
+                            ->hidden(fn(Forms\Get $get) => $get('status') !== 'approved'),
+
+                        Forms\Components\Select::make('next_reviewer_id')
+                            ->label('Assign Reviewer')
+                            ->options(function () {
+                                return User::role('reviewer')
+                                    ->pluck('name', 'id')
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->hidden(fn(Forms\Get $get) => $get('status') !== 'approved' || !$get('next_stage_id')),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -52,32 +128,45 @@ class SubmissionReviewResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->label('Title')
                     ->searchable()
-                    ->sortable()
-                    ->limit(50),
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('submissionType.name')
                     ->label('Type')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('currentStage.name')
-                    ->label('Current Stage')
-                    ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'success' => 'approved',
-                        'danger' => 'rejected',
-                        'warning' => 'revision_needed',
-                        'primary' => 'in_review',
-                        'secondary' => 'draft',
-                        'info' => 'submitted',
-                    ]),
-                Tables\Columns\TextColumn::make('user.fullname')
-                    ->label('Submitted By')
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('currentStage.name')
+                    ->label('Current Stage')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
+                    ->colors([
+                        'warning' => 'in_review',
+                        'success' => 'approved',
+                        'danger' => fn($state) => in_array($state, ['rejected', 'cancelled']),
+                        'primary' => fn($state) => in_array($state, ['submitted', 'draft']),
+                        'info' => fn($state) => $state === 'completed',
+                        'secondary' => fn($state) => $state === 'revision_needed',
+                    ]),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Submitted By')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Submission Date')
+                    ->date()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('Last Updated')
+                    ->date()
                     ->sortable()
-                    ->label('Last Updated'),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -87,18 +176,31 @@ class SubmissionReviewResource extends Resource
                         'revision_needed' => 'Revision Needed',
                         'approved' => 'Approved',
                         'rejected' => 'Rejected',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
                     ]),
+
                 Tables\Filters\SelectFilter::make('submission_type_id')
                     ->relationship('submissionType', 'name')
+                    ->searchable()
                     ->label('Submission Type'),
+
+                Tables\Filters\SelectFilter::make('current_stage_id')
+                    ->relationship('currentStage', 'name')
+                    ->searchable()
+                    ->label('Current Stage'),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\Action::make('review')
                     ->label('Review')
-                    ->url(fn (Submission $record) => static::getUrl('review', ['record' => $record]))
-                    ->color('primary'),
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->url(fn(Submission $record): string => route('filament.admin.resources.submission-reviews.review', $record)),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                // No bulk actions needed for review process
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -118,21 +220,14 @@ class SubmissionReviewResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
+        // Default to showing only submissions that are in review status
+        return parent::getEloquentQuery()
+            ->whereIn('status', [
+                'submitted',
+                'in_review',
+                'revision_needed',
+                'approved',
+                'rejected',
             ]);
-            
-        // If user is not an admin, only show submissions assigned to them
-        if (!auth()->user()->hasRole(['admin', 'super_admin'])) {
-            $userId = auth()->id();
-            
-            $query->whereHas('workflowAssignments', function (Builder $q) use ($userId) {
-                $q->where('reviewer_id', $userId)
-                  ->whereNull('completed_at');
-            });
-        }
-            
-        return $query;
     }
 }

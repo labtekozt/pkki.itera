@@ -236,11 +236,11 @@ class TrackingService
     /**
      * Request revisions for a submission.
      *
-     * @param Submission $submission
-     * @param User|null $processor
-     * @param string|null $comment
-     * @param array $metadata
-     * @return Submission
+     * @param Submission $submission The submission requiring revisions
+     * @param User|null $processor The user requesting revisions (defaults to authenticated user)
+     * @param string|null $comment Explanation for the revision request (defaults to standard message)
+     * @param array $metadata Additional context data for the tracking event
+     * @return Submission The updated submission
      */
     public function requestRevisions(
         Submission $submission,
@@ -248,25 +248,49 @@ class TrackingService
         ?string $comment = null,
         array $metadata = []
     ): Submission {
-        return DB::transaction(function () use ($submission, $processor, $comment, $metadata) {
-            $currentStage = $submission->currentStage;
+        return DB::transaction(function() use ($submission, $processor, $comment, $metadata) {
+            // Use default processor and comment if not provided
+            $processor = $processor ?? Auth::user();
+            $comment = $comment ?? 'Revisions required for this submission';
             
+            $currentStage = $submission->currentStage;
+            if (!$currentStage) {
+                throw new \RuntimeException('Cannot request revisions: submission has no current stage.');
+            }
+            
+            // Update submission status
             $submission->status = 'revision_needed';
             $submission->save();
             
             // Create a tracking entry for revision request
-            TrackingHistory::create([
+            $trackingData = [
                 'submission_id' => $submission->id,
                 'stage_id' => $currentStage->id,
                 'action' => 'request_revision',
                 'status' => 'revision_needed',
                 'comment' => $comment,
-                'metadata' => $metadata,
+                'metadata' => array_merge([
+                    'requires_document_upload' => $metadata['requires_document_upload'] ?? false,
+                    'priority' => $metadata['priority'] ?? 'normal'
+                ], $metadata),
                 'processed_by' => $processor?->id,
                 'source_status' => $submission->getOriginal('status'),
                 'target_status' => 'revision_needed',
                 'event_type' => 'revision_request',
-            ]);
+                'event_timestamp' => now()
+            ];
+            
+            // Create tracking history
+            TrackingHistory::create($trackingData);
+            
+            // Send notification to the submitter
+            if (isset($metadata['notify']) && $metadata['notify'] !== false && $submission->user) {
+                $submission->user->notify(new ReviewActionNotification(
+                    $submission,
+                    "Revision needed for your submission",
+                    $comment
+                ));
+            }
             
             return $submission->fresh();
         });
