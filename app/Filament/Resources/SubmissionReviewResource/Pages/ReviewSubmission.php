@@ -13,7 +13,8 @@ use Carbon\Carbon;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -336,271 +337,320 @@ class ReviewSubmission extends Page
                             }),
                     ]),
 
-                Tabs::make('submission_review')
-                    ->tabs([
-                        // Details tab using SubmissionDetailsService with Form components
-                        Tabs\Tab::make('details')
-                            ->label('Submission Details')
-                            ->icon('heroicon-o-information-circle')
-                            ->schema(function () {
-                                // Reference the submission details service for clean, reusable code
-                                // Use Form components instead of Infolist components
-                                $components = [];
+                Wizard::make([
+                    // Step 1: Submission Details
+                    Step::make('Submission Details')
+                        ->icon('heroicon-o-information-circle')
+                        ->description('Review basic submission information')
+                        ->schema(function () {
+                            // Reference the submission details service for clean, reusable code
+                            // Use Form components instead of Infolist components
+                            $components = [];
 
-                                // Add general information section
-                                $components[] = $this->submissionDetailsService->getGeneralInfoFormSection($this->record);
+                            // Add general information section
+                            $components[] = $this->submissionDetailsService->getGeneralInfoFormSection($this->record);
 
-                                // Add type-specific details section if available
-                                $typeDetails = $this->submissionDetailsService->getTypeDetailsFormSection($this->record);
-                                if ($typeDetails) {
-                                    $components[] = $typeDetails;
-                                }
+                            // Add type-specific details section if available
+                            $typeDetails = $this->submissionDetailsService->getTypeDetailsFormSection($this->record);
+                            if ($typeDetails) {
+                                $components[] = $typeDetails;
+                            }
 
-                                return $components;
-                            }),
+                            return $components;
+                        }),
 
-                        // Documents tab
-                        Tabs\Tab::make('documents')
-                            ->label('Documents')
-                            ->icon('heroicon-o-document-duplicate')
-                            ->badge(function () {
-                                return $this->record->submissionDocuments->count();
-                            })
-                            ->schema(function () {
-                                $schemaItems = [];
+                    // Step 2: Document Review
+                    Step::make('Document Review')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->description('Review and evaluate submitted documents')
+                        ->schema(function () {
+                            $schemaItems = [];
 
-                                if (!$this->record->currentStage) {
-                                    $schemaItems[] = Placeholder::make('no_stage')
-                                        ->content(new HtmlString('<div class="italic text-center py-4 text-gray-500">No stage assigned to this submission</div>'))
-                                        ->columnSpanFull();
-                                    return $schemaItems;
-                                }
-
-                                // Get stage requirements
-                                $stageRequirements = $this->record->currentStage->stageRequirements()
-                                    ->pluck('document_requirement_id')
-                                    ->toArray();
-
-                                // Display stage requirement satisfaction status
-                                $schemaItems[] = Placeholder::make('stage_requirements_status')
-                                    ->content(function () use ($stageRequirements) {
-                                        if (empty($stageRequirements)) {
-                                            return new HtmlString(
-                                                '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 shadow-sm">
-                                                    <div class="flex items-center">
-                                                        <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                        <span class="font-medium text-green-800">No specific document requirements for this stage</span>
-                                                    </div>
-                                                </div>'
-                                            );
-                                        }
-
-                                        if ($this->stageRequirementsSatisfied) {
-                                            return new HtmlString(
-                                                '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 shadow-sm">
-                                                    <div class="flex items-center">
-                                                        <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                        <span class="font-medium text-green-800">All stage requirements are satisfied</span>
-                                                    </div>
-                                                    <p class="text-green-700 mt-1">You can approve this submission to advance to the next stage</p>
-                                                </div>'
-                                            );
-                                        } else {
-                                            return new HtmlString(
-                                                '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-4 shadow-sm">
-                                                    <div class="flex items-center">
-                                                        <svg class="h-5 w-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                                        </svg>
-                                                        <span class="font-medium text-yellow-800">Stage requirements not satisfied</span>
-                                                    </div>
-                                                    <p class="text-yellow-700 mt-1">You need to approve at least one document for each stage requirement before advancing this submission</p>
-                                                </div>'
-                                            );
-                                        }
-                                    })
+                            if (!$this->record->currentStage) {
+                                $schemaItems[] = Placeholder::make('no_stage')
+                                    ->content(new HtmlString('<div class="italic text-center py-4 text-gray-500">No stage assigned to this submission</div>'))
                                     ->columnSpanFull();
+                                return $schemaItems;
+                            }
 
-                                // Get documents for this submission
-                                $documents = $this->record->submissionDocuments()
-                                    ->with(['document', 'requirement'])
-                                    ->get();
+                            // Get stage requirements
+                            $stageRequirements = $this->record->currentStage->stageRequirements()
+                                ->pluck('document_requirement_id')
+                                ->toArray();
 
-                                // Group documents by requirement for better organization
-                                $documentsByRequirement = [];
-                                foreach ($documents as $doc) {
-                                    $requirementId = $doc->requirement_id;
-                                    if (!isset($documentsByRequirement[$requirementId])) {
-                                        $documentsByRequirement[$requirementId] = [
-                                            'requirement' => $doc->requirement,
-                                            'is_stage_requirement' => in_array($requirementId, $stageRequirements),
-                                            'documents' => []
-                                        ];
-                                    }
-                                    $documentsByRequirement[$requirementId]['documents'][] = $doc;
-                                }
-
-                                // Create a card for each requirement group
-                                foreach ($documentsByRequirement as $requirementId => $group) {
-                                    $requirement = $group['requirement'];
-                                    $isStageRequirement = $group['is_stage_requirement'];
-                                    $docs = $group['documents'];
-
-                                    $badge = $isStageRequirement
-                                        ? " <span class='bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded ml-2'>Stage Requirement</span>"
-                                        : "";
-
-                                    $title = ($requirement->name ?? 'Unknown Requirement') . $badge;
-
-                                    // For each document in the group
-                                    $documentsList = '';
-                                    foreach ($docs as $doc) {
-                                        $statusColor = match ($doc->status) {
-                                            'pending' => 'gray',
-                                            'approved' => 'success',
-                                            'rejected' => 'danger',
-                                            'revision_needed' => 'warning',
-                                            default => 'gray',
-                                        };
-
-                                        $statusIcon = match ($doc->status) {
-                                            'approved' => '<svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
-                                            'rejected' => '<svg class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
-                                            'revision_needed' => '<svg class="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
-                                            default => '<svg class="w-4 h-4 text-gray-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>',
-                                        };
-
-                                        $documentsList .= "
-                                            <div class='p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-3'>
-                                                <div class='flex justify-between items-start'>
-                                                    <div>
-                                                        <h4 class='text-base font-medium'>{$doc->document->title}</h4>
-                                                        <p class='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                                                            {$doc->document->mimetype} · " . number_format($doc->document->size / 1024, 0) . " KB · Uploaded " . $doc->created_at->diffForHumans() . "
-                                                        </p>
-                                                    </div>
-                                                    <div class='flex items-center'>
-                                                        <div class='flex items-center px-2 py-1 rounded-full bg-{$statusColor}-100 text-{$statusColor}-800 mr-3'>
-                                                            {$statusIcon}
-                                                            <span class='text-xs font-medium'>" . ucfirst($doc->status) . "</span>
-                                                        </div>
-                                                        <a href='" . route('filament.admin.documents.download', $doc->document_id) . "' 
-                                                           target='_blank' 
-                                                           class='inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'>
-                                                            <svg class='h-4 w-4 mr-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                                                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'></path>
-                                                            </svg>
-                                                            Download
-                                                        </a>
-                                                    </div>
-                                                </div>";
-
-                                        // Add notes if present
-                                        if (!empty($doc->notes)) {
-                                            $documentsList .= "
-                                                <div class='mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-{$statusColor}-400'>
-                                                    <h5 class='text-xs font-medium mb-1'>Review Notes:</h5>
-                                                    <p class='text-sm'>{$doc->notes}</p>
-                                                </div>";
-                                        }
-
-                                        $documentsList .= "
-                                                <div class='mt-3'>
-                                                    <div class='flex items-center space-x-2'>" .
-                                            ($isStageRequirement ?
-                                                "<span class='flex items-center " . ($doc->status === 'approved' ? 'text-green-600' : 'text-blue-600') . " text-xs'>
-                                                            " . ($doc->status === 'approved' ?
-                                                    "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'></path></svg> This document is approved and satisfies stage requirements" :
-                                                    "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z' clip-rule='evenodd'></path></svg> This document requires review for stage progression") . "
-                                                        </span>"
-                                                :
-                                                "") .
-                                            "</div>
+                            // Display stage requirement satisfaction status
+                            $schemaItems[] = Placeholder::make('stage_requirements_status')
+                                ->content(function () use ($stageRequirements) {
+                                    if (empty($stageRequirements)) {
+                                        return new HtmlString(
+                                            '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 shadow-sm">
+                                                <div class="flex items-center">
+                                                    <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    <span class="font-medium text-green-800">No specific document requirements for this stage</span>
                                                 </div>
+                                            </div>'
+                                        );
+                                    }
+
+                                    if ($this->stageRequirementsSatisfied) {
+                                        return new HtmlString(
+                                            '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 shadow-sm">
+                                                <div class="flex items-center">
+                                                    <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    <span class="font-medium text-green-800">All stage requirements are satisfied</span>
+                                                </div>
+                                                <p class="text-green-700 mt-1">You can approve this submission to advance to the next stage</p>
+                                            </div>'
+                                        );
+                                    } else {
+                                        return new HtmlString(
+                                            '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-4 shadow-sm">
+                                                <div class="flex items-center">
+                                                    <svg class="h-5 w-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    <span class="font-medium text-yellow-800">Stage requirements not satisfied</span>
+                                                </div>
+                                                <p class="text-yellow-700 mt-1">You need to approve at least one document for each stage requirement before advancing this submission</p>
+                                            </div>'
+                                        );
+                                    }
+                                })
+                                ->columnSpanFull();
+
+                            // Get documents for this submission
+                            $documents = $this->record->submissionDocuments()
+                                ->with(['document', 'requirement'])
+                                ->get();
+
+                            // Group documents by requirement for better organization
+                            $documentsByRequirement = [];
+                            foreach ($documents as $doc) {
+                                $requirementId = $doc->requirement_id;
+                                $submissionDocumentId = $doc->id;
+                                if (!isset($documentsByRequirement[$requirementId])) {
+                                    $documentsByRequirement[$requirementId] = [
+                                        'requirement' => $doc->requirement,
+                                        'is_stage_requirement' => in_array($requirementId, $stageRequirements),
+                                        'documents' => []
+                                    ];
+                                }
+                                $documentsByRequirement[$requirementId]['documents'][] = $doc;
+                            }
+
+                            // Create a card for each requirement group
+                            foreach ($documentsByRequirement as $requirementId => $group) {
+                                $requirement = $group['requirement'];
+                                $isStageRequirement = $group['is_stage_requirement'];
+                                $docs = $group['documents'];
+
+                                $badge = $isStageRequirement
+                                    ? " <span class='bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded ml-2'>Stage Requirement</span>"
+                                    : "";
+
+                                $title = ($requirement->name ?? 'Unknown Requirement') . $badge;
+
+                                // For each document in the group
+                                $documentsList = '';
+                                $documentComponents = [];
+
+                                foreach ($docs as $doc) {
+                                    $statusColor = match ($doc->status) {
+                                        'pending' => 'gray',
+                                        'approved' => 'success',
+                                        'rejected' => 'danger',
+                                        'revision_needed' => 'warning',
+                                        default => 'gray',
+                                    };
+
+                                    $statusIcon = match ($doc->status) {
+                                        'approved' => '<svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
+                                        'rejected' => '<svg class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
+                                        'revision_needed' => '<svg class="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+                                        default => '<svg class="w-4 h-4 text-gray-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>',
+                                    };
+
+                                    $documentsList .= "
+                                        <div class='p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-3'>
+                                            <div class='flex justify-between items-start'>
+                                                <div>
+                                                    <h4 class='text-base font-medium'>{$doc->document->title}</h4>
+                                                    <p class='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                                        {$doc->document->mimetype} · " . number_format($doc->document->size / 1024, 0) . " KB · Uploaded " . $doc->created_at->diffForHumans() . "
+                                                    </p>
+                                                </div>
+                                                <div class='flex items-center'>
+                                                    <div class='flex items-center px-2 py-1 rounded-full bg-{$statusColor}-100 text-{$statusColor}-800 mr-3'>
+                                                        {$statusIcon}
+                                                        <span class='text-xs font-medium'>" . ucfirst($doc->status) . "</span>
+                                                    </div>
+                                                    <a href='" . route('filament.admin.documents.download', $doc->document_id) . "' 
+                                                       target='_blank' 
+                                                       class='inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'>
+                                                        <svg class='h-4 w-4 mr-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                                            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'></path>
+                                                        </svg>
+                                                        Download
+                                                    </a>
+                                                </div>
+                                            </div>";
+
+                                    // Add notes if present
+                                    if (!empty($doc->notes)) {
+                                        $documentsList .= "
+                                            <div class='mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-{$statusColor}-400'>
+                                                <h5 class='text-xs font-medium mb-1'>Review Notes:</h5>
+                                                <p class='text-sm'>{$doc->notes}</p>
                                             </div>";
                                     }
 
-                                    $schemaItems[] = Section::make(new HtmlString($title))
-                                        ->description(function () use ($requirement) {
-                                            return $requirement->description ?? '';
-                                        })
-                                        ->schema([
-                                            Placeholder::make("documents_for_requirement_{$requirementId}")
-                                                ->content(new HtmlString($documentsList)),
+                                    $documentsList .= "
+                                            <div class='mt-3'>
+                                                <div class='flex items-center space-x-2'>" .
+                                        ($isStageRequirement ?
+                                            "<span class='flex items-center " . ($doc->status === 'approved' ? 'text-green-600' : 'text-blue-600') . " text-xs'>
+                                                        " . ($doc->status === 'approved' ?
+                                                "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'></path></svg> This document is approved and satisfies stage requirements" :
+                                                "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z' clip-rule='evenodd'></path></svg> This document requires review for stage progression") . "
+                                                    </span>"
+                                            :
+                                            "") .
+                                        "</div>
+                                            </div>
+                                        </div>";
 
-                                            Select::make("document_status_{$requirementId}")
-                                                ->label('Update Document Status')
-                                                ->options([
-                                                    'pending' => 'Pending Review',
-                                                    'approved' => 'Approved',
-                                                    'rejected' => 'Rejected',
-                                                    'revision_needed' => 'Revision Needed',
-                                                ])
-                                                ->default(function () use ($docs) {
-                                                    // Default to the status of the latest document
-                                                    return count($docs) > 0 ? $docs[0]->status : 'pending';
-                                                })
-                                                ->reactive(),
-
-                                            Textarea::make("document_notes_{$requirementId}")
-                                                ->label('Review Notes')
-                                                ->placeholder('Enter any notes about this document')
-                                                ->default(function () use ($docs) {
-                                                    // Default to the notes of the latest document
-                                                    return count($docs) > 0 ? $docs[0]->notes : '';
-                                                })
-                                                ->rows(2),
+                                    // Create individual select components for each document using document ID
+                                    $documentComponents[] = Select::make("document_status_{$doc->id}")
+                                        ->label("Update Status for: {$doc->document->title}")
+                                        ->options([
+                                            'pending' => 'Pending Review',
+                                            'approved' => 'Approved',
+                                            'rejected' => 'Rejected',
+                                            'revision_needed' => 'Revision Needed',
                                         ])
-                                        ->collapsible();
+                                        ->default($doc ? $doc->status : 'pending')
+                                        ->reactive();
                                 }
 
-                                if (count($documentsByRequirement) === 0) {
-                                    $schemaItems[] = Placeholder::make('no_documents')
-                                        ->content(new HtmlString('<div class="italic text-center py-4 text-gray-500">No documents have been uploaded for this submission</div>'))
-                                        ->columnSpanFull();
-                                }
-
-                                return $schemaItems;
-                            }),
-
-                        Tabs\Tab::make('decision')
-                            ->label('Review Decision')
-                            ->icon('heroicon-o-check-circle')
-                            ->schema([
-                                Section::make('Final Review Decision')
-                                    ->description('Make your final decision about this submission')
+                                $schemaItems[] = Section::make(new HtmlString($title))
+                                    ->description(function () use ($requirement) {
+                                        return $requirement->description ?? '';
+                                    })
                                     ->schema([
-                                        Select::make('reviewDecision')
-                                            ->label('Decision')
-                                            ->options([
-                                                'approved' => 'Approve - Move to Next Stage',
-                                                'revision_needed' => 'Request Revision',
-                                                'rejected' => 'Reject Submission',
-                                            ])
-                                            ->required()
-                                            ->reactive()
-                                            ->disabled(!$this->stageRequirementsSatisfied && $this->record->currentStage && !$this->record->currentStage->stageRequirements()->exists())
-                                            ->helperText(function () {
-                                                if (!$this->stageRequirementsSatisfied && $this->record->currentStage && $this->record->currentStage->stageRequirements()->exists()) {
-                                                    return 'You need to approve all stage requirements before approving this submission';
-                                                }
-                                                return null;
-                                            }),
+                                        Placeholder::make("documents_for_requirement_{$requirementId}")
+                                            ->content(new HtmlString($documentsList)),
 
-                                        Textarea::make('reviewer_notes')
-                                            ->label('Comments')
-                                            ->placeholder('Enter your review comments, feedback, or reasons for your decision')
-                                            ->required()
-                                            ->rows(4),
-                                    ]),
+                                        // Add individual document components
+                                        ...$documentComponents
+                                    ])
+                                    ->collapsible();
+                            }
 
-                            ]),
+                            if (count($documentsByRequirement) === 0) {
+                                $schemaItems[] = Placeholder::make('no_documents')
+                                    ->content(new HtmlString('<div class="italic text-center py-4 text-gray-500">No documents have been uploaded for this submission</div>'))
+                                    ->columnSpanFull();
+                            }
 
-                    ])
+                            return $schemaItems;
+                        }),
+
+                    // Step 3: Review Decision
+                    Step::make('Final Decision')
+                        ->icon('heroicon-o-check-circle')
+                        ->description('Submit your final review decision')
+                        ->schema([
+                            Section::make('Review Decision')
+                                ->description('Make your final decision about this submission')
+                                ->schema([
+                                    Select::make('reviewDecision')
+                                        ->label('Decision')
+                                        ->options([
+                                            'approved' => 'Approve - Move to Next Stage',
+                                            'revision_needed' => 'Request Revision',
+                                            'rejected' => 'Reject Submission',
+                                        ])
+                                        ->required()
+                                        ->reactive()
+                                        ->disabled(!$this->stageRequirementsSatisfied && $this->record->currentStage && !$this->record->currentStage->stageRequirements()->exists())
+                                        ->helperText(function () {
+                                            if (!$this->stageRequirementsSatisfied && $this->record->currentStage && $this->record->currentStage->stageRequirements()->exists()) {
+                                                return 'You need to approve all stage requirements before approving this submission';
+                                            }
+                                            return null;
+                                        }),
+
+                                    Textarea::make('reviewer_notes')
+                                        ->label('Comments')
+                                        ->placeholder('Enter your review comments, feedback, or reasons for your decision')
+                                        ->required()
+                                        ->rows(4),
+                                ]),
+
+                            Section::make()
+                                ->schema([
+                                    Placeholder::make('submit_review_info')
+                                        ->content(new HtmlString('
+                                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                                <div class="flex items-center">
+                                                    <svg class="h-5 w-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    <span class="font-medium text-blue-800">Ready to submit your review?</span>
+                                                </div>
+                                                <p class="ml-7 text-blue-700 text-sm mt-1">Click the button below to submit your review decision.</p>
+                                            </div>
+                                        ')),
+
+                                    Placeholder::make('submit_button_container')
+                                        ->content(function () {
+                                            // Check if requirements are satisfied for approval
+                                            $disabledReason = '';
+                                            $disabled = false;
+
+                                            if (
+                                                !$this->stageRequirementsSatisfied &&
+                                                $this->record->currentStage &&
+                                                $this->record->currentStage->stageRequirements()->exists() &&
+                                                isset($this->data['reviewDecision']) &&
+                                                $this->data['reviewDecision'] === 'approved'
+                                            ) {
+                                                $disabled = true;
+                                                $disabledReason = 'You need to approve all stage requirements before approving this submission.';
+                                            }
+
+                                            $buttonHtml = '
+                                                <div class="flex justify-end">
+                                                    <button type="submit" ' . ($disabled ? 'disabled' : '') . ' 
+                                                    class="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg 
+                                                    border transition-colors focus:outline-none focus:ring-offset-2 
+                                                    focus:ring-2 focus:ring-inset filament-button dark:focus:ring-offset-0 
+                                                    h-9 px-4 text-sm text-white shadow focus:ring-white border-transparent 
+                                                    bg-primary-600 hover:bg-primary-500 focus:bg-primary-700 focus:ring-offset-primary-700 
+                                                    ' . ($disabled ? 'opacity-70 cursor-not-allowed' : '') . '">
+                                                    <svg class="h-5 w-5 -ml-1 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Submit Review
+                                                    </button>
+                                                </div>';
+
+                                            if ($disabled) {
+                                                $buttonHtml .= '
+                                                    <p class="text-sm text-red-600 mt-2">
+                                                        ' . $disabledReason . '
+                                                    </p>';
+                                            }
+
+                                            return new HtmlString($buttonHtml);
+                                        })
+                                ])
+                        ]),
+                ])
                     ->columnSpanFull()
             ])
             ->statePath('data');
@@ -627,36 +677,38 @@ class ReviewSubmission extends Page
         try {
             DB::beginTransaction();
 
-            // First, update all document statuses
-            foreach ($this->record->submissionDocuments as $doc) {
-                $newStatus = $this->data["document_status_{$doc->id}"] ?? $doc->status;
-                $notes = $this->data["document_notes_{$doc->id}"] ?? $doc->notes;
+            // Check if the submission is already in the final stage
+            if ($this->record->current_stage_id === $this->record->submissionType->final_stage_id) {
+                DB::rollBack();
 
-                if ($newStatus !== $doc->status || $notes !== $doc->notes) {
-                    $doc->update([
-                        'status' => $newStatus,
-                        'notes' => $notes,
-                    ]);
-                }
+                Notification::make()
+                    ->title('Cannot approve submission')
+                    ->body('This submission is already in the final stage and cannot be approved further.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+            // Check if the submission is already in the final status
+            if ($this->record->status === 'completed') {
+                DB::rollBack();
+
+                Notification::make()
+                    ->title('Cannot approve submission')
+                    ->body('This submission is already completed and cannot be approved further.')
+                    ->danger()
+                    ->send();
+
+                return;
             }
 
             // Recalculate stage requirement satisfaction
             $this->checkStageRequirementsSatisfaction();
 
-            // Get all document requirements for this submission type
-            $allRequirements = $this->record->submissionType->documentRequirements()
-                ->pluck('id')
-                ->toArray();
-
-            // Get requirements that have at least one approved document
-            $approvedRequirementIds = $this->record->submissionDocuments()
-                ->where('status', 'approved')
-                ->pluck('requirement_id')
-                ->unique()
-                ->toArray();
 
             // Check if each requirement has at least one approved document
-            $allRequirementsSatisfied = count(array_intersect($allRequirements, $approvedRequirementIds)) === count($allRequirements);
+            $allRequirementsSatisfied = $this->stageRequirementsSatisfied;
+
 
             // Check if we can approve when that's the decision
             if ($this->data['reviewDecision'] === 'approved') {
@@ -759,26 +811,68 @@ class ReviewSubmission extends Page
             // Handle based on decision
             switch ($this->data['reviewDecision']) {
                 case 'approved':
+                    // Check if submission can advance to next stage
+                    if (!$this->record->canAdvanceToNextStage()) {
+                        DB::rollBack();
+
+                        Notification::make()
+                            ->title('Cannot approve submission')
+                            ->body('This submission cannot be advanced to the next stage. The workflow may have ended or there is no valid next stage.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    // Get the next stage using the Submission model's method
+                    $nextStage = $this->record->nextStage();
+                    if (!$nextStage) {
+                        DB::rollBack();
+
+                        Notification::make()
+                            ->title('Cannot approve submission')
+                            ->body('No next stage found in the workflow. Please check the workflow configuration.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    // Get the next stage ID
+                    $nextStageId = $nextStage->id;
+
                     // Update submission to new stage
                     $this->record->update([
                         'status' => 'in_review', // Keep as in_review for the next stage
-                        'current_stage_id' => $this->data['nextStageId'],
+                        'current_stage_id' => $nextStageId,
                         'is_active' => true, // Ensure is_active is true for approved status
                     ]);
 
-                    // Create new assignment for next stage
-                    WorkflowAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'submission_id' => $this->record->id,
-                        'stage_id' => $this->data['nextStageId'],
-                        'reviewer_id' => Auth::id(),
-                        'assigned_by' => Auth::id(),
-                        'status' => 'pending',
-                        'assigned_at' => now(),
-                    ]);
+                    // Check if an assignment already exists for this submission, stage, and reviewer
+                    $existingAssignment = WorkflowAssignment::where('submission_id', $this->record->id)
+                        ->where('stage_id', $nextStageId)
+                        ->where('reviewer_id', Auth::id())
+                        ->first();
+
+                    // Only create a new assignment if one doesn't already exist
+                    if (!$existingAssignment) {
+                        WorkflowAssignment::create([
+                            'id' => Str::uuid()->toString(),
+                            'submission_id' => $this->record->id,
+                            'stage_id' => $nextStageId,
+                            'reviewer_id' => Auth::id(),
+                            'assigned_by' => Auth::id(),
+                            'status' => 'pending',
+                            'assigned_at' => now(),
+                        ]);
+                    } else {
+                        // Update the existing assignment if needed
+                        $existingAssignment->update([
+                            'status' => 'pending',
+                            'assigned_at' => now(),
+                        ]);
+                    }
 
                     // Get next stage name
-                    $nextStageName = WorkflowStage::find($this->data['nextStageId'])->name ?? 'Next Stage';
+                    $nextStageName = $nextStage->name ?? 'Next Stage';
 
                     // Send notification to the next reviewer
                     $nextReviewer = \App\Models\User::find(Auth::id());
@@ -843,6 +937,76 @@ class ReviewSubmission extends Page
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        }
+    }
+
+    /**
+     * Process document status update with confirmation
+     * 
+     * @param string $documentId
+     * @param string $status
+     * @param string|null $notes
+     */
+    public function updateDocumentStatus(string $documentId, string $status, ?string $notes = null): void
+    {
+        try {
+            // Validate documentId format
+            if (!preg_match('/^[0-9a-f-]{36}$/i', $documentId)) {
+                throw new \Exception("Invalid document ID format");
+            }
+
+            // Find the submission document
+            $document = $this->record->submissionDocuments()
+                ->where('id', $documentId)
+                ->first();
+
+            if (!$document) {
+                // Try a direct lookup if relation query fails
+                $document = \App\Models\SubmissionDocument::find($documentId);
+
+                // If document exists but doesn't belong to this submission, reject the update
+                if ($document && $document->submission_id !== $this->record->id) {
+                    throw new \Exception("Document does not belong to this submission");
+                }
+            }
+
+            if (!$document) {
+                throw new \Exception("Document not found with ID: {$documentId}");
+            }
+
+            // Update the document status in the database
+            $document->update([
+                'status' => $status,
+                'notes' => $notes,
+            ]);
+
+            // Update local document statuses for form state
+            $this->documentStatuses["document_{$document->id}"] = $status;
+
+            // Recalculate stage requirement satisfaction
+            $this->checkStageRequirementsSatisfaction();
+
+            // Show success notification
+            $statusLabel = ucfirst(str_replace('_', ' ', $status));
+            Notification::make()
+                ->title("Document marked as {$statusLabel}")
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            // Add more detailed error notification
+            Notification::make()
+                ->title('Error updating document status')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            // Log the error
+            \Illuminate\Support\Facades\Log::error('Document status update failed', [
+                'document_id' => $documentId,
+                'status' => $status,
+                'error' => $e->getMessage(),
+                'submission_id' => $this->record?->id,
+            ]);
         }
     }
 }

@@ -174,11 +174,6 @@ class Submission extends Model
             return false;
         }
 
-        // Check if current stage requirements are fulfilled
-        if (!$this->currentStage->canExit($this)) {
-            return false;
-        }
-
         // Check if there's a next stage
         $nextStage = $this->currentStage->nextStage();
         if (!$nextStage) {
@@ -186,7 +181,39 @@ class Submission extends Model
         }
 
         // Can't advance if submission status is not appropriate
-        return in_array($this->status, ['in_review', 'approved']);
+        return in_array($this->status, ['in_review', 'approved', 'revision_needed', 'submitted']);
+    }
+
+    /**
+     * Check if the submission can be returned to the previous stage.
+     */
+    public function canReturnToPreviousStage(): bool
+    {
+        if (!$this->currentStage) {
+            return false;
+        }
+
+        // Check if current stage requirements are fulfilled
+        if (!$this->currentStage->canExit($this)) {
+            return false;
+        }
+
+        // Check if there's a previous stage
+        $previousStage = $this->currentStage->previousStage();
+        if (!$previousStage) {
+            return false;
+        }
+
+        // Can't return if submission status is not appropriate
+        return in_array($this->status, ['in_review', 'approved', 'revision_needed', 'submitted']);
+    }
+
+    /**
+     * Get the next stage for this submission.
+     */
+    public function nextStage()
+    {
+        return $this->currentStage->nextStage();
     }
 
     /**
@@ -316,6 +343,15 @@ class Submission extends Model
     }
 
     /**
+     * Check if current Stage is final Stage.
+     */
+    
+    public function isCurrentStageFinal(): bool
+    {
+        return $this->currentStage ? $this->currentStage->isFinalStage() : false;
+    }
+
+    /**
      * Check if a review can be submitted for this submission.
      * 
      * @return bool True if the submission is in a reviewable state
@@ -344,5 +380,50 @@ class Submission extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Check if the user can resubmit this submission.
+     * 
+     * @return bool True if the submission can be resubmitted
+     */
+    public function canResubmit(): bool
+    {
+        // Only submissions that are marked as needing revision can be resubmitted
+        if ($this->status !== 'revision_needed') {
+            return false;
+        }
+        
+        // Must have a current stage
+        if (!$this->currentStage) {
+            return false;
+        }
+        
+        // The user must be the owner of the submission
+        $user = auth()->user();
+        if (!$user || $user->id !== $this->user_id) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Resubmit this submission after making revisions.
+     * 
+     * @param string|null $comment
+     * @return self
+     */
+    public function resubmit(?string $comment = null): self
+    {
+        if (!$this->canResubmit()) {
+            throw new \Exception("This submission cannot be resubmitted.");
+        }
+
+        return app(TrackingService::class)->resubmitAfterRevision(
+            $this,
+            auth()->user(),
+            $comment ?? 'Submission resubmitted after revision'
+        );
     }
 }

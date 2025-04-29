@@ -26,13 +26,21 @@ class SubmissionDocumentStatusChanged
     public $oldStatus;
 
     /**
+     * The new status after the update.
+     *
+     * @var string
+     */
+    public $newStatus;
+
+    /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(SubmissionDocument $submissionDocument, ?string $oldStatus = null)
+    public function __construct(SubmissionDocument $submissionDocument, ?string $oldStatus = null, string $newStatus = null)
     {
         $this->submissionDocument = $submissionDocument;
         $this->oldStatus = $oldStatus;
+        $this->newStatus = $newStatus;
     }
 }

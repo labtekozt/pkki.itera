@@ -471,6 +471,11 @@ class EditSubmission extends EditRecord
                                 ) {
                                     $options['submitted'] = 'Submitted - Ready for review';
                                 }
+                                
+                                // Add resubmit option when status is revision_needed
+                                if ($this->record->status === 'revision_needed' && $this->isDocumentComplete) {
+                                    $options['submitted'] = 'Resubmit - Send back for review';
+                                }
 
                                 return $options;
                             })
@@ -478,8 +483,8 @@ class EditSubmission extends EditRecord
                             ->required()
                             ->reactive()
                             ->disabled(function () {
-                                // Disable the status field if current status is not draft or cancelled
-                                return !in_array($this->record->status, ['draft', 'cancelled']);
+                                // Allow status change if status is draft, cancelled, or revision_needed
+                                return !in_array($this->record->status, ['draft', 'cancelled', 'revision_needed']);
                             })
                             ->afterStateUpdated(function (string $state, Set $set) {
                                 if ($state === 'submitted' && $this->record->status === 'draft') {
@@ -491,16 +496,23 @@ class EditSubmission extends EditRecord
                                     }
 
                                     $set('status_notes', 'Submission ready for review');
+                                } else if ($state === 'submitted' && $this->record->status === 'revision_needed') {
+                                    $set('status_notes', 'Submission updated and resubmitted for review');
                                 }
                             })
                             ->helperText(function () {
-                                if (!in_array($this->record->status, ['draft', 'cancelled'])) {
+                                if (!in_array($this->record->status, ['draft', 'cancelled', 'revision_needed'])) {
                                     return 'Status cannot be changed once submitted';
                                 }
 
                                 if ($this->record->status === 'draft' && !$this->isDocumentComplete) {
                                     return 'You need to upload all required documents before submitting';
                                 }
+                                
+                                if ($this->record->status === 'revision_needed') {
+                                    return 'After making the required changes, you can resubmit your application for review';
+                                }
+                                
                                 return 'Changing status may trigger workflow actions';
                             }),
 
@@ -567,18 +579,52 @@ class EditSubmission extends EditRecord
                 }
             }
 
+            // Special handling for resubmission from revision_needed
+            $wasRevisionNeeded = $record->status === 'revision_needed';
+
             $updatedRecord = $submissionService->updateSubmission(
                 $record,
                 $data,
                 documents: $documents
             );
 
-            if (isset($data['status']) && $data['status'] === 'submitted' && $record->status === 'draft') {
-                Notification::make()
-                    ->title('Submission successfully sent for review')
-                    ->body('Your submission has been received and is now in the review process')
-                    ->success()
-                    ->send();
+            // Handle notifications based on status change
+            if (isset($data['status']) && $data['status'] === 'submitted') {
+                if ($record->status === 'draft') {
+                    Notification::make()
+                        ->title('Submission successfully sent for review')
+                        ->body('Your submission has been received and is now in the review process')
+                        ->success()
+                        ->send();
+                } else if ($record->status === 'revision_needed') {
+                    // This is a resubmission after revisions
+                    Notification::make()
+                        ->title('Resubmission successful')
+                        ->body('Your revised submission has been sent back to the reviewer')
+                        ->success()
+                        ->send();
+                    
+                    // Notify reviewers through workflow assignments
+                    $this->notifyReviewers($updatedRecord);
+                    
+                    // Create tracking history entry for the resubmission
+                    \App\Models\TrackingHistory::create([
+                        'id' => \Illuminate\Support\Str::uuid()->toString(),
+                        'submission_id' => $updatedRecord->id,
+                        'stage_id' => $updatedRecord->current_stage_id,
+                        'action' => 'resubmitted',
+                        'status' => 'in_review',
+                        'comment' => $data['comment'] ?? 'Submission resubmitted after revision',
+                        'processed_by' => Auth::id(),
+                        'source_status' => 'revision_needed',
+                        'target_status' => 'submitted',
+                        'event_type' => 'status_change',
+                        'metadata' => [
+                            'user_role' => Auth::user()->roles->pluck('name')->first() ?? 'submitter',
+                        ],
+                        'event_timestamp' => now(),
+                    ]);
+                }
             } else {
                 Notification::make()
                     ->title('Submission updated successfully')
@@ -595,6 +641,48 @@ class EditSubmission extends EditRecord
                 ->send();
 
             return $record;
+        }
+    }
+    
+    /**
+     * Notify all relevant reviewers when a submission is resubmitted
+     */
+    protected function notifyReviewers(Model $record): void
+    {
+        // Find the latest reviewer assignment for this submission
+        $latestAssignments = $record->currentStageAssignments()
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        if ($latestAssignments->isEmpty()) {
+            return;
+        }
+        
+        // Get all reviewers who should be notified
+        $reviewerIds = $latestAssignments->pluck('reviewer_id')->unique();
+        
+        // Set all current assignments back to pending
+        foreach ($latestAssignments as $assignment) {
+            $assignment->update([
+                'status' => 'pending',
+                'completed_at' => null,
+            ]);
+        }
+        
+        // Get user information for the notification
+        $submitter = Auth::user();
+        $submitterName = $submitter ? $submitter->fullname ?? $submitter->name : 'A user';
+        
+        // Send notification to all reviewers
+        foreach ($reviewerIds as $reviewerId) {
+            $reviewer = \App\Models\User::find($reviewerId);
+            if ($reviewer) {
+                $reviewer->notify(new \App\Notifications\ReviewActionNotification(
+                    $record,
+                    "Submission resubmitted after revision",
+                    "{$submitterName} has updated and resubmitted submission '{$record->title}' after making requested revisions."
+                ));
+            }
         }
     }
 }

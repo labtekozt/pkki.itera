@@ -211,4 +211,46 @@ class ManageSubmissionDocuments extends Page implements HasTable
                 ->modalHeading('Upload Document')
         ];
     }
+    
+    /**
+     * Update document status with confirmation
+     */
+    public function updateDocumentStatus(string $documentId, string $status, ?string $notes = null): void
+    {
+        try {
+            // Find the submission document
+            $document = $this->record->submissionDocuments()->find($documentId);
+            
+            if (!$document) {
+                Notification::make()
+                    ->title('Document not found')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Update the document status in the database
+            $document->update([
+                'status' => $status,
+                'notes' => $notes,
+            ]);
+
+            // Show success notification
+            $statusLabel = ucfirst(str_replace('_', ' ', $status));
+            Notification::make()
+                ->title("Document marked as {$statusLabel}")
+                ->success()
+                ->send();
+                
+            // Refresh table to show updated data
+            $this->refreshTable();
+            
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error updating document status')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
 }

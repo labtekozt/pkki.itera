@@ -182,17 +182,28 @@ class DocumentsRelationManager extends RelationManager
                         ->label('Review Notes')
                         ->required(),
                 ])
+                ->modalHeading('Document Review')
+                ->modalDescription(fn($record) => "You are reviewing document: {$record->document->title}")
+                ->modalSubmitActionLabel('Submit Review')
                 ->action(function (array $data, $record): void {
+                    $oldStatus = $record->status;
                     $record->update([
                         'status' => $data['status'],
                         'notes' => $data['review_notes'],
                     ]);
 
-                    // In a real application, you might want to notify the user here
-                    // or create a tracking history entry
-                })
-                ->modalHeading('Review Document')
-                ->modalSubmitActionLabel('Submit Review');
+                    $statusLabel = match($data['status']) {
+                        self::STATUS_APPROVED => 'approved',
+                        self::STATUS_REJECTED => 'rejected',
+                        self::STATUS_REVISION_NEEDED => 'marked for revision',
+                        default => 'updated'
+                    };
+
+                    Notification::make()
+                        ->title("Document {$statusLabel} successfully")
+                        ->success()
+                        ->send();
+                });
         }
 
         // Add bulk actions for admin and superadmin roles only

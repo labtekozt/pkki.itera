@@ -29,8 +29,6 @@ return new class extends Migration
             $table->foreign('reviewer_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('assigned_by')->references('id')->on('users')->onDelete('cascade');
             
-            // A reviewer can only be assigned once per submission and stage
-            $table->unique(['submission_id', 'stage_id', 'reviewer_id']);
         });
     }
 

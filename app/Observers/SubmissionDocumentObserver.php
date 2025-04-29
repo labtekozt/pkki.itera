@@ -32,7 +32,11 @@ class SubmissionDocumentObserver
     {
         // Fire an event when a new document is created with a non-pending status
         if ($submissionDocument->status !== 'pending') {
-            event(new SubmissionDocumentStatusChanged($submissionDocument));
+            event(new SubmissionDocumentStatusChanged(
+                $submissionDocument,
+                null, // No old status for new documents
+                $submissionDocument->status // Include the current status as new status
+            ));
         }
     }
     public function updated(SubmissionDocument $submissionDocument): void
@@ -45,7 +49,7 @@ class SubmissionDocumentObserver
 
             // Only fire the event if the status has changed
             if ($oldStatus !== $newStatus) {
-                event(new SubmissionDocumentStatusChanged($submissionDocument, $oldStatus));
+                event(new SubmissionDocumentStatusChanged($submissionDocument, $oldStatus, $newStatus));
             }
         }
 
@@ -97,12 +101,8 @@ class SubmissionDocumentObserver
                 $newStatus
             );
 
-            // Dispatch the status changed event for tracking
-            event(new \App\Events\SubmissionDocumentStatusChanged(
-                $submissionDocument,
-                $oldStatus,
-                $newStatus
-            ));
+            // Note: We don't need a second event dispatch here since we already dispatched above
+            // Removing the duplicate event to avoid confusion
         }
     }
 
