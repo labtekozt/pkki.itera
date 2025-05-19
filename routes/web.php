@@ -23,6 +23,9 @@ Route::get('/', function () {
 Route::get('/kegiatan', function () {
     return Inertia::render(component:'Kegiatan');  
 });
+Route::get('/news', function () {
+    return Inertia::render(component:'news');  
+});
 
 // Add document download route for admin panel
 Route::get('/admin/documents/{document}/download', function (Document $document) {
