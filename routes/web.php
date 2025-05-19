@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     return Inertia::render(component: 'Welcome');
 });
+Route::get('/kegiatan', function () {
+    return Inertia::render(component:'Kegiatan');  
+});
 
 // Add document download route for admin panel
 Route::get('/admin/documents/{document}/download', function (Document $document) {
