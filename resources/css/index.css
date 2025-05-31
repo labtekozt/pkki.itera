@@ -1,0 +1,67 @@
+.navbar {
+    top: 0;
+    width: 100%;
+    transition: all 0.3s ease-in-out;	
+    z-index: 50;
+    background-color: transparent; 
+  }
+  
+  .navbar-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #B82132;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+    animation: slide-down 0.5s forwards;
+  
+    /* backdrop-filter: blur(10px); */
+  }
+  
+  @keyframes slide-down {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  .nav-link {
+    transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  }
+  
+  .text-white {
+    color: white;
+  }
+  
+  
+  /* banner */
+  .bannerHome {
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    position: relative;
+    margin-top: -100px !important; 
+    margin: 0;
+    padding: 0;
+  }
+  
+  .bannerContent {
+    position: relative;
+    z-index: 2; /* Ensures that the content is above the overlay */
+  }
+  
+  @media (min-width: 640px) {
+    .bannerContent {
+      padding: 0; /* Increases padding for larger screens */
+    }
+  }
+  
+  .bg-key{
+    background-color: rgba(23, 109, 1, 0.158);
+  }

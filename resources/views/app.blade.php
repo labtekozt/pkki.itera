@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Dynamic title from Inertia props or fallback -->
-    <title>{{ config('app.name', 'PKKI ITERA') }}{{ isset($page['props']['meta']['title']) ? ' - ' . $page['props']['meta']['title'] : '' }}</title>
+    <title>PKKI ITERA</title>
     
     <!-- Meta tags -->
     <meta name="description" content="{{ $page['props']['meta']['description'] ?? config('app.description', 'PKKI ITERA Application') }}">
@@ -48,6 +48,7 @@
     <!-- Vite & Inertia -->
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+    @vite(['resources/css/index.css', 'resources/js/index.jsx'])
     
     <!-- Styles -->
     <style>
