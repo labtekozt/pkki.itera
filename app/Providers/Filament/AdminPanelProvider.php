@@ -48,11 +48,26 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 Navigation\NavigationGroup::make()
-                    ->label(__('menu.nav_group.content'))
+                    ->label(__('menu.nav_group.intellectual_property'))
                     ->collapsible(false),
                 Navigation\NavigationGroup::make()
-                    ->label(__('menu.nav_group.access'))
+                    ->label(__('menu.nav_group.review_management'))
                     ->collapsible(false),
+                Navigation\NavigationGroup::make()
+                    ->label(__('menu.nav_group.workflow_management'))
+                    ->collapsed(),
+                Navigation\NavigationGroup::make()
+                    ->label(__('menu.nav_group.system_configuration'))
+                    ->collapsed(),
+                Navigation\NavigationGroup::make()
+                    ->label(__('menu.nav_group.analytics_reports'))
+                    ->collapsed(),
+                Navigation\NavigationGroup::make()
+                    ->label(__('menu.nav_group.content'))
+                    ->collapsed(),
+                Navigation\NavigationGroup::make()
+                    ->label(__('menu.nav_group.access'))
+                    ->collapsed(),
                 Navigation\NavigationGroup::make()
                     ->label(__('menu.nav_group.sites'))
                     ->collapsed(),
@@ -64,7 +79,7 @@ class AdminPanelProvider extends PanelProvider
                     ->collapsed(),
             ])
             ->navigationItems([
-                Navigation\NavigationItem::make('Log Viewer') // !! To-Do: lang
+                Navigation\NavigationItem::make(__('menu.nav_item.log_viewer'))
                     ->visible(fn(): bool => auth()->user()->can('access_log_viewer'))
                     ->url(config('app.url') . '/' . config('log-viewer.route_path'), shouldOpenInNewTab: true)
                     ->icon('fluentui-document-bullet-list-multiple-20-o')

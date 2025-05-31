@@ -10,39 +10,39 @@ class BrandSubmissionForm
     public static function getFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Trademark Details')
+            Forms\Components\Section::make(__('resource.brand.details'))
                 ->schema([
                     Forms\Components\TextInput::make('brandDetail.brand_name')
-                        ->label('Brand Name')
+                        ->label(__('resource.brand.brand_name'))
                         ->required()
                         ->helperText('Nama merek yang diajukan')
                         ->maxLength(255),
                         
                     Forms\Components\Select::make('brandDetail.brand_type')
-                        ->label('Brand Type')
+                        ->label(__('resource.brand.brand_type'))
                         ->options([
-                            'word' => 'Word Mark',
-                            'logo' => 'Logo Mark',
-                            'combined' => 'Combined Mark',
-                            'sound' => 'Sound Mark',
-                            'collective' => 'Collective Mark',
+                            'word' => 'Merek Kata',
+                            'logo' => 'Merek Logo',
+                            'combined' => 'Merek Kombinasi',
+                            'sound' => 'Merek Suara',
+                            'collective' => 'Merek Kolektif',
                         ])
                         ->helperText('Tipe merek: kata, logo, kombinasi, suara, dll')
                         ->required(),
                         
                     Forms\Components\Textarea::make('brandDetail.brand_description')
-                        ->label('Brand Description')
+                        ->label(__('resource.brand.brand_description'))
                         ->helperText('Deskripsi rinci tentang merek yang diajukan')
                         ->required()
                         ->columnSpanFull(),
                         
                     Forms\Components\TextInput::make('brandDetail.inovators_name')
-                        ->label('Innovators/Creators Name')
+                        ->label(__('resource.brand.innovators_name'))
                         ->helperText('Nama inovator yang mengajukan permohonan merek')
                         ->required(),
                         
                     Forms\Components\Select::make('brandDetail.application_type')
-                        ->label('Application Type')
+                        ->label(__('resource.brand.application_type'))
                         ->options([
                             'trading' => 'Merek Dagang',
                             'service' => 'Merek Jasa',
@@ -53,11 +53,11 @@ class BrandSubmissionForm
                         ->required(),
                         
                     Forms\Components\DatePicker::make('brandDetail.application_date')
-                        ->label('Application Date')
+                        ->label(__('resource.brand.application_date'))
                         ->helperText('Tanggal pengajuan permohonan merek'),
                         
                     Forms\Components\Select::make('brandDetail.application_origin')
-                        ->label('Application Origin')
+                        ->label(__('resource.brand.application_origin'))
                         ->options([
                             'indonesia' => 'Indonesia',
                             'foreign' => 'Foreign',
@@ -66,7 +66,7 @@ class BrandSubmissionForm
                         ->required(),
                         
                     Forms\Components\Select::make('brandDetail.application_category')
-                        ->label('Application Category')
+                        ->label(__('resource.brand.application_category'))
                         ->options([
                             'umkm' => 'UMKM',
                             'general' => 'UMUM',
@@ -75,7 +75,7 @@ class BrandSubmissionForm
                         ->required(),
                         
                     Forms\Components\TextInput::make('brandDetail.nice_classes')
-                        ->label('Nice Classification')
+                        ->label(__('resource.brand.nice_classes'))
                         ->placeholder('e.g., 9, 42')
                         ->helperText('Kelas klasifikasi Nice untuk merek'),
                         
@@ -85,7 +85,7 @@ class BrandSubmissionForm
                         ->columnSpanFull(),
                         
                     Forms\Components\TextInput::make('brandDetail.brand_label')
-                        ->label('Brand Label')
+                        ->label(__('resource.brand_form.brand_label'))
                         ->helperText('Label merek yang diajukan')
                         ->required(),
                         
@@ -111,7 +111,7 @@ class BrandSubmissionForm
                         ->helperText('Pernyataan penolakan hak eksklusif atas elemen tertentu dalam merek'),
                         
                     Forms\Components\TextInput::make('brandDetail.priority_number')
-                        ->label('Priority Number')
+                        ->label(__('resource.brand_form.priority_number'))
                         ->helperText('Nomor prioritas jika mengklaim hak prioritas'),
                 ])
                 ->columns(2)

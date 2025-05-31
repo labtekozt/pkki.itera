@@ -33,26 +33,26 @@ class UserFeedbackStatsWidget extends BaseWidget
         $ratingTrend = $previousAvgRating > 0 ? (($recentAvgRating - $previousAvgRating) / $previousAvgRating) * 100 : 0;
 
         return [
-            Stat::make('Total Feedback', $totalFeedback)
-                ->description($recentFeedback . ' in last 30 days')
+            Stat::make(__('resource.widgets.feedback_stats.total_feedback'), $totalFeedback)
+                ->description($recentFeedback . ' ' . __('resource.widgets.feedback_stats.in_last_days', ['days' => '30']))
                 ->descriptionIcon($feedbackTrend >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->chart($this->getFeedbackChart())
                 ->color($feedbackTrend >= 0 ? 'success' : 'danger'),
 
-            Stat::make('Average Rating', number_format($avgRating, 1) . '/5')
-                ->description(number_format($recentAvgRating, 1) . '/5 recent average')
+            Stat::make(__('resource.widgets.feedback_stats.average_rating'), number_format($avgRating, 1) . '/5')
+                ->description(number_format($recentAvgRating, 1) . '/5 ' . __('resource.widgets.feedback_stats.recent_average'))
                 ->descriptionIcon($ratingTrend >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->chart($this->getRatingChart())
                 ->color($avgRating >= 4 ? 'success' : ($avgRating >= 3 ? 'warning' : 'danger')),
 
-            Stat::make('Critical Issues', $criticalFeedback)
-                ->description('Low ratings (≤2 stars) or accessibility issues')
+            Stat::make(__('resource.widgets.feedback_stats.critical_issues'), $criticalFeedback)
+                ->description(__('resource.widgets.feedback_stats.low_ratings_desc'))
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($criticalFeedback > 0 ? 'danger' : 'success')
                 ->url(route('filament.admin.resources.user-feedback.index', ['activeTab' => 'critical'])),
 
-            Stat::make('Needs Review', $unprocessedFeedback)
-                ->description('Unprocessed feedback requiring attention')
+            Stat::make(__('resource.widgets.feedback_stats.needs_review'), $unprocessedFeedback)
+                ->description(__('resource.widgets.feedback_stats.unprocessed_desc'))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($unprocessedFeedback > 0 ? 'warning' : 'success')
                 ->url(route('filament.admin.resources.user-feedback.index', ['activeTab' => 'unprocessed'])),

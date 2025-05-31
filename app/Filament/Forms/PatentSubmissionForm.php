@@ -10,45 +10,46 @@ class PatentSubmissionForm
     public static function getFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Patent Details')
+            Forms\Components\Section::make(__('resource.patent.details'))
                 ->schema([
                     Forms\Components\Select::make('patentDetail.application_type')
-                        ->label('Patent Type')
+                        ->label(__('resource.patent.application_type'))
                         ->options([
-                            'simple_patent' => 'Simple Patent',
-                            'patent' => 'Standard Patent',
+                            'simple_patent' => __('resource.patent.simple_patent'),
+                            'patent' => __('resource.patent.standard_patent'),
                         ])
-                        ->helperText('Select either simple patent or standard patent')
+                        ->helperText(__('resource.patent.type_helper'))
                         ->required(),
                         
                     Forms\Components\TextInput::make('patentDetail.patent_title')
-                        ->label('Patent Title')
-                        ->helperText('Title of the patent application')
+                        ->label(__('resource.patent.patent_title'))
+                        ->helperText(__('resource.patent.title_helper'))
                         ->required()
                         ->maxLength(255)
                         ->columnSpanFull(),
                         
                     Forms\Components\Textarea::make('patentDetail.patent_description')
-                        ->label('Patent Description')
-                        ->helperText('Detailed description of the patent invention')
+                        ->label(__('resource.patent.patent_description'))
+                        ->helperText(__('resource.patent.description_helper'))
                         ->required()
                         ->columnSpanFull(),
                         
                     Forms\Components\Toggle::make('patentDetail.from_grant_research')
-                        ->label('From Grant Research')
-                        ->helperText('Whether the invention comes from research/community service that received grant funding'),
+                        ->label(__('resource.patent.from_grant_research'))
+                        ->helperText(__('resource.patent.grant_helper')),
                         
                     Forms\Components\Toggle::make('patentDetail.self_funded')
-                        ->label('Self Funded')
-                        ->helperText('Whether self-funding will be used for this patent application'),
+                        ->label(__('resource.patent.self_funded'))
+                        ->helperText(__('resource.patent.self_funded_helper')),
                         
                     Forms\Components\TextInput::make('patentDetail.inventors_name')
-                        ->label('Inventors Name')
-                        ->helperText('Names of the inventors involved in this patent')
+                        ->label(__('resource.patent.inventors_name'))
+                        ->helperText(__('resource.patent.inventors_helper'))
                         ->required(),
                         
                     Forms\Components\TextInput::make('patentDetail.media_link')
-                        ->label('Media Link')
+                        ->label(__('resource.patent.media_link'))
+                        ->helperText(__('resource.patent.media_helper'))
                         ->url()
                         ->helperText('Link to video/poster and leaflet (must be accessible). Format: A3 poster containing invention advantages and price'),
                 ])

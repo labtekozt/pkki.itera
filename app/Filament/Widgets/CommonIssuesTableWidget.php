@@ -9,9 +9,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CommonIssuesTableWidget extends BaseWidget
 {
-    protected static ?string $heading = 'Most Common Usability Issues';
+    protected static ?string $heading = null;
     protected static ?int $sort = 3;
     protected int | string | array $columnSpan = 'full';
+    
+    public function getHeading(): string
+    {
+        return __('resource.widgets.common_usability_issues');
+    }
 
     protected function getTableQuery(): Builder
     {
@@ -37,16 +42,16 @@ class CommonIssuesTableWidget extends BaseWidget
         arsort($issueCount);
 
         $issueLabels = [
-            'navigation' => 'Navigation/Page Movement',
-            'forms' => 'Filling Forms',
-            'upload' => 'Document Upload',
-            'understanding' => 'Understanding Instructions',
-            'text_size' => 'Text Size Too Small',
-            'buttons' => 'Buttons Hard to Click',
-            'reading' => 'Reading Difficulty',
-            'layout' => 'Page Layout Confusion',
-            'speed' => 'System Too Slow',
-            'mobile' => 'Mobile Interface Issues',
+            'navigation' => __('resource.widgets.issues.navigation'),
+            'forms' => __('resource.widgets.issues.forms'),
+            'upload' => __('resource.widgets.issues.upload'),
+            'understanding' => __('resource.widgets.issues.understanding'),
+            'text_size' => __('resource.widgets.issues.text_size'),
+            'buttons' => __('resource.widgets.issues.buttons'),
+            'reading' => __('resource.widgets.issues.reading'),
+            'layout' => __('resource.widgets.issues.layout'),
+            'speed' => __('resource.widgets.issues.speed'),
+            'mobile' => __('resource.widgets.issues.mobile'),
         ];
 
         $result = [];
@@ -72,17 +77,17 @@ class CommonIssuesTableWidget extends BaseWidget
     {
         return [
             Tables\Columns\TextColumn::make('rank')
-                ->label('#')
+                ->label(__('resource.widgets.rank'))
                 ->alignCenter()
                 ->sortable(),
                 
             Tables\Columns\TextColumn::make('label')
-                ->label('Issue')
+                ->label(__('resource.widgets.issue'))
                 ->searchable()
                 ->weight('semibold'),
                 
             Tables\Columns\TextColumn::make('count')
-                ->label('Reports')
+                ->label(__('resource.widgets.reports'))
                 ->alignCenter()
                 ->badge()
                 ->color(fn ($record) => match($record->severity) {
@@ -93,12 +98,12 @@ class CommonIssuesTableWidget extends BaseWidget
                 }),
                 
             Tables\Columns\TextColumn::make('percentage')
-                ->label('% of Users')
+                ->label(__('resource.widgets.percentage_users'))
                 ->alignCenter()
                 ->formatStateUsing(fn ($state) => $state . '%'),
                 
             Tables\Columns\TextColumn::make('severity')
-                ->label('Severity')
+                ->label(__('resource.widgets.severity'))
                 ->alignCenter()
                 ->badge()
                 ->color(fn ($state) => match($state) {
@@ -109,9 +114,9 @@ class CommonIssuesTableWidget extends BaseWidget
                 }),
                 
             Tables\Columns\TextColumn::make('reports_last_week')
-                ->label('Recent Reports')
+                ->label(__('resource.widgets.recent_reports'))
                 ->alignCenter()
-                ->description('Last 7 days'),
+                ->description(__('resource.widgets.last_7_days')),
         ];
     }
 
@@ -119,7 +124,7 @@ class CommonIssuesTableWidget extends BaseWidget
     {
         return [
             Tables\Actions\Action::make('view_details')
-                ->label('View Details')
+                ->label(__('resource.widgets.view_details'))
                 ->icon('heroicon-o-eye')
                 ->url(fn ($record) => route('filament.admin.resources.user-feedback.index', [
                     'tableFilters' => [

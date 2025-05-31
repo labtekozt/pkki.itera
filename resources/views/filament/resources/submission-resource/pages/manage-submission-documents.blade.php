@@ -5,8 +5,8 @@
                 <div>
                     <h2 class="text-lg font-semibold mb-1">{{ $record->title }}</h2>
                     <p class="text-sm text-gray-500">
-                        Type: {{ $record->submissionType->name }}
-                        | Status: 
+                        {{ __('resource.submission_types.type') }}: {{ $record->submissionType->name }}
+                        | {{ __('resource.submissions.status') }}: 
                         <span @class([
                             'px-2 py-1 rounded-full text-xs font-medium',
                             'bg-gray-100 text-gray-800' => $record->status === 'draft',
@@ -15,13 +15,13 @@
                             'bg-red-100 text-red-800' => in_array($record->status, ['rejected', 'revision_needed']),
                             'bg-green-100 text-green-800' => in_array($record->status, ['approved', 'completed']),
                         ])>
-                            {{ ucfirst($record->status) }}
+                            {{ __('resource.submissions.statuses.' . $record->status) }}
                         </span>
                     </p>
                     
                 @if($record->currentStage)
                 <p class="text-sm text-gray-500">
-                    Current Stage: {{ $record->currentStage->name }}
+                    {{ __('resource.workflow_stages.current_stage') }}: {{ $record->currentStage->name }}
                 </p>
                 @endif
             </div>
@@ -36,9 +36,9 @@
                         </svg>
                     </div>
                     <div class="ml-3">
-                        <h3 class="text-sm font-medium text-yellow-800">Submission is in draft state</h3>
+                        <h3 class="text-sm font-medium text-yellow-800">{{ __('resource.submissions.draft_notice_title') }}</h3>
                         <div class="mt-2 text-sm text-yellow-700">
-                            <p>This submission is still in draft status and has not been officially submitted yet.</p>
+                            <p>{{ __('resource.submissions.draft_notice_message') }}</p>
                         </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Confirm Document Status Change
+                        {{ __('resource.submissions.confirm_status_change') }}
                     </h3>
                     
                     <button type="button" x-on:click="open = false" class="text-gray-400 hover:text-gray-500">
@@ -133,21 +133,21 @@
                 
                 <div class="mb-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Are you sure you want to change the status of <span x-text="requirementName" class="font-medium"></span> to 
+                        {{ __('resource.submissions.confirm_status_change_message') }} <span x-text="requirementName" class="font-medium"></span> {{ __('resource.submissions.to') }} 
                         <span x-text="statusLabel" x-bind:class="'text-' + statusColor + '-500 font-medium'"></span>?
                     </p>
                 </div>
                 
                 <div class="mb-4">
                     <label for="statusNotes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Notes / Reason
+                        {{ __('resource.submissions.notes_reason') }}
                     </label>
                     <textarea 
                         id="statusNotes"
                         x-model="notes"
                         class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                         rows="3"
-                        placeholder="Add notes about why you're changing the status (optional)"></textarea>
+                        placeholder="{{ __('resource.submissions.notes_placeholder') }}"></textarea>
                 </div>
 
                 <div class="flex justify-end space-x-3">

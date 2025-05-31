@@ -12,13 +12,13 @@ class PatentTypeFilter extends SelectFilter
     {
         parent::setUp();
         
-        $this->label('Patent Type');
+        $this->label(__('resource.patent_form.patent_type'));
         
         $this->options([
-            'utility' => 'Utility Patent',
-            'design' => 'Design Patent',
-            'plant' => 'Plant Patent',
-            'process' => 'Process Patent',
+            'utility' => __('resource.patent_form.types.utility'),
+            'design' => __('resource.patent_form.types.design'),
+            'plant' => __('resource.patent_form.types.plant'),
+            'process' => __('resource.patent_form.types.process'),
         ]);
         
         $this->query(function (Builder $query, array $data) {

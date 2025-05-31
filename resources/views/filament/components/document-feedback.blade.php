@@ -26,7 +26,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="text-sm font-medium {{ $styleArray[2] }}">
-                    Document Status: {{ ucfirst(str_replace('_', ' ', $record->status)) }}
+                    Status Dokumen: {{ ucfirst(str_replace('_', ' ', $record->status)) }}
                 </h3>
                 <p class="mt-1 text-sm {{ $styleArray[3] }}">
                     {{ $statusInfo['message'] }}
@@ -37,24 +37,24 @@
 
     {{-- Document Information --}}
     <div class="bg-gray-50 rounded-lg p-4">
-        <h4 class="text-sm font-medium text-gray-900 mb-3">Document Information</h4>
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Informasi Dokumen</h4>
         <dl class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
             <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Document Type</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $record->requirement->name ?? 'Unknown' }}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Jenis Dokumen</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ $record->requirement->name ?? 'Tidak Diketahui' }}</dd>
             </div>
             <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Name</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $record->document->title ?? 'Unknown' }}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nama File</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ $record->document->title ?? 'Tidak Diketahui' }}</dd>
             </div>
             <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Uploaded</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $record->created_at->format('M d, Y g:i A') }}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Diunggah</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ $record->created_at->format('d M Y H:i') }}</dd>
             </div>
             @if($reviewedAt && $record->status !== 'pending')
             <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Reviewed</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $reviewedAt->format('M d, Y g:i A') }}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Terakhir Ditinjau</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ $reviewedAt->format('d M Y H:i') }}</dd>
             </div>
             @endif
         </dl>
@@ -64,7 +64,7 @@
     <div class="bg-white border border-gray-200 rounded-lg p-4">
         <h4 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
             @svg('heroicon-o-chat-bubble-left-right', 'h-4 w-4 mr-2')
-            Reviewer Feedback
+            Umpan Balik Peninjau
         </h4>
         
         @if($notes && $notes !== 'No specific feedback provided.')
@@ -80,11 +80,11 @@
                 </div>
                 <p class="text-sm text-gray-500">
                     @if($record->status === 'pending')
-                        Your document is awaiting review. Feedback will appear here once reviewed.
+                        Dokumen Anda sedang menunggu peninjauan. Umpan balik akan muncul di sini setelah ditinjau.
                     @elseif($record->status === 'approved')
-                        Document approved without specific feedback.
+                        Dokumen disetujui tanpa umpan balik khusus.
                     @else
-                        No specific feedback provided by the reviewer.
+                        Tidak ada umpan balik khusus yang diberikan oleh peninjau.
                     @endif
                 </p>
             </div>
@@ -96,31 +96,31 @@
     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <h4 class="text-sm font-medium text-yellow-800 mb-2 flex items-center">
             @svg('heroicon-o-light-bulb', 'h-4 w-4 mr-2')
-            Next Steps
+            Langkah Selanjutnya
         </h4>
         <ul class="text-sm text-yellow-700 space-y-1">
             @if($record->status === 'rejected')
                 <li class="flex items-start">
                     <span class="flex-shrink-0 w-1.5 h-1.5 bg-yellow-600 rounded-full mt-2 mr-2"></span>
-                    Upload a new corrected document
+                    Unggah dokumen baru yang telah diperbaiki
                 </li>
                 <li class="flex items-start">
                     <span class="flex-shrink-0 w-1.5 h-1.5 bg-yellow-600 rounded-full mt-2 mr-2"></span>
-                    Address all issues mentioned in the feedback
+                    Tangani semua masalah yang disebutkan dalam umpan balik
                 </li>
             @else
                 <li class="flex items-start">
                     <span class="flex-shrink-0 w-1.5 h-1.5 bg-yellow-600 rounded-full mt-2 mr-2"></span>
-                    Revise your document based on the feedback above
+                    Revisi dokumen Anda berdasarkan umpan balik di atas
                 </li>
                 <li class="flex items-start">
                     <span class="flex-shrink-0 w-1.5 h-1.5 bg-yellow-600 rounded-full mt-2 mr-2"></span>
-                    Upload the revised version
+                    Unggah versi yang telah direvisi
                 </li>
             @endif
             <li class="flex items-start">
                 <span class="flex-shrink-0 w-1.5 h-1.5 bg-yellow-600 rounded-full mt-2 mr-2"></span>
-                Contact support if you need clarification
+                Hubungi dukungan jika Anda memerlukan klarifikasi
             </li>
         </ul>
     </div>
@@ -128,10 +128,10 @@
     <div class="bg-green-50 border border-green-200 rounded-lg p-4">
         <h4 class="text-sm font-medium text-green-800 mb-2 flex items-center">
             @svg('heroicon-o-check-circle', 'h-4 w-4 mr-2')
-            Congratulations!
+            Selamat!
         </h4>
         <p class="text-sm text-green-700">
-            Your document has been approved and meets all requirements. No further action is needed for this document.
+            Dokumen Anda telah disetujui dan memenuhi semua persyaratan. Tidak ada tindakan lebih lanjut yang diperlukan untuk dokumen ini.
         </p>
     </div>
     @endif

@@ -6,7 +6,7 @@
 
             <div class="text-right">
                 <x-filament::button type="submit" form="submit" class="align-right">
-                    Update
+                    Perbarui
                 </x-filament::button>
             </div>
         </form>

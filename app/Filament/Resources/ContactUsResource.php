@@ -34,31 +34,39 @@ class ContactUsResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Contact Information')
+                Infolists\Components\Section::make(__('resource.contact_information'))
                     ->schema([
-                        Infolists\Components\TextEntry::make('firstname'),
-                        Infolists\Components\TextEntry::make('lastname'),
-                        Infolists\Components\TextEntry::make('email'),
-                        Infolists\Components\TextEntry::make('phone'),
-                        Infolists\Components\TextEntry::make('company'),
-                        Infolists\Components\TextEntry::make('employees'),
+                        Infolists\Components\TextEntry::make('firstname')
+                            ->label(__('resource.firstname')),
+                        Infolists\Components\TextEntry::make('lastname')
+                            ->label(__('resource.lastname')),
+                        Infolists\Components\TextEntry::make('email')
+                            ->label(__('resource.email')),
+                        Infolists\Components\TextEntry::make('phone')
+                            ->label(__('resource.phone')),
+                        Infolists\Components\TextEntry::make('company')
+                            ->label(__('resource.company')),
+                        Infolists\Components\TextEntry::make('employees')
+                            ->label(__('resource.employees')),
                     ])
                     ->columns(2),
 
-                Infolists\Components\Section::make('Message')
+                Infolists\Components\Section::make(__('resource.message'))
                     ->schema([
                         Infolists\Components\TextEntry::make('title')
-                            ->label('Subject'),
+                            ->label(__('resource.subject')),
                         Infolists\Components\TextEntry::make('message')
+                            ->label(__('resource.message'))
                             ->columnSpanFull(),
                     ]),
 
                 // Show reply section if a reply has been sent
-                Infolists\Components\Section::make('Your Reply')
+                Infolists\Components\Section::make(__('resource.your_reply'))
                     ->schema([
                         Infolists\Components\TextEntry::make('reply_title')
-                            ->label('Subject'),
+                            ->label(__('resource.subject')),
                         Infolists\Components\TextEntry::make('reply_message')
+                            ->label(__('resource.reply_message'))
                             ->html()
                             ->columnSpanFull(),
                     ])
@@ -84,32 +92,42 @@ class ContactUsResource extends Resource
                         ->grow(false),
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('name')
+                            ->label(__('resource.user_fullname'))
                             ->weight('bold')
                             ->toggleable()
                             ->searchable()
                             ->limit(20)
                             ->sortable(),
                         Tables\Columns\TextColumn::make('email')
+                            ->label(__('resource.email'))
                             ->searchable(),
                         Tables\Columns\TextColumn::make('phone')
+                            ->label(__('resource.phone'))
                             ->searchable(),
                     ]),
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('company')
+                            ->label(__('resource.company'))
                             ->searchable(),
                         Tables\Columns\TextColumn::make('employees')
-                            ->formatStateUsing(fn(string $state): string => $state . ' People')
+                            ->label(__('resource.employees'))
+                            ->formatStateUsing(fn(string $state): string => $state . ' ' . __('resource.people'))
                             ->searchable(),
                     ]),
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('created_at')
+                            ->label(__('resource.sent_at'))
                             ->sortable()
                             ->searchable()
                             ->toggleable()
-                            ->dateTime()
-                            ->label('Sent at'),
+                            ->dateTime(),
                         Tables\Columns\TextColumn::make('status')
-                            ->formatStateUsing(fn(string $state): string => $state)
+                            ->label(__('resource.status'))
+                            ->formatStateUsing(fn(string $state): string => match($state) {
+                                'new' => __('resource.new'),
+                                'read' => __('resource.read'),
+                                default => $state,
+                            })
                             ->sortable()
                             ->searchable()
                             ->toggleable()
@@ -131,9 +149,10 @@ class ContactUsResource extends Resource
             ->filters([
                 TrashedFilter::make(),
                 SelectFilter::make('status')
+                    ->label(__('resource.status'))
                     ->options([
-                        'new' => 'NEW',
-                        'read' => 'READ',
+                        'new' => __('resource.new'),
+                        'read' => __('resource.read'),
                     ]),
             ])
             ->bulkActions([
@@ -148,10 +167,14 @@ class ContactUsResource extends Resource
                         empty($record->reply_message) || empty($record->reply_title)
                     ),
                 TablesActions\ActionGroup::make([
-                    TablesActions\ViewAction::make('view'),
-                    TablesActions\DeleteAction::make('delete'),
-                    TablesActions\ForceDeleteAction::make(),
-                    TablesActions\RestoreAction::make(),
+                    TablesActions\ViewAction::make('view')
+                        ->label(__('resource.view')),
+                    TablesActions\DeleteAction::make('delete')
+                        ->label(__('resource.delete')),
+                    TablesActions\ForceDeleteAction::make()
+                        ->label(__('resource.force_delete')),
+                    TablesActions\RestoreAction::make()
+                        ->label(__('resource.restore')),
                 ]),
             ]);
     }
@@ -172,12 +195,12 @@ class ContactUsResource extends Resource
 
     public static function getLabel(): string
     {
-        return 'Inbox';
+        return __('resource.inbox');
     }
 
     public static function getPluralLabel(): string
     {
-        return 'Contact Us';
+        return __('resource.contact_us');
     }
 
     public static function getNavigationBadge(): ?string
@@ -187,7 +210,7 @@ class ContactUsResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Inbox';
+        return __('resource.inbox');
     }
 
     public static function getEloquentQuery(): Builder

@@ -53,22 +53,26 @@ class MyProfileExtended extends MyProfileComponent
     {
         return $form
             ->schema([
-                SpatieMediaLibraryFileUpload::make('media')->label('Avatar')
+                SpatieMediaLibraryFileUpload::make('media')->label(__('resource.avatar'))
                         ->collection('avatars')
                         ->avatar()
                         ->required(),
                     Grid::make()->schema([
                         TextInput::make('username')
+                            ->label(__('resource.username'))
                             ->disabled()
                             ->required(),
                         TextInput::make('email')
+                            ->label(__('resource.email'))
                             ->disabled()
                             ->required(),
                     ]),
                     Grid::make()->schema([
                         TextInput::make('firstname')
+                            ->label(__('resource.firstname'))
                             ->required(),
                         TextInput::make('lastname')
+                            ->label(__('resource.lastname'))
                             ->required()
                     ]),
             ])
@@ -85,14 +89,14 @@ class MyProfileExtended extends MyProfileComponent
             $this->handleRecordUpdate($this->getUser(), $data);
 
             Notification::make()
-                ->title('Profile updated')
+                ->title(__('resource.profile_updated'))
                 ->success()
                 ->send();
 
             $this->redirect('my-profile', navigate: FilamentView::hasSpaMode() && is_app_url('my-profile'));
         } catch (\Throwable $th) {
             Notification::make()
-                ->title('Failed to update.')
+                ->title(__('resource.failed_to_update'))
                 ->danger()
                 ->send();
         }

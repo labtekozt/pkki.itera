@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Tracking History Details')
+@section('title', 'Detail Riwayat Pelacakan')
 
 @section('content')
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="md:flex md:items-center md:justify-between mb-4">
         <div class="flex-1 min-w-0">
             <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                Tracking History Details
+                Detail Riwayat Pelacakan
             </h2>
             <p class="mt-1 text-sm text-gray-500">
-                Complete audit trail of all submission activities and document changes.
+                Jejak audit lengkap dari semua aktivitas pengajuan dan perubahan dokumen.
             </p>
         </div>
     </div>
@@ -18,14 +18,14 @@
     <!-- Filters Panel -->
     <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
         <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Filters</h3>
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Filter</h3>
             <form action="{{ route('tracking.detail') }}" method="GET" class="space-y-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Submission Filter -->
                     <div>
-                        <label for="submission_id" class="block text-sm font-medium text-gray-700">Submission</label>
+                        <label for="submission_id" class="block text-sm font-medium text-gray-700">Pengajuan</label>
                         <select id="submission_id" name="submission_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            <option value="">All Submissions</option>
+                            <option value="">Semua Pengajuan</option>
                             @foreach($submissionOptions as $submission)
                                 <option value="{{ $submission->id }}" {{ $submissionId == $submission->id ? 'selected' : '' }}>
                                     {{ $submission->title }}
@@ -36,9 +36,9 @@
 
                     <!-- Document Filter -->
                     <div>
-                        <label for="document_id" class="block text-sm font-medium text-gray-700">Document</label>
+                        <label for="document_id" class="block text-sm font-medium text-gray-700">Dokumen</label>
                         <select id="document_id" name="document_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            <option value="">All Documents</option>
+                            <option value="">Semua Dokumen</option>
                             @foreach($documentOptions as $document)
                                 <option value="{{ $document->id }}" {{ $documentId == $document->id ? 'selected' : '' }}>
                                     {{ $document->title }}
@@ -49,9 +49,9 @@
 
                     <!-- User Filter -->
                     <div>
-                        <label for="user_id" class="block text-sm font-medium text-gray-700">User</label>
+                        <label for="user_id" class="block text-sm font-medium text-gray-700">Pengguna</label>
                         <select id="user_id" name="user_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            <option value="">All Users</option>
+                            <option value="">Semua Pengguna</option>
                             @foreach($userOptions as $user)
                                 <option value="{{ $user->id }}" {{ isset($userId) && $userId == $user->id ? 'selected' : '' }}>
                                     {{ $user->fullname }}
@@ -62,20 +62,20 @@
 
                     <!-- Date Range Filters -->
                     <div>
-                        <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
                         <input type="date" name="start_date" id="start_date" value="{{ $startDate }}" 
                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
                     </div>
 
                     <div>
-                        <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
                         <input type="date" name="end_date" id="end_date" value="{{ $endDate }}" 
                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
                     </div>
                 </div>
 
                 <div>
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Event Types</h4>
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Jenis Event</h4>
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         @foreach($eventTypeOptions as $type)
                             <div class="flex items-start">
@@ -116,7 +116,7 @@
 
                 <div class="flex justify-end">
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                        Apply Filters
+                        Terapkan Filter
                     </button>
                 </div>
             </form>
@@ -130,25 +130,25 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date & Time
+                            Tanggal & Waktu
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Event
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Submission
+                            Pengajuan
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stage
+                            Tahap
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            User
+                            Pengguna
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
+                            Aksi
                         </th>
                     </tr>
                 </thead>

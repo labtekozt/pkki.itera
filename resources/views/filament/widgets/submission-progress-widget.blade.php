@@ -1,12 +1,12 @@
 <x-filament-widgets::widget class="col-span-full">
     <x-filament::section>
         <x-slot name="heading">
-            <span class="text-xl md:text-2xl font-bold">Submission Progress</span>
+            <span class="text-xl md:text-2xl font-bold">Progress Pengajuan</span>
         </x-slot>
 
         @if (!$submission)
             <div class="flex items-center justify-center p-6">
-                <p class="text-lg text-gray-500">No submission selected</p>
+                <p class="text-lg text-gray-500">Tidak ada pengajuan yang dipilih</p>
             </div>
         @else
             <div class="space-y-8">
@@ -14,17 +14,17 @@
                     
                     
                     <div class="bg-primary-50 dark:bg-primary-900/20 p-4 md:p-6 rounded-lg shadow-sm">
-                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Current Stage</h3>
-                        <p class="text-2xl md:text-3xl font-bold">{{ $submission->currentStage?->name ?? 'None' }}</p>
+                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Tahap Saat Ini</h3>
+                        <p class="text-2xl md:text-3xl font-bold">{{ $submission->currentStage?->name ?? 'Belum Ada' }}</p>
                     </div>
                     
                     <div class="bg-primary-50 dark:bg-primary-900/20 p-4 md:p-6 rounded-lg shadow-sm">
-                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Documents</h3>
+                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Dokumen</h3>
                         <p class="text-2xl md:text-3xl font-bold">{{ $statistics['documents_approved'] }}/{{ $statistics['documents_total'] }}</p>
                     </div>
                     
                     <div class="bg-primary-50 dark:bg-primary-900/20 p-4 md:p-6 rounded-lg shadow-sm">
-                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Revision Requests</h3>
+                        <h3 class="text-sm md:text-base font-medium text-primary-700 dark:text-primary-400">Permintaan Revisi</h3>
                         <p class="text-2xl md:text-3xl font-bold">{{ $statistics['revisions_requested'] }}</p>
                     </div>
                 </div>
@@ -66,7 +66,7 @@
                                                 @if ($step['status'] === 'current') bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300 @endif
                                                 @if ($step['status'] === 'upcoming') bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 @endif
                                             ">
-                                                {{ ucfirst($step['status']) }}
+                                                @if ($step['status'] === 'completed') Selesai @elseif ($step['status'] === 'current') Sedang Berjalan @else Menunggu @endif
                                             </span>
                                         </div>
                                         
@@ -74,7 +74,7 @@
                                             <time class="block mb-2 text-sm md:text-base font-normal leading-none text-gray-500 dark:text-gray-400">
                                                 {{ $step['date'] }}
                                                 @if ($step['days_spent'] > 0)
-                                                    <span class="ml-2">({{ $step['days_spent'] }} days)</span>
+                                                    <span class="ml-2">({{ $step['days_spent'] }} hari)</span>
                                                 @endif
                                             </time>
                                         @endif
@@ -83,7 +83,7 @@
                                         
                                         @if (count($step['actions']) > 0)
                                             <div class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
-                                                <h4 class="text-base font-medium text-gray-900 dark:text-white">Recent Actions</h4>
+                                                <h4 class="text-base font-medium text-gray-900 dark:text-white">Aktivitas Terbaru</h4>
                                                 <ul class="mt-2 space-y-2">
                                                     @foreach ($step['actions'] as $action)
                                                         <li class="text-sm md:text-base bg-gray-50 dark:bg-gray-800/50 p-3 rounded-md">

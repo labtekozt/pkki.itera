@@ -45,15 +45,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>New Contact Request</h1>
-        <p>A new contact request was submitted:</p>
+        <h1>Permintaan Kontak Baru</h1>
+        <p>Permintaan kontak baru telah dikirimkan:</p>
         <table>
             <tr>
-                <td class="label">First Name:</td>
+                <td class="label">Nama Depan:</td>
                 <td class="value">{{ $contact->firstname }}</td>
             </tr>
             <tr>
-                <td class="label">Last Name:</td>
+                <td class="label">Nama Belakang:</td>
                 <td class="value">{{ $contact->lastname }}</td>
             </tr>
             <tr>
@@ -61,24 +61,24 @@
                 <td class="value">{{ $contact->email }}</td>
             </tr>
             <tr>
-                <td class="label">Phone:</td>
+                <td class="label">Telepon:</td>
                 <td class="value">{{ $contact->phone }}</td>
             </tr>
             <tr>
-                <td class="label">Company:</td>
+                <td class="label">Perusahaan:</td>
                 <td class="value">{{ $contact->company }}</td>
             </tr>
             <tr>
-                <td class="label">Title:</td>
+                <td class="label">Judul:</td>
                 <td class="value">{{ $contact->title }}</td>
             </tr>
             <tr>
-                <td class="label">Message:</td>
+                <td class="label">Pesan:</td>
                 <td class="value">{{ $contact->message }}</td>
             </tr>
         </table>
         <div class="footer">
-            <p>This email was sent from the contact form on Your Website.</p>
+            <p>Email ini dikirim dari formulir kontak di situs web Anda.</p>
         </div>
     </div>
 </body>

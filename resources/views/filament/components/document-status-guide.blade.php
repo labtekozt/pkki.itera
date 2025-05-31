@@ -1,7 +1,7 @@
 <div class="space-y-6">
     <div class="prose prose-sm max-w-none">
         <p class="text-gray-600">
-            This guide explains what each document status means and what actions you may need to take.
+            Panduan ini menjelaskan arti setiap status dokumen dan tindakan yang mungkin perlu Anda lakukan.
         </p>
     </div>
 
@@ -15,9 +15,9 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-gray-900">Pending Review</h4>
+                <h4 class="text-sm font-medium text-gray-900">Menunggu Peninjauan</h4>
                 <p class="mt-1 text-sm text-gray-600">
-                    Your document has been uploaded and is waiting for reviewer assessment. No action needed from you at this time.
+                    Dokumen Anda telah diunggah dan menunggu penilaian dari peninjau. Tidak ada tindakan yang diperlukan dari Anda saat ini.
                 </p>
             </div>
         </div>
@@ -30,9 +30,9 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-green-900">Document Approved</h4>
+                <h4 class="text-sm font-medium text-green-900">Dokumen Disetujui</h4>
                 <p class="mt-1 text-sm text-green-700">
-                    Your document meets all requirements and has been approved. No further action needed for this document.
+                    Dokumen Anda memenuhi semua persyaratan dan telah disetujui. Tidak diperlukan tindakan lebih lanjut untuk dokumen ini.
                 </p>
             </div>
         </div>
@@ -45,16 +45,16 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-yellow-900">Needs Revision</h4>
+                <h4 class="text-sm font-medium text-yellow-900">Perlu Revisi</h4>
                 <p class="mt-1 text-sm text-yellow-700">
-                    Your document has minor issues that need to be corrected. Review the feedback and upload a revised version.
+                    Dokumen Anda memiliki masalah kecil yang perlu diperbaiki. Tinjau masukan dan unggah versi yang telah direvisi.
                 </p>
                 <div class="mt-2">
-                    <p class="text-xs font-medium text-yellow-800">Action Required:</p>
+                    <p class="text-xs font-medium text-yellow-800">Tindakan Diperlukan:</p>
                     <ul class="mt-1 text-xs text-yellow-700 list-disc list-inside">
-                        <li>Review the specific feedback provided</li>
-                        <li>Make the requested changes</li>
-                        <li>Upload the revised document</li>
+                        <li>Tinjau masukan spesifik yang diberikan</li>
+                        <li>Buat perubahan yang diminta</li>
+                        <li>Unggah dokumen yang telah direvisi</li>
                     </ul>
                 </div>
             </div>
@@ -68,16 +68,16 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-red-900">Document Rejected</h4>
+                <h4 class="text-sm font-medium text-red-900">Dokumen Ditolak</h4>
                 <p class="mt-1 text-sm text-red-700">
-                    Your document has significant issues and needs to be completely replaced. Review the feedback carefully.
+                    Dokumen Anda memiliki masalah yang signifikan dan perlu diganti sepenuhnya. Tinjau masukan dengan seksama.
                 </p>
                 <div class="mt-2">
-                    <p class="text-xs font-medium text-red-800">Action Required:</p>
+                    <p class="text-xs font-medium text-red-800">Tindakan Diperlukan:</p>
                     <ul class="mt-1 text-xs text-red-700 list-disc list-inside">
-                        <li>Carefully review all rejection reasons</li>
-                        <li>Create a new document addressing all issues</li>
-                        <li>Upload the corrected document</li>
+                        <li>Tinjau dengan seksama semua alasan penolakan</li>
+                        <li>Buat dokumen baru yang mengatasi semua masalah</li>
+                        <li>Unggah dokumen yang telah diperbaiki</li>
                     </ul>
                 </div>
             </div>
@@ -91,9 +91,9 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-blue-900">Document Replaced</h4>
+                <h4 class="text-sm font-medium text-blue-900">Dokumen Diganti</h4>
                 <p class="mt-1 text-sm text-blue-700">
-                    This document has been superseded by a newer version. It's kept for historical reference.
+                    Dokumen ini telah digantikan oleh versi yang lebih baru. Disimpan untuk referensi historis.
                 </p>
             </div>
         </div>
@@ -106,9 +106,9 @@
                 </span>
             </div>
             <div class="flex-1">
-                <h4 class="text-sm font-medium text-green-900">Final Version</h4>
+                <h4 class="text-sm font-medium text-green-900">Versi Final</h4>
                 <p class="mt-1 text-sm text-green-700">
-                    This is the final approved version of the document. No further changes will be accepted.
+                    Ini adalah versi final yang disetujui dari dokumen. Tidak akan ada perubahan lebih lanjut yang diterima.
                 </p>
             </div>
         </div>
@@ -118,24 +118,24 @@
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 class="text-sm font-medium text-blue-900 mb-3 flex items-center">
             @svg('heroicon-o-light-bulb', 'h-4 w-4 mr-2')
-            Tips for Successful Document Review
+            Tips untuk Peninjauan Dokumen yang Sukses
         </h4>
         <ul class="space-y-2 text-sm text-blue-800">
             <li class="flex items-start">
                 <span class="flex-shrink-0 w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
-                Click "View Feedback" to see detailed reviewer comments
+                Klik "Lihat Masukan" untuk melihat komentar peninjau yang detail
             </li>
             <li class="flex items-start">
                 <span class="flex-shrink-0 w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
-                Ensure documents meet all format and content requirements
+                Pastikan dokumen memenuhi semua persyaratan format dan konten
             </li>
             <li class="flex items-start">
                 <span class="flex-shrink-0 w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
-                Address all feedback points before resubmitting
+                Tanggapi semua poin masukan sebelum mengirim ulang
             </li>
             <li class="flex items-start">
                 <span class="flex-shrink-0 w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
-                Contact support if you need clarification on feedback
+                Hubungi dukungan jika Anda memerlukan klarifikasi tentang masukan
             </li>
         </ul>
     </div>

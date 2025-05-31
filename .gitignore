@@ -1,3 +1,4 @@
+# Laravel
 /.phpunit.cache
 /node_modules
 /public/build
@@ -8,13 +9,150 @@
 .env
 .env.backup
 .env.production
+.env.local
+.env.*.local
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
 auth.json
 npm-debug.log
 yarn-error.log
+composer.phar
+
+# Security - Critical files that should never be committed
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+/storage/oauth-private.key
+/storage/oauth-public.key
+/.env*
+!/.env.example
+
+# Development Tools & IDEs
 /.fleet
 /.idea
 /.vscode
-/.github
+/.nova
+/.phpstorm.meta.php
+/_ide_helper.php
+/_ide_helper_models.php
+/.phpunit.result.cache
+*.swp
+*.swo
+*~
+
+# Application Logs & Storage
+/storage/logs/*.log
+/storage/app/public/*
+!/storage/app/public/.gitkeep
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+!/storage/framework/cache/.gitkeep
+!/storage/framework/sessions/.gitkeep
+!/storage/framework/testing/.gitkeep
+!/storage/framework/views/.gitkeep
+
+# Bootstrap cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
+# Compiled assets
+/public/css
+/public/js
+/public/mix-manifest.json
+/public/build
+/public/hot
+
+# Security files
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+/storage/oauth-private.key
+/storage/oauth-public.key
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+*.tmp
+*.bak
+
+# Windows
+desktop.ini
+
+# Deployment
+/deploy.php
+/deployment.log
+/.deploy
+.gitattributes
+.htaccess
+
+# Backup files
+*.backup
+*.sql
+*.dump
+*.tar.gz
+*.zip
+
+# Optional npm files
+package-lock.json
+yarn.lock
+
+# Testing
+/coverage
+/.coverage
+/tests/coverage
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Deployment files
+deployment.zip
+deploy.tar.gz
+
+# Security keys
+*.key
+*.pem
+*.crt
+
+# Local development
+/database/database.sqlite
+phpunit.xml
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+
+# Coverage reports
+/coverage
+/clover.xml
+/.nyc_output
+
+# Backup files
+*.bak
+*.backup
+
+# Package lock files (optional - remove if you want to track them)
+# package-lock.json
+# composer.lock

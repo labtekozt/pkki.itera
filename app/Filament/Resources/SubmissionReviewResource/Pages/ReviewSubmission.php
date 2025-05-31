@@ -10,6 +10,7 @@ use App\Models\WorkflowStage;
 use App\Notifications\ReviewActionNotification;
 use App\Services\SubmissionDetailsService;
 use Carbon\Carbon;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -459,7 +460,12 @@ class ReviewSubmission extends Page
                                 $documentComponents = [];
 
                                 foreach ($docs as $doc) {
-                                    $statusColor = match ($doc->status) {
+                                    // Skip if doc is null or invalid
+                                    if (!$doc || !is_object($doc)) {
+                                        continue;
+                                    }
+                                    
+                                    $statusColor = match ($doc->status ?? 'pending') {
                                         'pending' => 'gray',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -467,7 +473,7 @@ class ReviewSubmission extends Page
                                         default => 'gray',
                                     };
 
-                                    $statusIcon = match ($doc->status) {
+                                    $statusIcon = match ($doc->status ?? 'pending') {
                                         'approved' => '<svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
                                         'rejected' => '<svg class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
                                         'revision_needed' => '<svg class="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
@@ -478,17 +484,17 @@ class ReviewSubmission extends Page
                                         <div class='p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-3'>
                                             <div class='flex justify-between items-start'>
                                                 <div>
-                                                    <h4 class='text-base font-medium'>{$doc->document->title}</h4>
+                                                    <h4 class='text-base font-medium'>" . ($doc->document ? $doc->document->title : 'Untitled Document') . "</h4>
                                                     <p class='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                                                        {$doc->document->mimetype} · " . number_format($doc->document->size / 1024, 0) . " KB · Uploaded " . $doc->created_at->diffForHumans() . "
+                                                        " . ($doc->document ? $doc->document->mimetype : 'unknown') . " · " . ($doc->document ? number_format($doc->document->size / 1024, 0) : '0') . " KB · Uploaded " . ($doc->created_at ? $doc->created_at->diffForHumans() : 'Unknown time') . "
                                                     </p>
                                                 </div>
                                                 <div class='flex items-center'>
                                                     <div class='flex items-center px-2 py-1 rounded-full bg-{$statusColor}-100 text-{$statusColor}-800 mr-3'>
                                                         {$statusIcon}
-                                                        <span class='text-xs font-medium'>" . ucfirst($doc->status) . "</span>
+                                                        <span class='text-xs font-medium'>" . ucfirst($doc->status ?? 'pending') . "</span>
                                                     </div>
-                                                    <a href='" . route('filament.admin.documents.download', $doc->document_id) . "' 
+                                                    <a href='" . route('filament.admin.documents.download', $doc->document_id ?? 'unknown') . "' 
                                                        target='_blank' 
                                                        class='inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'>
                                                         <svg class='h-4 w-4 mr-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
@@ -500,11 +506,11 @@ class ReviewSubmission extends Page
                                             </div>";
 
                                     // Add notes if present
-                                    if (!empty($doc->notes)) {
+                                    if (!empty($doc->notes ?? '')) {
                                         $documentsList .= "
                                             <div class='mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-{$statusColor}-400'>
                                                 <h5 class='text-xs font-medium mb-1'>Review Notes:</h5>
-                                                <p class='text-sm'>{$doc->notes}</p>
+                                                <p class='text-sm'>" . e($doc->notes) . "</p>
                                             </div>";
                                     }
 
@@ -512,10 +518,10 @@ class ReviewSubmission extends Page
                                             <div class='mt-3'>
                                                 <div class='flex items-center space-x-2'>" .
                                         ($isStageRequirement ?
-                                            "<span class='flex items-center " . ($doc->status === 'approved' ? 'text-green-600' : 'text-blue-600') . " text-xs'>
-                                                        " . ($doc->status === 'approved' ?
-                                                "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'></path></svg> This document is approved and satisfies stage requirements" :
-                                                "<svg class='h-4 w-4 mr-1' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z' clip-rule='evenodd'></path></svg> This document requires review for stage progression") . "
+                                            "<span class='flex items-center " . (($doc->status ?? 'pending') === 'approved' ? 'text-green-600' : 'text-blue-600') . " text-xs'>
+                                                        " . (($doc->status ?? 'pending') === 'approved' ?
+                                                '<svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> This document is approved and satisfies stage requirements' :
+                                                '<svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg> This document requires review for stage progression') . "
                                                     </span>"
                                             :
                                             "") .
@@ -524,17 +530,22 @@ class ReviewSubmission extends Page
                                         </div>";
 
                                     // Create individual select components for each document using document ID
-                                    $documentComponents[] = Select::make("document_status_{$doc->id}")
-                                        ->label("Update Status for: {$doc->document->title}")
+                                    $documentTitle = $doc->document ? $doc->document->title : 'Untitled Document';
+                                    $documentId = $doc->id ?? 'unknown';
+                                    $documentStatus = $doc->status ?? 'pending';
+                                    
+                                    $documentComponents[] = Select::make("document_status_{$documentId}")
+                                        ->label("Update Status for: {$documentTitle}")
                                         ->options([
                                             'pending' => 'Pending Review',
                                             'approved' => 'Approved',
                                             'rejected' => 'Rejected',
                                             'revision_needed' => 'Revision Needed',
                                         ])
-                                        ->default($doc ? $doc->status : 'pending')
+                                        ->default($documentStatus)
                                         ->reactive();
-                                }
+                                            
+                                   }
 
                                 $schemaItems[] = Section::make(new HtmlString($title))
                                     ->description(function () use ($requirement) {
@@ -583,12 +594,111 @@ class ReviewSubmission extends Page
                                             }
                                             return null;
                                         }),
-
-                                    Textarea::make('reviewer_notes')
+                                        Textarea::make('reviewer_notes')
                                         ->label('Comments')
                                         ->placeholder('Enter your review comments, feedback, or reasons for your decision')
                                         ->required()
                                         ->rows(4),
+                                    // Certificate Upload Section - Only show when final stage and approved
+                                    Section::make('📜 Upload Sertifikat')
+                                        ->description('Upload sertifikat untuk menyelesaikan proses pengajuan')
+                                        ->schema([
+                                            Placeholder::make('certificate_info')
+                                                ->content(new HtmlString('
+                                                    <div class="p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl mb-4">
+                                                        <div class="flex items-center mb-3">
+                                                            <span class="text-2xl mr-3">🎯</span>
+                                                            <div>
+                                                                <h3 class="text-lg font-semibold text-emerald-800">Tahap Final - Upload Sertifikat</h3>
+                                                                <p class="text-emerald-700">Ini adalah tahap terakhir dalam proses pengajuan.</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="bg-white rounded-lg p-3 border border-emerald-100">
+                                                            <p class="text-emerald-800 text-sm">
+                                                                <span class="font-medium">📋 Petunjuk:</span>
+                                                                Upload file sertifikat resmi untuk menyelesaikan pengajuan ini. 
+                                                                Status akan berubah menjadi "Completed" setelah sertifikat diupload.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                '))
+                                                ->visible(function () {
+                                                    return $this->record && 
+                                                           $this->record->currentStage && 
+                                                           $this->record->currentStage->isFinalStage();
+                                                }),
+
+                                            FileUpload::make('certificate_file')
+                                                ->label('📄 File Sertifikat')
+                                                ->disk('public')
+                                                ->directory('certificates')
+                                                ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                                                ->maxSize(5120) // 5MB
+                                                ->downloadable()
+                                                ->previewable()
+                                                ->imagePreviewHeight('300')
+                                                ->helperText('
+                                                    📌 Format yang diperbolehkan: PDF, JPG, PNG (maksimal 5MB)
+                                                    💡 Tip: Pastikan file sertifikat dapat dibaca dengan jelas
+                                                ')
+                                                ->placeholder('Klik di sini untuk memilih file sertifikat...')
+                                                ->visible(function () {
+                                                    return $this->record && 
+                                                           $this->record->currentStage && 
+                                                           $this->record->currentStage->isFinalStage() &&
+                                                           isset($this->data['reviewDecision']) &&
+                                                           $this->data['reviewDecision'] === 'approved';
+                                                })
+                                                ->required(function () {
+                                                    return $this->record && 
+                                                           $this->record->currentStage && 
+                                                           $this->record->currentStage->isFinalStage() &&
+                                                           isset($this->data['reviewDecision']) &&
+                                                           $this->data['reviewDecision'] === 'approved';
+                                                }),
+
+                                            TextInput::make('certificate_number')
+                                                ->label('🔢 Nomor Sertifikat')
+                                                ->placeholder('Contoh: CERT-2024-001')
+                                                ->maxLength(100)
+                                                ->helperText('Masukkan nomor sertifikat resmi (opsional - akan digenerate otomatis jika kosong)')
+                                                ->visible(function () {
+                                                    return $this->record && 
+                                                           $this->record->currentStage && 
+                                                           $this->record->currentStage->isFinalStage() &&
+                                                           isset($this->data['reviewDecision']) &&
+                                                           $this->data['reviewDecision'] === 'approved';
+                                                }),
+
+                                            Placeholder::make('certificate_warning')
+                                                ->content(new HtmlString('
+                                                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                                        <div class="flex items-center">
+                                                            <span class="text-xl mr-2">⚠️</span>
+                                                            <div>
+                                                                <p class="text-amber-800 font-medium text-sm">Peringatan Penting</p>
+                                                                <p class="text-amber-700 text-sm mt-1">
+                                                                    Setelah sertifikat diupload dan pengajuan diselesaikan, 
+                                                                    status tidak dapat diubah lagi. Pastikan semua informasi sudah benar.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                '))
+                                                ->visible(function () {
+                                                    return $this->record && 
+                                                           $this->record->currentStage && 
+                                                           $this->record->currentStage->isFinalStage() &&
+                                                           isset($this->data['reviewDecision']) &&
+                                                           $this->data['reviewDecision'] === 'approved';
+                                                }),
+                                        ])
+                                        ->visible(function () {
+                                            return $this->record && 
+                                                   $this->record->currentStage && 
+                                                   $this->record->currentStage->isFinalStage();
+                                        }),
+
                                 ]),
 
                             Section::make()
@@ -620,7 +730,7 @@ class ReviewSubmission extends Page
                                                 $this->data['reviewDecision'] === 'approved'
                                             ) {
                                                 $disabled = true;
-                                                $disabledReason = 'You need to approve all stage requirements before approving this submission.';
+                                                $disabledReason = 'You need to approve all required documents before approving this submission.';
                                             }
 
                                             $buttonHtml = '
@@ -811,6 +921,63 @@ class ReviewSubmission extends Page
             // Handle based on decision
             switch ($this->data['reviewDecision']) {
                 case 'approved':
+                    // Check if this is the final stage
+                    if ($this->record->currentStage && $this->record->currentStage->isFinalStage()) {
+                        // Handle final stage completion with certificate
+                        $certificateFile = $this->data['certificate_file'] ?? null;
+                        $certificateNumber = $this->data['certificate_number'] ?? null;
+                        
+                        if (!$certificateFile) {
+                            DB::rollBack();
+                            
+                            Notification::make()
+                                ->title('❌ Sertifikat Diperlukan')
+                                ->body('Harap upload file sertifikat untuk menyelesaikan pengajuan ini.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+                        
+                        // Generate certificate number if not provided
+                        if (!$certificateNumber) {
+                            $certificateNumber = 'CERT-' . strtoupper($this->record->submissionType->slug) . '-' . 
+                                               date('Y') . '-' . str_pad($this->record->id, 4, '0', STR_PAD_LEFT);
+                        }
+                        
+                        // Update submission to completed status
+                        $this->record->update([
+                            'status' => 'completed',
+                            'certificate' => $certificateFile, // Store file path
+                            'reviewer_notes' => $this->data['reviewer_notes'],
+                        ]);
+                        
+                        // Create tracking entry for completion
+                        TrackingHistory::create([
+                            'id' => Str::uuid()->toString(),
+                            'submission_id' => $this->record->id,
+                            'stage_id' => $this->record->current_stage_id,
+                            'action' => 'complete_submission',
+                            'status' => 'completed',
+                            'comment' => 'Pengajuan telah selesai dan sertifikat telah diterbitkan.',
+                            'processed_by' => Auth::id(),
+                            'metadata' => [
+                                'certificate_file' => $certificateFile,
+                                'certificate_number' => $certificateNumber,
+                                'completion_date' => now()->toDateString(),
+                            ],
+                            'event_timestamp' => now(),
+                        ]);
+                        
+                        // Send completion notification
+                        $this->record->user->notify(new ReviewActionNotification(
+                            $this->record,
+                            "🎉 Pengajuan Anda Telah Selesai!",
+                            "Selamat! Pengajuan '{$this->record->title}' telah berhasil diselesaikan. Sertifikat dengan nomor {$certificateNumber} telah diterbitkan dan dapat diunduh dari halaman pengajuan Anda."
+                        ));
+                        
+                        break;
+                    }
+                    
                     // Check if submission can advance to next stage
                     if (!$this->record->canAdvanceToNextStage()) {
                         DB::rollBack();
