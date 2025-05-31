@@ -27,9 +27,19 @@ class SubmissionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationLabel = 'All Submissions';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $navigationGroup = 'Intellectual Property';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.submission.navigation_label');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('menu.nav_group.intellectual_property');
+    }
 
     protected static ?int $navigationSort = 1;
 
@@ -39,13 +49,14 @@ class SubmissionResource extends Resource
             ->schema([
                 Forms\Components\Tabs::make('Submission')
                     ->tabs([
-                        Forms\Components\Tabs\Tab::make('Basic Information')
+                        Forms\Components\Tabs\Tab::make(__('resource.submission.tabs.basic_info'))
                             ->schema([
                                 Forms\Components\Hidden::make('user_id')
                                     ->default(fn() => Auth::id()),
 
                                 Forms\Components\Select::make('submission_type_id')
                                     ->relationship('submissionType', 'name')
+                                    ->label(__('resource.submission.fields.submission_type'))
                                     ->required()
                                     ->reactive()
                                     ->afterStateUpdated(function (Set $set, ?string $state) {
@@ -57,54 +68,53 @@ class SubmissionResource extends Resource
                                     }),
 
                                 Forms\Components\TextInput::make('title')
+                                    ->label(__('resource.submission.fields.title'))
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpanFull(),
 
                                 Forms\Components\Select::make('status')
+                                    ->label(__('resource.submission.fields.status'))
                                     ->options([
-                                        'draft' => 'Draft',
-                                        'submitted' => 'Submitted',
-                                        'in_review' => 'In Review',
-                                        'revision_needed' => 'Revision Needed',
-                                        'approved' => 'Approved',
-                                        'rejected' => 'Rejected',
-                                        'completed' => 'Completed',
-                                        'cancelled' => 'Cancelled',
+                                        'draft' => __('resource.submission.status.draft'),
+                                        'submitted' => __('resource.submission.status.submitted'),
+                                        'in_review' => __('resource.submission.status.in_review'),
+                                        'revision_needed' => __('resource.submission.status.revision_needed'),
+                                        'approved' => __('resource.submission.status.approved'),
+                                        'rejected' => __('resource.submission.status.rejected'),
+                                        'completed' => __('resource.submission.status.completed'),
+                                        'cancelled' => __('resource.submission.status.cancelled'),
                                     ])
                                     ->default('draft')
-                                    ->required(),
-
-                                Forms\Components\TextInput::make('certificate')
-                                    ->maxLength(255)
-                                    ->placeholder('Certificate number (if issued)')
-                                    ->visible(fn(Get $get) => in_array($get('status'), ['approved', 'completed'])),
-
-                                Forms\Components\Select::make('current_stage_id')
-                                    ->relationship('currentStage', 'name', function (Builder $query, Get $get) {
-                                        $submissionTypeId = $get('submission_type_id');
-                                        if ($submissionTypeId) {
-                                            $query->where('submission_type_id', $submissionTypeId)
-                                                ->orderBy('order');
-                                        }
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->label('Current Stage')
-                                    ->visible(function (Get $get) {
-                                        return (bool) $get('submission_type_id') && $get('status') !== 'draft';
-                                    }),
+                                    ->required(),                        Forms\Components\TextInput::make('certificate')
+                            ->label(__('resource.submission.fields.certificate'))
+                            ->maxLength(255)
+                            ->placeholder(__('resource.submission.placeholders.certificate'))
+                            ->visible(fn(Get $get) => in_array($get('status'), ['approved', 'completed'])),                        Forms\Components\Select::make('current_stage_id')
+                            ->relationship('currentStage', 'name', function (Builder $query, Get $get) {
+                                $submissionTypeId = $get('submission_type_id');
+                                if ($submissionTypeId) {
+                                    $query->where('submission_type_id', $submissionTypeId)
+                                        ->orderBy('order');
+                                }
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->label(__('resource.submission.fields.current_stage'))
+                            ->visible(function (Get $get) {
+                                return (bool) $get('submission_type_id') && $get('status') !== 'draft';
+                            }),
                             ])
                             ->columns(2),
 
-                        Forms\Components\Tabs\Tab::make('Type Details')
+                        Forms\Components\Tabs\Tab::make(__('resource.submission.tabs.details'))
                             ->schema(function (Get $get) {
                                 $submissionTypeId = $get('submission_type_id');
 
                                 if (!$submissionTypeId) {
                                     return [
                                         Forms\Components\Placeholder::make('select_type')
-                                            ->content('Please select a submission type first')
+                                            ->content(__('resource.submission.placeholders.select_type_first'))
                                             ->columnSpanFull(),
                                     ];
                                 }
@@ -132,19 +142,24 @@ class SubmissionResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('submissionType.name')
+                    ->label(__('resource.submission.fields.submission_type'))
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('title')
+                    ->label(__('resource.submission.fields.title'))
                     ->limit(50)
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('user.fullname')
+                    ->label(__('resource.submission.fields.user'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
+                    ->label(__('resource.submission.fields.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => __("resource.submission.status.{$state}"))
                     ->color(fn(string $state): string => match ($state) {
                         'draft' => 'gray',
                         'submitted' => 'info',
@@ -158,14 +173,16 @@ class SubmissionResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('currentStage.name')
-                    ->label('Current Stage'),
+                    ->label(__('resource.submission.fields.current_stage')),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('resource.submission.fields.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('resource.general.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -173,32 +190,34 @@ class SubmissionResource extends Resource
             ->filters([
                 SelectFilter::make('submission_type_id')
                     ->relationship('submissionType', 'name')
-                    ->label('Submission Type'),
+                    ->label(__('resource.submission.fields.submission_type')),
 
                 SelectFilter::make('status')
+                    ->label(__('resource.submission.fields.status'))
                     ->options([
-                        'draft' => 'Draft',
-                        'submitted' => 'Submitted',
-                        'in_review' => 'In Review',
-                        'revision_needed' => 'Revision Needed',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
+                        'draft' => __('resource.submission.status.draft'),
+                        'submitted' => __('resource.submission.status.submitted'),
+                        'in_review' => __('resource.submission.status.in_review'),
+                        'revision_needed' => __('resource.submission.status.revision_needed'),
+                        'approved' => __('resource.submission.status.approved'),
+                        'rejected' => __('resource.submission.status.rejected'),
+                        'completed' => __('resource.submission.status.completed'),
+                        'cancelled' => __('resource.submission.status.cancelled'),
                     ]),
 
                 SelectFilter::make('user_id')
                     ->relationship('user', 'fullname')
                     ->searchable()
                     ->preload()
-                    ->label('Submitter'),
+                    ->label(__('resource.submission.fields.user')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label(__('actions.view')),
                 Tables\Actions\EditAction::make()
-                    ->label('Edit Submission')
+                    ->label(__('resource.submission.actions.edit'))
                     ->icon('heroicon-o-pencil')
-                    ->tooltip('Interface lengkap dengan semua fitur'),
+                    ->tooltip(__('resource.submission.actions.edit_tooltip')),
     
             ])
             ->bulkActions([
@@ -223,16 +242,19 @@ class SubmissionResource extends Resource
     public static function getInfolistSchema($record): array
     {
         return [
-            Section::make('Basic Information')
+            Section::make(__('resource.submission.sections.basic_information'))
                 ->schema([
                     TextEntry::make('submissionType.name')
-                        ->label('Submission Type'),
+                        ->label(__('resource.submission.fields.submission_type')),
 
                     TextEntry::make('title')
+                        ->label(__('resource.submission.fields.title'))
                         ->columnSpanFull(),
 
                     TextEntry::make('status')
+                        ->label(__('resource.submission.fields.status'))
                         ->badge()
+                        ->formatStateUsing(fn (string $state): string => __("resource.submission.status.{$state}"))
                         ->color(fn(string $state): string => match ($state) {
                             'draft' => 'gray',
                             'submitted' => 'info',
@@ -246,35 +268,36 @@ class SubmissionResource extends Resource
                         }),
 
                     TextEntry::make('reviewer_notes')
-                        ->label('Reviewer Notes')
+                        ->label(__('resource.submission.fields.reviewer_notes'))
                         ->markdown()
                         ->columnSpanFull()
                         ->visible(fn($record) => !empty($record->reviewer_notes) && in_array($record->status, ['revision_needed', 'rejected'])),
                     
                     TextEntry::make('currentStage.name')
-                        ->label('Current Stage')
+                        ->label(__('resource.submission.fields.current_stage'))
                         ->visible(fn($record) => !empty($record->current_stage_id)),
 
                     TextEntry::make('certificate')
+                        ->label(__('resource.submission.fields.certificate'))
                         ->visible(fn($record) => !empty($record->certificate)),
 
                     TextEntry::make('user.fullname')
-                        ->label('Submitted By'),
+                        ->label(__('resource.submission.fields.submitted_by')),
 
                     TextEntry::make('created_at')
                         ->dateTime()
-                        ->label('Submission Date'),
+                        ->label(__('resource.submission.fields.submission_date')),
 
                     TextEntry::make('updated_at')
                         ->dateTime()
-                        ->label('Last Updated')
+                        ->label(__('resource.general.updated_at'))
                         ->visible(fn($record) => $record->updated_at->ne($record->created_at)),
                 ])
                 ->columns(2)
                 ->collapsible(false),
 
             // Type-specific section
-            Section::make('Type Details')
+            Section::make(__('resource.submission.sections.type_details'))
                 ->schema(function () use ($record) {
                     if (!$record->submissionType) {
                         return [];
@@ -302,33 +325,34 @@ class SubmissionResource extends Resource
 
         return [
             TextEntry::make('patentDetail.application_type')
+                ->label(__('resource.patent.fields.application_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'simple_patent' => 'Simple Patent',
-                    'patent' => 'Standard Patent',
+                    'simple_patent' => __('resource.patent.application_types.simple_patent'),
+                    'patent' => __('resource.patent.application_types.patent'),
                     default => $state,
                 }),
 
             TextEntry::make('patentDetail.patent_title')
-                ->label('Patent Title')
+                ->label(__('resource.patent.fields.patent_title'))
                 ->columnSpanFull(),
 
             TextEntry::make('patentDetail.patent_description')
-                ->label('Description')
+                ->label(__('resource.patent.fields.patent_description'))
                 ->columnSpanFull(),
 
             TextEntry::make('patentDetail.from_grant_research')
-                ->label('From Grant Research')
-                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No'),
+                ->label(__('resource.patent.fields.from_grant_research'))
+                ->formatStateUsing(fn($state) => $state ? __('resource.general.yes') : __('resource.general.no')),
 
             TextEntry::make('patentDetail.self_funded')
-                ->label('Self Funded')
-                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No'),
+                ->label(__('resource.patent.fields.self_funded'))
+                ->formatStateUsing(fn($state) => $state ? __('resource.general.yes') : __('resource.general.no')),
 
             TextEntry::make('patentDetail.inventors_name')
-                ->label('Inventors'),
+                ->label(__('resource.patent.fields.inventors_name')),
 
             TextEntry::make('patentDetail.media_link')
-                ->label('Media Link')
+                ->label(__('resource.patent.fields.media_link'))
                 ->visible(fn($record) => !empty($record->patentDetail->media_link)),
         ];
     }
@@ -341,27 +365,27 @@ class SubmissionResource extends Resource
 
         return [
             TextEntry::make('brandDetail.brand_name')
-                ->label('Brand Name'),
+                ->label(__('resource.brand.fields.brand_name')),
 
             TextEntry::make('brandDetail.brand_type')
-                ->label('Brand Type'),
+                ->label(__('resource.brand.fields.brand_type')),
 
             TextEntry::make('brandDetail.brand_description')
-                ->label('Description')
+                ->label(__('resource.brand.fields.brand_description'))
                 ->columnSpanFull(),
 
             TextEntry::make('brandDetail.inovators_name')
-                ->label('Innovators'),
+                ->label(__('resource.brand.fields.inovators_name')),
 
             TextEntry::make('brandDetail.application_type')
-                ->label('Application Type'),
+                ->label(__('resource.brand.fields.application_type')),
 
             TextEntry::make('brandDetail.nice_classes')
-                ->label('Nice Classification')
+                ->label(__('resource.brand.fields.nice_classes'))
                 ->visible(fn($record) => !empty($record->brandDetail->nice_classes)),
 
             TextEntry::make('brandDetail.goods_services_search')
-                ->label('Goods & Services')
+                ->label(__('resource.brand.fields.goods_services_search'))
                 ->columnSpanFull()
                 ->visible(fn($record) => !empty($record->brandDetail->goods_services_search)),
         ];
@@ -375,35 +399,35 @@ class SubmissionResource extends Resource
 
         return [
             TextEntry::make('hakiDetail.haki_title')
-                ->label('Work Title')
+                ->label(__('resource.haki.fields.haki_title'))
                 ->columnSpanFull(),
 
             TextEntry::make('hakiDetail.work_type')
-                ->label('Work Type')
+                ->label(__('resource.haki.fields.work_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'literary' => 'Literary Work',
-                    'musical' => 'Musical Work',
-                    'dramatic' => 'Dramatic Work',
-                    'artistic' => 'Artistic Work',
-                    'audiovisual' => 'Audiovisual Work',
-                    'sound_recording' => 'Sound Recording',
-                    'computer_program' => 'Computer Program',
+                    'literary' => __('resource.haki.work_types.literary'),
+                    'musical' => __('resource.haki.work_types.musical'),
+                    'dramatic' => __('resource.haki.work_types.dramatic'),
+                    'artistic' => __('resource.haki.work_types.artistic'),
+                    'audiovisual' => __('resource.haki.work_types.audiovisual'),
+                    'sound_recording' => __('resource.haki.work_types.sound_recording'),
+                    'computer_program' => __('resource.haki.work_types.computer_program'),
                     default => $state,
                 }),
 
             TextEntry::make('hakiDetail.work_description')
-                ->label('Work Description')
+                ->label(__('resource.haki.fields.work_description'))
                 ->columnSpanFull(),
 
             TextEntry::make('hakiDetail.inventors_name')
-                ->label('Creators/Authors'),
+                ->label(__('resource.haki.fields.inventors_name')),
 
             TextEntry::make('hakiDetail.registration_number')
-                ->label('Registration Number')
+                ->label(__('resource.haki.fields.registration_number'))
                 ->visible(fn($record) => !empty($record->hakiDetail->registration_number)),
 
             TextEntry::make('hakiDetail.registration_date')
-                ->label('Registration Date')
+                ->label(__('resource.haki.fields.registration_date'))
                 ->date()
                 ->visible(fn($record) => !empty($record->hakiDetail->registration_date)),
         ];
@@ -417,28 +441,28 @@ class SubmissionResource extends Resource
 
         return [
             TextEntry::make('industrialDesignDetail.design_title')
-                ->label('Design Title')
+                ->label(__('resource.industrial_design.fields.design_title'))
                 ->columnSpanFull(),
 
             TextEntry::make('industrialDesignDetail.design_type')
-                ->label('Design Type'),
+                ->label(__('resource.industrial_design.fields.design_type')),
 
             TextEntry::make('industrialDesignDetail.design_description')
-                ->label('Design Description')
+                ->label(__('resource.industrial_design.fields.design_description'))
                 ->columnSpanFull(),
 
             TextEntry::make('industrialDesignDetail.novelty_statement')
-                ->label('Novelty Statement')
+                ->label(__('resource.industrial_design.fields.novelty_statement'))
                 ->columnSpanFull(),
 
             TextEntry::make('industrialDesignDetail.inventors_name')
-                ->label('Inventors'),
+                ->label(__('resource.industrial_design.fields.inventors_name')),
 
             TextEntry::make('industrialDesignDetail.designer_information')
-                ->label('Designer Information'),
+                ->label(__('resource.industrial_design.fields.designer_information')),
 
             TextEntry::make('industrialDesignDetail.locarno_class')
-                ->label('Locarno Classification')
+                ->label(__('resource.industrial_design.fields.locarno_class'))
                 ->visible(fn($record) => !empty($record->industrialDesignDetail->locarno_class)),
         ];
     }

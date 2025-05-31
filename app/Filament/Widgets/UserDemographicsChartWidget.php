@@ -8,9 +8,14 @@ use Illuminate\Support\Facades\DB;
 
 class UserDemographicsChartWidget extends ChartWidget
 {
-    protected static ?string $heading = 'User Demographics & Tech Comfort';
+    protected static ?string $heading = null;
     protected static ?int $sort = 2;
     protected static ?string $pollingInterval = '30s';
+    
+    public function getHeading(): string
+    {
+        return __('resource.widgets.user_demographics');
+    }
 
     protected function getData(): array
     {
@@ -43,7 +48,7 @@ class UserDemographicsChartWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Age Groups',
+                    'label' => __('resource.widgets.age_groups'),
                     'data' => $ageCounts,
                     'backgroundColor' => [
                         '#10B981', // Green
@@ -74,7 +79,7 @@ class UserDemographicsChartWidget extends ChartWidget
                 ],
                 'title' => [
                     'display' => true,
-                    'text' => 'Age Distribution of Feedback Users',
+                    'text' => __('resource.widgets.age_distribution_title'),
                 ],
             ],
             'responsive' => true,
@@ -85,12 +90,12 @@ class UserDemographicsChartWidget extends ChartWidget
     private function formatAgeGroup(string $ageGroup): string
     {
         return match($ageGroup) {
-            'under_30' => 'Under 30',
-            '30_40' => '30-40',
-            '40_50' => '40-50',
-            '50_60' => '50-60',
-            '60_70' => '60-70',
-            'over_70' => 'Over 70',
+            'under_30' => __('resource.widgets.age_groups.under_30'),
+            '30_40' => __('resource.widgets.age_groups.30_40'),
+            '40_50' => __('resource.widgets.age_groups.40_50'),
+            '50_60' => __('resource.widgets.age_groups.50_60'),
+            '60_70' => __('resource.widgets.age_groups.60_70'),
+            'over_70' => __('resource.widgets.age_groups.over_70'),
             default => ucfirst($ageGroup),
         };
     }
@@ -98,14 +103,14 @@ class UserDemographicsChartWidget extends ChartWidget
     private function formatTechComfort(string $techComfort): string
     {
         return match($techComfort) {
-            'expert' => 'Expert',
-            'advanced' => 'Advanced',
-            'intermediate' => 'Intermediate',
-            'beginner' => 'Beginner',
-            'very_comfortable' => 'Very Comfortable',
-            'comfortable' => 'Comfortable',
-            'not_comfortable' => 'Not Comfortable',
-            'need_help' => 'Need Help',
+            'expert' => __('resource.widgets.tech_comfort.expert'),
+            'advanced' => __('resource.widgets.tech_comfort.advanced'),
+            'intermediate' => __('resource.widgets.tech_comfort.intermediate'),
+            'beginner' => __('resource.widgets.tech_comfort.beginner'),
+            'very_comfortable' => __('resource.widgets.tech_comfort.very_comfortable'),
+            'comfortable' => __('resource.widgets.tech_comfort.comfortable'),
+            'not_comfortable' => __('resource.widgets.tech_comfort.not_comfortable'),
+            'need_help' => __('resource.widgets.tech_comfort.need_help'),
             default => ucfirst($techComfort),
         };
     }

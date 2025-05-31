@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TestMail</title>
+    <title>Email Uji Coba</title>
 </head>
 <body>
     <h1>{{ $mailData['title'] }}</h1>
@@ -14,6 +14,6 @@
     cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
     proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
 
-    <p>Thank you</p>
+    <p>Terima kasih</p>
 </body>
 </html>

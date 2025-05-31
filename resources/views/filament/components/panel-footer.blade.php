@@ -3,7 +3,7 @@
         <a href="#" class="hover:underline">{{ config('app.name') }}</a> {{
             env('APP_VERSION') ? "v".env('APP_VERSION'): '' }}
     </span>
-    <span class="text-sm text-center text-gray-400 dark:text-gray-300">©{{ date('Y') }} All Rights
-        Reserved.
+    <span class="text-sm text-center text-gray-400 dark:text-gray-300">©{{ date('Y') }} Hak Cipta
+        Dilindungi.
     </span>
 </footer>

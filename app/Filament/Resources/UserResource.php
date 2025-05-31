@@ -35,6 +35,21 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.user.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('resource.user.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.user.plural_label');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -60,12 +75,15 @@ class UserResource extends Resource
                         Forms\Components\Section::make()
                             ->schema([
                                 Forms\Components\TextInput::make('password')
+                                    ->label(__('resource.user.fields.password'))
                                     ->password()
                                     ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
                                     ->dehydrated(fn(?string $state): bool => filled($state))
                                     ->revealable()
+                                    ->placeholder(__('resource.user_password_placeholder'))
                                     ->required(),
                                 Forms\Components\TextInput::make('passwordConfirmation')
+                                    ->label(__('resource.user.fields.password_confirmation'))
                                     ->password()
                                     ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
                                     ->dehydrated(fn(?string $state): bool => filled($state))
@@ -90,10 +108,10 @@ class UserResource extends Resource
                             ])
                             ->compact()
                             ->hidden(fn(string $operation): bool => $operation === 'create'),
-                        Forms\Components\Section::make('Provider Information')
+                        Forms\Components\Section::make(__('resource.user.sections.provider_info'))
                             ->schema([
                                 Forms\Components\Placeholder::make('provider')
-                                    ->label("Layanan Penyedia Akun")
+                                    ->label(__('resource.user.fields.provider'))
                                     ->content(fn(User $record): ?string => new HtmlString("$record->provider")),
                             ])
                             ->compact()
@@ -103,20 +121,23 @@ class UserResource extends Resource
 
                 Forms\Components\Tabs::make()
                     ->schema([
-                        Forms\Components\Tabs\Tab::make('Details')
+                        Forms\Components\Tabs\Tab::make(__('resource.user.tabs.details'))
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 Forms\Components\TextInput::make('fullname')
+                                    ->label(__('resource.user.fields.fullname'))
                                     ->required()
                                     ->maxLength(255)
                                     ->live()
-                                    ->placeholder('Full Name')
+                                    ->placeholder(__('resource.user.placeholders.full_name'))
                                     ->dehydrated(fn(?string $state): bool => filled($state)),
 
                                 Forms\Components\TextInput::make('email')
+                                    ->label(__('resource.user.fields.email'))
                                     ->email()
                                     ->required()
                                     ->maxLength(255)
+                                    ->placeholder(__('resource.user_email_placeholder'))
                                     ->unique(
                                         table: 'users',
                                         column: 'email',
@@ -124,46 +145,46 @@ class UserResource extends Resource
                                     ),
 
                                 // User Detail Section
-                                Forms\Components\Section::make('User Details')
+                                Forms\Components\Section::make(__('resource.user.sections.user_details'))
                                     ->schema([
                                         Forms\Components\TextInput::make('detail.phonenumber')
-                                            ->label('Phone Number')
+                                            ->label(__('resource.user.fields.phone_number'))
                                             ->tel()
                                             ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
-                                            ->placeholder('+62 812 3456 7890')
+                                            ->placeholder(__('resource.user.placeholders.phone_number'))
                                             ->maxLength(255),
 
                                         Forms\Components\Textarea::make('detail.alamat')
-                                            ->label('Address')
-                                            ->placeholder('Enter complete address')
+                                            ->label(__('resource.user.fields.address'))
+                                            ->placeholder(__('resource.user.placeholders.address'))
                                             ->rows(3)
                                             ->columnSpanFull()
                                             ->maxLength(255),
 
 
                                         // Academic Information subsection
-                                        Forms\Components\Fieldset::make('Academic Information')
+                                        Forms\Components\Fieldset::make(__('resource.user.sections.academic_info'))
                                             ->schema([
                                                 Forms\Components\TextInput::make('detail.jurusan')
-                                                    ->label('Department')
-                                                    ->placeholder('e.g., Computer Science')
+                                                    ->label(__('resource.user.fields.department'))
+                                                    ->placeholder(__('resource.user.placeholders.department'))
                                                     ->maxLength(255),
 
                                                 Forms\Components\TextInput::make('detail.prodi')
-                                                    ->label('Program Studi')
-                                                    ->placeholder('e.g., Software Engineering')
+                                                    ->label(__('resource.user.fields.program_studi'))
+                                                    ->placeholder(__('resource.user.placeholders.program_studi'))
                                                     ->maxLength(255),
                                             ])
                                             ->columns(2),
                                     ]),
                             ]),
 
-                        Forms\Components\Tabs\Tab::make('Roles')
+                        Forms\Components\Tabs\Tab::make(__('resource.user.tabs.roles'))
                             ->icon('fluentui-shield-task-48')
                             ->visible(fn() => auth()->user()->isSuperAdmin())
                             ->schema([
                                 Select::make('roles')
-                                    ->hiddenLabel()
+                                    ->label(__('resource.user.fields.roles'))
                                     ->relationship('roles', 'name')
                                     ->getOptionLabelFromRecordUsing(fn(Model $record) => Str::headline($record->name))
                                     ->preload()
@@ -184,31 +205,31 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                SpatieMediaLibraryImageColumn::make('media')->label('Avatar')
+                SpatieMediaLibraryImageColumn::make('media')->label(__('resource.user.columns.avatar'))
                     ->collection('avatars')
                     ->wrap(),
-                Tables\Columns\TextColumn::make('fullname')->label('fullname')
+                Tables\Columns\TextColumn::make('fullname')->label(__('resource.user.columns.fullname'))
                     ->description(fn(Model $record) => $record->firstname . ' ' . $record->lastname)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('roles.name')->label('Role')
+                Tables\Columns\TextColumn::make('roles.name')->label(__('resource.user.columns.role'))
                     ->formatStateUsing(fn($state): string => Str::headline($state))
                     ->colors(['info'])
                     ->badge(),
-                Tables\Columns\TextColumn::make('email')
+                Tables\Columns\TextColumn::make('email')->label(__('resource.user.columns.email'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('provider')->default('local')
-                    ->label('Provider')
+                    ->label(__('resource.user.columns.provider'))
                     ->formatStateUsing(fn($state): string => Str::headline($state))
                     ->colors(['info'])
                     ->badge(),
-                Tables\Columns\TextColumn::make('email_verified_at')->label('Verified at')
+                Tables\Columns\TextColumn::make('email_verified_at')->label(__('resource.user.columns.verified_at'))
                     ->dateTime()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
+                Tables\Columns\TextColumn::make('created_at')->label(__('resource.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                Tables\Columns\TextColumn::make('updated_at')->label(__('resource.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -17,10 +17,10 @@
             };
             
             $statusText = match ($docItem->status) {
-                'approved' => 'Approved',
-                'rejected' => 'Rejected',
-                'revision_needed' => 'Revision Needed',
-                default => 'Unknown',
+                'approved' => 'Disetujui',
+                'rejected' => 'Ditolak',
+                'revision_needed' => 'Perlu Revisi',
+                default => 'Tidak Diketahui',
             };
         @endphp
         
@@ -32,7 +32,7 @@
                     <div class="flex items-center justify-between mb-2">
                         <div>
                             <h4 class="font-semibold text-{{ $statusColor }}-800">
-                                {{ $docItem->requirement->name ?? 'Document' }}
+                                {{ $docItem->requirement->name ?? 'Dokumen' }}
                             </h4>
                             <p class="text-sm text-{{ $statusColor }}-600">
                                 {{ $docItem->document->title }}
@@ -45,7 +45,7 @@
                             <a href="{{ route('filament.admin.documents.download', $docItem->document_id) }}" 
                                target="_blank"
                                class="text-{{ $statusColor }}-600 hover:text-{{ $statusColor }}-800 text-sm font-medium">
-                                Download
+                                Unduh
                             </a>
                         </div>
                     </div>
@@ -53,7 +53,7 @@
                     {{-- Document Info --}}
                     <div class="text-xs text-{{ $statusColor }}-600 mb-3">
                         {{ $docItem->document->mimetype }} • {{ number_format($docItem->document->size / 1024, 0) }} KB
-                        • Uploaded {{ $docItem->created_at->format('M d, Y g:i A') }}
+                        • Diunggah {{ $docItem->created_at->format('d M Y H:i') }}
                     </div>
                     
                     {{-- Reviewer Feedback --}}
@@ -62,7 +62,7 @@
                             <svg class="h-4 w-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                             </svg>
-                            Reviewer Feedback
+                            Umpan Balik Peninjau
                         </h5>
                         <div class="prose prose-sm max-w-none text-gray-700">
                             {!! nl2br(e($docItem->notes)) !!}
@@ -75,9 +75,9 @@
                         <div class="flex items-start space-x-2">
                             <span class="text-{{ $statusColor }}-500 mt-0.5">💡</span>
                             <div>
-                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Action Required</p>
+                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Tindakan Diperlukan</p>
                                 <p class="text-xs text-{{ $statusColor }}-700">
-                                    Please review the feedback above and upload a revised version of this document.
+                                    Harap tinjau umpan balik di atas dan unggah versi revisi dari dokumen ini.
                                 </p>
                             </div>
                         </div>
@@ -87,9 +87,9 @@
                         <div class="flex items-start space-x-2">
                             <span class="text-{{ $statusColor }}-500 mt-0.5">🔄</span>
                             <div>
-                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Document Rejected</p>
+                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Dokumen Ditolak</p>
                                 <p class="text-xs text-{{ $statusColor }}-700">
-                                    This document needs to be replaced. Please upload a new version addressing the issues mentioned in the feedback.
+                                    Dokumen ini perlu diganti. Harap unggah versi baru yang mengatasi masalah yang disebutkan dalam umpan balik.
                                 </p>
                             </div>
                         </div>
@@ -99,9 +99,9 @@
                         <div class="flex items-start space-x-2">
                             <span class="text-{{ $statusColor }}-500 mt-0.5">✨</span>
                             <div>
-                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Document Approved</p>
+                                <p class="text-sm font-medium text-{{ $statusColor }}-800">Dokumen Disetujui</p>
                                 <p class="text-xs text-{{ $statusColor }}-700">
-                                    This document has been approved and meets all requirements. No further action needed.
+                                    Dokumen ini telah disetujui dan memenuhi semua persyaratan. Tidak ada tindakan lebih lanjut yang diperlukan.
                                 </p>
                             </div>
                         </div>
@@ -119,7 +119,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-                <h4 class="font-medium text-blue-800">What's Next?</h4>
+                <h4 class="font-medium text-blue-800">Apa Selanjutnya?</h4>
                 <p class="text-sm text-blue-700 mt-1">
                     @php
                         $hasRejected = $documentsWithFeedback->where('status', 'rejected')->count() > 0;
@@ -128,11 +128,11 @@
                     @endphp
                     
                     @if($allApproved)
-                        All your documents have been approved! Your submission will proceed to the next stage.
+                        Semua dokumen Anda telah disetujui! Pengajuan Anda akan berlanjut ke tahap berikutnya.
                     @elseif($hasRejected || $hasRevisionNeeded)
-                        You need to address the feedback above by uploading revised documents. Once updated, your submission can be resubmitted for review.
+                        Anda perlu mengatasi umpan balik di atas dengan mengunggah dokumen yang telah direvisi. Setelah diperbarui, pengajuan Anda dapat dikirim ulang untuk ditinjau.
                     @else
-                        Your documents are under review. We'll notify you once the review is complete.
+                        Dokumen Anda sedang dalam peninjauan. Kami akan memberi tahu Anda setelah peninjauan selesai.
                     @endif
                 </p>
             </div>

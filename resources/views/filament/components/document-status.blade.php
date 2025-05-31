@@ -10,11 +10,11 @@
                 </div>
             </div>
             <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">All Required Documents Complete</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Semua Dokumen Wajib Lengkap</h3>
                 <p class="text-base text-gray-700 mt-1">
-                    You have uploaded all the required documents for your submission.
+                    Anda telah mengunggah semua dokumen yang diperlukan untuk pengajuan Anda.
                     @if($submission->status === 'draft')
-                        You can now submit your application for review.
+                        Sekarang Anda dapat mengirim aplikasi untuk ditinjau.
                     @endif
                 </p>
             </div>
@@ -31,13 +31,13 @@
                     </div>
                 </div>
                 <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Required Documents Missing</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">Dokumen Wajib Belum Lengkap</h3>
                     <p class="text-base text-gray-700 mt-1">
-                        Your submission is missing required documents.
+                        Pengajuan Anda masih kekurangan dokumen yang diperlukan.
                         @if($submission->status === 'draft')
-                            You need to upload all required documents before you can submit.
+                            Anda perlu mengunggah semua dokumen yang diperlukan sebelum dapat mengirim.
                         @else
-                            Please upload these documents to complete your submission.
+                            Silakan unggah dokumen-dokumen ini untuk melengkapi pengajuan Anda.
                         @endif
                     </p>
                 </div>
@@ -45,7 +45,7 @@
             
             <!-- List of missing documents -->
             <div class="mt-6">
-                <h4 class="text-lg font-medium text-gray-800">Documents You Need to Upload:</h4>
+                <h4 class="text-lg font-medium text-gray-800">Dokumen yang Perlu Anda Unggah:</h4>
                 <div class="mt-3 pl-3">
                     <ul class="list-disc space-y-3 pl-5 text-base">
                         @foreach($missingDocuments as $document)
@@ -67,7 +67,7 @@
                     <svg class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    Upload Missing Documents
+                    Unggah Dokumen yang Kurang
                 </a>
             </div>
         </div>

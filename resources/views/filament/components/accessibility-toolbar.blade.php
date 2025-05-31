@@ -28,8 +28,8 @@
                 <button onclick="toggleHighContrast()" 
                         id="contrast-toggle"
                         class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Toggle Kontras Tinggi">
-                    🎨 Toggle
+                        title="Aktif/Nonaktifkan Kontras Tinggi">
+                    🎨 Kontras
                 </button>
             </div>
 
@@ -40,7 +40,7 @@
                         id="reading-guide-toggle"
                         class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
                         title="Tampilkan/Sembunyikan Panduan Baca">
-                    📏 Guide
+                    📏 Panduan
                 </button>
             </div>
 
@@ -184,10 +184,10 @@ function toggleHighContrast() {
     
     if (isHighContrast) {
         body.classList.add('high-contrast');
-        document.getElementById('contrast-toggle').textContent = '🎨 ON';
+        document.getElementById('contrast-toggle').textContent = '🎨 AKTIF';
     } else {
         body.classList.remove('high-contrast');
-        document.getElementById('contrast-toggle').textContent = '🎨 OFF';
+        document.getElementById('contrast-toggle').textContent = '🎨 NONAKTIF';
     }
     
     localStorage.setItem('accessibility-high-contrast', isHighContrast);

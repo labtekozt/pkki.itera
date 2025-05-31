@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <x-filament::section>
         <x-slot name="heading">
-            Process Submission
+            Proses Pengajuan
         </x-slot>
         
         <x-slot name="headerEnd">
@@ -29,14 +29,14 @@
                         <div>
                             <x-filament::input.wrapper>
                                 <x-filament::input.label required>
-                                    Action
+                                    Tindakan
                                 </x-filament::input.label>
                                 
                                 <x-filament::input.select 
                                     wire:model="action" 
                                     required
                                 >
-                                    <option value="">Select an action</option>
+                                    <option value="">Pilih tindakan</option>
                                     @foreach ($this->getAvailableActions() as $availableAction)
                                         <option value="{{ $availableAction['id'] }}">
                                             {{ $availableAction['label'] }}
@@ -50,14 +50,14 @@
                             <div>
                                 <x-filament::input.wrapper>
                                     <x-filament::input.label required>
-                                        Next Stage
+                                        Tahapan Selanjutnya
                                     </x-filament::input.label>
                                     
                                     <x-filament::input.select 
                                         wire:model="targetStageId" 
                                         required
                                     >
-                                        <option value="">Select next stage</option>
+                                        <option value="">Pilih tahapan selanjutnya</option>
                                         @foreach ($this->getNextStages() as $id => $name)
                                             <option value="{{ $id }}">
                                                 {{ $name }}
@@ -70,14 +70,14 @@
                             <div>
                                 <x-filament::input.wrapper>
                                     <x-filament::input.label required>
-                                        Previous Stage
+                                        Tahapan Sebelumnya
                                     </x-filament::input.label>
                                     
                                     <x-filament::input.select 
                                         wire:model="targetStageId" 
                                         required
                                     >
-                                        <option value="">Select previous stage</option>
+                                        <option value="">Pilih tahapan sebelumnya</option>
                                         @foreach ($this->getPreviousStages() as $id => $name)
                                             <option value="{{ $id }}">
                                                 {{ $name }}
@@ -90,14 +90,14 @@
                             <div>
                                 <x-filament::input.wrapper>
                                     <x-filament::input.label required>
-                                        Rejection Reason
+                                        Alasan Penolakan
                                     </x-filament::input.label>
                                     
                                     <x-filament::input.select 
                                         wire:model="rejectReason" 
                                         required
                                     >
-                                        <option value="">Select a reason</option>
+                                        <option value="">Pilih alasan</option>
                                         @foreach ($this->getRejectReasons() as $id => $name)
                                             <option value="{{ $id }}">
                                                 {{ $name }}
@@ -112,13 +112,13 @@
                     <div>
                         <x-filament::input.wrapper>
                             <x-filament::input.label required>
-                                Comment
+                                Komentar
                             </x-filament::input.label>
                             
                             <x-filament::input.textarea 
                                 wire:model="comment" 
                                 required
-                                placeholder="Enter your comment or justification for this action"
+                                placeholder="Masukkan komentar atau justifikasi untuk tindakan ini"
                             />
                         </x-filament::input.wrapper>
                     </div>
@@ -130,14 +130,14 @@
                             tag="a"
                             :href="$this->getResource()::getUrl('view', ['record' => $record])"
                         >
-                            Cancel
+                            Batal
                         </x-filament::button>
                         
                         <x-filament::button 
                             type="submit" 
                             :color="$action === 'reject' ? 'danger' : ($action === 'approve' || $action === 'complete' ? 'success' : 'primary')"
                         >
-                            Process
+                            Proses
                         </x-filament::button>
                     </div>
                 </form>

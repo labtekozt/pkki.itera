@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\DocumentController;
 use App\Models\Document;
+use App\Models\Submission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\TrackingHistoryController;
@@ -57,6 +58,38 @@ Route::middleware(['auth'])->group(function () {
         ->name('filament.admin.documents.download');
     Route::get('/documents/{document}/view', [App\Http\Controllers\DocumentController::class, 'view'])
         ->name('filament.admin.documents.view');
+    
+    // Certificate download route
+    Route::get('/certificates/{submission}/download', function (App\Models\Submission $submission) {
+        // Check if user can access this certificate (owner or admin)
+        if (!Auth::check()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $user = Auth::user();
+        if ($submission->user_id !== $user->id && !$user->hasAnyRole(['admin', 'super_admin'])) {
+            abort(403, 'You do not have permission to download this certificate');
+        }
+
+        // Check if submission is completed and has certificate
+        if ($submission->status !== 'completed' || !$submission->certificate) {
+            abort(404, 'Certificate not available');
+        }
+
+        // Check if the certificate file exists
+        if (!Storage::exists($submission->certificate)) {
+            abort(404, 'Certificate file not found');
+        }
+
+        // Generate descriptive filename
+        $certificateNumber = 'CERT-' . $submission->id;
+        $cleanTitle = preg_replace('/[^a-zA-Z0-9\s]/', '', $submission->title);
+        $cleanTitle = preg_replace('/\s+/', '_', trim($cleanTitle));
+        $cleanTitle = substr($cleanTitle, 0, 50);
+        $filename = "Sertifikat_{$certificateNumber}_{$cleanTitle}.pdf";
+
+        return Storage::download($submission->certificate, $filename);
+    })->name('certificates.download')->middleware('auth');
 });
 
 /*

@@ -22,12 +22,12 @@ class SubmissionTypeResource extends Resource
 
     // Improved navigation and labels
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
-    protected static ?string $navigationGroup = 'System Configuration';
+    protected static ?string $navigationGroup = __('resource.system_configuration');
     protected static ?int $navigationSort = 10;
     protected static ?string $recordTitleAttribute = 'name';
-    protected static ?string $modelLabel = 'Submission Type';
-    protected static ?string $pluralModelLabel = 'Submission Types';
-    protected static ?string $navigationLabel = 'Submission Types';
+    protected static ?string $modelLabel = __('resource.submission_type');
+    protected static ?string $pluralModelLabel = __('resource.submission_types');
+    protected static ?string $navigationLabel = __('resource.submission_types');
 
     // Change navbar icon color
     protected static ?string $activeNavigationIconColor = 'primary';
@@ -44,9 +44,10 @@ class SubmissionTypeResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Submission Type Details')
+                Forms\Components\Section::make(__('resource.submission_type_details'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label(__('resource.type_name'))
                             ->required()
                             ->maxLength(255)
                             ->reactive()
@@ -55,21 +56,22 @@ class SubmissionTypeResource extends Resource
                                 $set('slug', Str::slug($state));
                             })
                             ->autocapitalize('words')
-                            ->label('Type Name')
-                            ->helperText('A descriptive name for this submission type (e.g. Patent, Trademark)')
+                            ->helperText(__('resource.type_name_help'))
                             ->autofocus(),
 
                         Forms\Components\TextInput::make('slug')
+                            ->label(__('resource.slug'))
                             ->required()
                             ->maxLength(255)
                             ->rules(['alpha_dash'])
                             ->unique(ignoreRecord: true)
-                            ->helperText('Used in URLs and as a unique identifier')
+                            ->helperText(__('resource.slug_help'))
                             ->prefix(config('app.url') . '/submissions/'),
 
                         Forms\Components\Textarea::make('description')
+                            ->label(__('resource.description'))
                             ->rows(3)
-                            ->helperText('Explain what this submission type is used for')
+                            ->helperText(__('resource.description_help'))
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -95,6 +97,7 @@ class SubmissionTypeResource extends Resource
             ->defaultSort('name')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(__('resource.type_name'))
                     ->searchable()
                     ->sortable()
                     ->weight(FontWeight::Bold)
@@ -102,28 +105,33 @@ class SubmissionTypeResource extends Resource
                     ->wrap(),
 
                 Tables\Columns\TextColumn::make('slug')
+                    ->label(__('resource.slug'))
                     ->searchable()
                     ->copyable()
                     ->color('gray'),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('resource.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\ViewAction::make()
+                        ->label(__('resource.view')),
+                    Tables\Actions\EditAction::make()
+                        ->label(__('resource.edit')),
                     Tables\Actions\DeleteAction::make()
+                        ->label(__('resource.delete'))
                         ->requiresConfirmation()
-                        ->modalDescription('Are you sure you want to delete this submission type? All associated submissions, requirements, and workflow stages will be affected.')
+                        ->modalDescription(__('resource.delete_confirmation'))
                         ->modalIcon('heroicon-o-exclamation-triangle')
                         ->modalIconColor('danger'),
-                ])->tooltip('Actions'),
+                ])->tooltip(__('resource.actions')),
 
                 Tables\Actions\Action::make('requirements')
-                    ->label('Requirements')
+                    ->label(__('resource.requirements'))
                     ->icon('heroicon-o-document')
                     ->color('info')
                     ->url(fn(SubmissionType $record): string =>
@@ -131,7 +139,7 @@ class SubmissionTypeResource extends Resource
                     ->badge(fn(SubmissionType $record) => $record->documentRequirements()->count() ?: ''),
 
                 Tables\Actions\Action::make('stages')
-                    ->label('Workflow')
+                    ->label(__('resource.workflow'))
                     ->icon('heroicon-o-squares-plus')
                     ->color('warning')
                     ->url(fn(SubmissionType $record): string =>
@@ -139,7 +147,7 @@ class SubmissionTypeResource extends Resource
                     ->badge(fn(SubmissionType $record) => $record->workflowStages()->count() ?: ''),
 
                 Tables\Actions\Action::make('view_submissions')
-                    ->label('Submissions')
+                    ->label(__('resource.submissions'))
                     ->icon('heroicon-o-clipboard-document-list')
                     ->color('success')
                     ->url(fn(SubmissionType $record): string =>
@@ -152,25 +160,26 @@ class SubmissionTypeResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
+                        ->label(__('resource.delete_bulk'))
                         ->requiresConfirmation()
-                        ->modalDescription('Are you sure you want to delete these submission types? All associated submissions, requirements, and workflow stages will be affected.'),
+                        ->modalDescription(__('resource.bulk_delete_confirmation')),
 
                     Tables\Actions\BulkAction::make('activate')
-                        ->label('Mark as Active')
+                        ->label(__('resource.mark_as_active'))
                         ->icon('heroicon-o-check-circle')
                         ->action(fn(Collection $records) => $records->each->update(['is_active' => true]))
                         ->color('success')
                         ->requiresConfirmation(),
 
                     Tables\Actions\BulkAction::make('deactivate')
-                        ->label('Mark as Inactive')
+                        ->label(__('resource.mark_as_inactive'))
                         ->icon('heroicon-o-x-circle')
                         ->action(fn(Collection $records) => $records->each->update(['is_active' => false]))
                         ->color('danger')
                         ->requiresConfirmation(),
 
                     Tables\Actions\BulkAction::make('export')
-                        ->label('Export Selected')
+                        ->label(__('resource.export_selected'))
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
                             // Export logic would go here
@@ -181,16 +190,16 @@ class SubmissionTypeResource extends Resource
                 ]),
             ])
             ->emptyStateIcon('heroicon-o-document')
-            ->emptyStateHeading('No Submission Types Yet')
-            ->emptyStateDescription('Create a submission type to start configuring your IP management workflows.')
+            ->emptyStateHeading(__('resource.no_submission_types'))
+            ->emptyStateDescription(__('resource.create_submission_type_description'))
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Create Submission Type')
+                    ->label(__('resource.create_submission_type'))
                     ->icon('heroicon-o-plus')
                     ->disabled(!static::canCreate()) // Make create button inactive
                     ->tooltip(static::canCreate() 
-                        ? 'Create a new submission type' 
-                        : 'You don\'t have permission to create submission types'),
+                        ? __('resource.create_submission_type') 
+                        : __('resource.no_permission_create')),
             ]);
     }
 

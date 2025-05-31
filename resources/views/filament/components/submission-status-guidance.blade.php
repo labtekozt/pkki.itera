@@ -17,14 +17,14 @@
                 
                 $statusLabel = match ($status) {
                     'draft' => 'Draft',
-                    'submitted' => 'Submitted',
-                    'in_review' => 'In Review',
-                    'revision_needed' => 'Needs Revision',
-                    'approved' => 'Approved',
-                    'rejected' => 'Rejected',
-                    'completed' => 'Completed',
-                    'cancelled' => 'Cancelled',
-                    default => 'Unknown',
+                    'submitted' => 'Dikirim',
+                    'in_review' => 'Dalam Peninjauan',
+                    'revision_needed' => 'Perlu Revisi',
+                    'approved' => 'Disetujui',
+                    'rejected' => 'Ditolak',
+                    'completed' => 'Selesai',
+                    'cancelled' => 'Dibatalkan',
+                    default => 'Tidak Diketahui',
                 };
                 
                 $statusIcon = match ($status) {
@@ -47,18 +47,18 @@
                 />
             </div>
             <div>
-                <h2 class="text-xl font-bold text-gray-900">Current Status: {{ $statusLabel }}</h2>
+                <h2 class="text-xl font-bold text-gray-900">Status Saat Ini: {{ $statusLabel }}</h2>
                 <p class="text-base text-gray-600">
                     {{ match ($status) {
-                        'draft' => 'Your submission can still be edited. It has not been submitted for review yet.',
-                        'submitted' => 'Your submission has been successfully sent to be reviewed.',
-                        'in_review' => 'Your submission is now being reviewed by our team.',
-                        'revision_needed' => 'Your submission needs some changes before it can be approved.',
-                        'approved' => 'Congratulations! Your submission has been approved.',
-                        'rejected' => 'Unfortunately, your submission was not approved.',
-                        'completed' => 'Your submission is complete and has been certified.',
-                        'cancelled' => 'This submission has been cancelled.',
-                        default => 'Status information unavailable.',
+                        'draft' => 'Pengajuan Anda masih dapat diedit. Belum dikirim untuk ditinjau.',
+                        'submitted' => 'Pengajuan Anda telah berhasil dikirim untuk ditinjau.',
+                        'in_review' => 'Pengajuan Anda sedang ditinjau oleh tim kami.',
+                        'revision_needed' => 'Pengajuan Anda memerlukan beberapa perubahan sebelum dapat disetujui.',
+                        'approved' => 'Selamat! Pengajuan Anda telah disetujui.',
+                        'rejected' => 'Maaf, pengajuan Anda tidak disetujui.',
+                        'completed' => 'Pengajuan Anda telah selesai dan telah disertifikasi.',
+                        'cancelled' => 'Pengajuan ini telah dibatalkan.',
+                        default => 'Informasi status tidak tersedia.',
                     } }}
                 </p>
             </div>
@@ -67,7 +67,7 @@
         <!-- Next Steps Section with Checkboxes -->
         @if (count($nextSteps) > 0)
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">What To Do Next:</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Apa yang Harus Dilakukan Selanjutnya:</h3>
                 <div class="pl-1 space-y-4">
                     @foreach ($nextSteps as $step)
                         <div class="flex items-start">
@@ -101,7 +101,7 @@
                         <svg class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
-                        Complete Your Submission
+                        Lengkapi Pengajuan Anda
                     </a>
                 </div>
                 
@@ -110,7 +110,7 @@
                         <svg class="inline-block w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                         </svg>
-                        You need to upload all required documents before submitting
+                        Anda perlu mengunggah semua dokumen yang diperlukan sebelum mengirim
                     </p>
                 @endif
             </div>
@@ -122,7 +122,7 @@
                         <svg class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Update & Resubmit
+                        Perbarui & Kirim Ulang
                     </a>
                 </div>
             </div>

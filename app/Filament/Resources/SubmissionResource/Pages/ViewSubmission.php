@@ -18,7 +18,10 @@ use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Notifications\Notification;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Submission;
 
 class ViewSubmission extends ViewRecord
 {
@@ -31,37 +34,26 @@ class ViewSubmission extends ViewRecord
 
         $actions = [];
 
-        // Add simplified edit option for elderly users
-        if (in_array($this->record->status, ['draft', 'revision_needed'])) {
-            $actions[] = Actions\Action::make('edit_simple')
-                ->label('📝 Edit Mudah')
-                ->icon('heroicon-o-heart')
-                ->color('success')
-                ->tooltip('Interface yang lebih sederhana dan mudah digunakan')
-                ->url(fn () => $this->getResource()::getUrl('edit-simple', ['record' => $this->record]));
-        }
-
         // Customize the edit button text based on submission status
         if ($this->record->status === 'draft') {
             $actions[] = Actions\EditAction::make()
-                ->label('Edit Advanced')
+                ->label(__('resource.submission.actions.edit_draft'))
                 ->icon('heroicon-o-pencil-square')
-                ->color('primary')
-                ->tooltip('Interface lengkap dengan semua fitur');
+                ->color('primary');
         } elseif ($this->record->status === 'revision_needed') {
             $actions[] = Actions\EditAction::make()
-                ->label('Update Submission')
+                ->label(__('resource.submission.actions.update_submission'))
                 ->icon('heroicon-o-pencil-square')
-                ->color('warning')
-                ->tooltip('Interface lengkap dengan semua fitur');
+                ->color('warning');
         } else {
-            $actions[] = Actions\EditAction::make();
+            $actions[] = Actions\EditAction::make()
+                ->label(__('actions.edit'));
         }
 
         // Add workflow actions if available
         if (!empty($availableActions) && auth()->user()->can('review_submissions')) {
             $actions[] = Actions\Action::make('process')
-                ->label('Process')
+                ->label(__('resource.submission.actions.process'))
                 ->color('warning')
                 ->icon('heroicon-o-cog')
                 ->url(fn() => $this->getResource()::getUrl('process', ['record' => $this->record]))
@@ -81,17 +73,11 @@ class ViewSubmission extends ViewRecord
         $baseSchema = SubmissionResource::getInfolistSchema($this->record);
         
         // Create our custom schema components
-        $interfaceSelectionSection = $this->getInterfaceSelectionSection();
         $statusGuidanceSection = $this->getStatusGuidanceSection();
         $documentStatusSection = $this->getDocumentStatusSection();
         
         // Build the schema array, ensuring no null values
         $schema = [];
-        
-        // Add interface selection guide if submission can be edited
-        if ($interfaceSelectionSection !== null) {
-            $schema[] = $interfaceSelectionSection;
-        }
         
         // Add status guidance section if not null
         if ($statusGuidanceSection !== null) {
@@ -106,25 +92,25 @@ class ViewSubmission extends ViewRecord
         // Add the base schema components
         $schema = array_merge($schema, $baseSchema);
         
-        // Add document feedback section if there are reviewer notes
-        $documentFeedbackSection = $this->getDocumentFeedbackSection();
-        if ($documentFeedbackSection !== null) {
-            $schema[] = $documentFeedbackSection;
+        // Add certificate section for completed submissions
+        $certificateSection = $this->getCertificateSection();
+        if ($certificateSection !== null) {
+            $schema[] = $certificateSection;
         }
         
         // Add reviewer notes section if applicable
         if (!empty($this->record->reviewer_notes) && 
             in_array($this->record->status, ['revision_needed', 'rejected'])
         ) {
-            $schema[] = Section::make('Reviewer Notes')
-                ->description('Notes from reviewers regarding required revisions')
+            $schema[] = Section::make(__('resource.submissions.reviewer_notes'))
+                ->description(__('resource.submissions.reviewer_notes_description'))
                 ->icon('heroicon-o-chat-bubble-left-right')
                 ->schema([
                     TextEntry::make('reviewer_notes')
-                        ->label('Revision Notes')
+                        ->label(__('resource.submissions.revision_notes'))
                         ->html()
                         ->formatStateUsing(fn ($state) => nl2br(e($state)))
-                        ->placeholder('No revision notes provided'),
+                        ->placeholder(__('resource.submissions.no_revision_notes')),
                 ])
                 ->columns(1);
         }
@@ -138,21 +124,17 @@ class ViewSubmission extends ViewRecord
      */
     protected function getStatusGuidanceSection()
     {
-        return Section::make('Submission Status')
+        return Section::make(__('resource.submissions.submission_status'))
             ->description($this->getStatusDescription($this->record->status))
             ->icon($this->getStatusIcon($this->record->status))
             ->schema([
-                TextEntry::make('status_guidance')
-                    ->html()
-                    ->formatStateUsing(function () {
-                        return view('filament.components.submission-status-guidance', [
-                            'submission' => $this->record,
-                            'status' => $this->record->status,
-                            'nextSteps' => $this->getNextSteps($this->record->status),
-                            'documentComplete' => $this->isDocumentationComplete(),
-                        ])->render();
-                    })
-                    ->hiddenLabel()
+                ViewEntry::make('status_guidance')
+                    ->view('filament.components.submission-status-guidance', [
+                        'submission' => $this->record,
+                        'status' => $this->record->status,
+                        'nextSteps' => $this->getNextSteps($this->record->status),
+                        'documentComplete' => $this->isDocumentationComplete(),
+                    ])
             ])
             ->extraAttributes([
                 'class' => match ($this->record->status) {
@@ -189,16 +171,12 @@ class ViewSubmission extends ViewRecord
             ->icon($icon)
             ->iconColor($iconColor)
             ->schema([
-                TextEntry::make('document_status')
-                    ->html()
-                    ->formatStateUsing(function () use ($documentComplete) {
-                        return view('filament.components.document-status', [
-                            'submission' => $this->record,
-                            'documentComplete' => $documentComplete,
-                            'missingDocuments' => $this->getMissingDocuments(),
-                        ])->render();
-                    })
-                    ->hiddenLabel()
+                ViewEntry::make('document_status')
+                    ->view('filament.components.document-status', [
+                        'submission' => $this->record,
+                        'documentComplete' => $documentComplete,
+                        'missingDocuments' => $this->getMissingDocuments(),
+                    ])
             ]);
     }
 
@@ -351,68 +329,147 @@ class ViewSubmission extends ViewRecord
     }
 
     /**
-     * Get interface selection section to guide users between simple and advanced editing
+     * Get certificate section for completed submissions
      */
-    protected function getInterfaceSelectionSection()
+    protected function getCertificateSection(): ?Section
     {
-        // Only show interface selection if submission can be edited
-        if (!in_array($this->record->status, ['draft', 'revision_needed'])) {
+        // Only show certificate section for completed submissions
+        if ($this->record->status !== 'completed') {
             return null;
         }
 
-        return Section::make('📝 Pilih Cara Edit')
-            ->description('Pilih interface yang paling sesuai dengan kebutuhan Anda')
-            ->icon('heroicon-o-adjustments-horizontal')
+        return Section::make('🎉 Sertifikat Tersedia')
+            ->description('Sertifikat kekayaan intelektual Anda telah selesai diproses')
+            ->icon('heroicon-o-trophy')
+            ->iconColor('success')
             ->schema([
-                TextEntry::make('interface_selection')
-                    ->html()
-                    ->formatStateUsing(function () {
-                        return view('filament.components.interface-selection-guide', [
-                            'submission' => $this->record,
-                            'simpleEditUrl' => $this->getResource()::getUrl('edit-simple', ['record' => $this->record]),
-                            'advancedEditUrl' => $this->getResource()::getUrl('edit', ['record' => $this->record]),
-                        ])->render();
-                    })
-                    ->hiddenLabel()
+                ViewEntry::make('certificate_status')
+                    ->view('filament.components.certificate-status', [
+                        'submission' => $this->record,
+                        'certificateMetadata' => $this->getCertificateMetadata($this->record),
+                        'downloadAction' => $this->downloadCertificateAction(),
+                    ])
             ])
             ->extraAttributes([
-                'class' => 'border-l-4 border-green-500 bg-green-50',
-            ])
-            ->collapsible()
-            ->collapsed(false);
+                'class' => 'border-l-4 border-green-500 bg-gradient-to-r from-green-50 to-emerald-50'
+            ]);
     }
 
     /**
-     * Get document feedback section to display reviewer notes prominently
+     * Get certificate metadata from tracking history
      */
-    protected function getDocumentFeedbackSection()
+    private function getCertificateMetadata(Submission $submission): ?array
     {
-        $documentsWithFeedback = $this->record->submissionDocuments()
-            ->whereNotNull('notes')
-            ->whereIn('status', ['approved', 'rejected', 'revision_needed'])
-            ->with(['document', 'requirement'])
+        // Get the latest tracking history entry for certificate upload
+        $certificateHistory = $submission->trackingHistory()
+            ->where('action', 'certificate_uploaded')
             ->latest()
-            ->get();
-
-        if ($documentsWithFeedback->isEmpty()) {
+            ->first();
+        
+        if (!$certificateHistory || !$certificateHistory->metadata) {
             return null;
         }
+        
+        return $certificateHistory->metadata;
+    }
 
-        return Section::make('Document Review Feedback')
-            ->description('Feedback from reviewers on your submitted documents')
-            ->icon('heroicon-o-chat-bubble-left-right')
-            ->schema([
-                TextEntry::make('document_feedback')
-                    ->html()
-                    ->formatStateUsing(function () use ($documentsWithFeedback) {
-                        return view('filament.components.document-feedback-list', [
-                            'documentsWithFeedback' => $documentsWithFeedback,
-                        ])->render();
-                    })
-                    ->hiddenLabel()
-            ])
-            ->extraAttributes([
-                'class' => 'border-l-4 border-blue-500',
-            ]);
+    /**
+     * Create download certificate action
+     */
+    private function downloadCertificateAction(): Action
+    {
+        return Action::make('downloadCertificate')
+            ->label('📥 Unduh Sertifikat')
+            ->size('xl')
+            ->color('success')
+            ->icon('heroicon-o-document-arrow-down')
+            ->requiresConfirmation()
+            ->modalHeading('Konfirmasi Unduh Sertifikat')
+            ->modalDescription('Apakah Anda yakin ingin mengunduh sertifikat?')
+            ->modalSubmitActionLabel('Ya, Unduh')
+            ->modalCancelActionLabel('Batal')
+            ->action(function () {
+                return $this->downloadCertificate();
+            });
+    }
+
+    /**
+     * Handle certificate download
+     */
+    protected function downloadCertificate()
+    {
+        $submission = $this->record;
+        
+        // Check if user can access this certificate
+        if (!auth()->user()->can('view', $submission)) {
+            Notification::make()
+                ->title('❌ Akses Ditolak')
+                ->body('Anda tidak memiliki izin untuk mengunduh sertifikat ini.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // Check if certificate file exists
+        if (!$submission->certificate || !Storage::exists($submission->certificate)) {
+            Notification::make()
+                ->title('⚠️ File Tidak Ditemukan')
+                ->body('Maaf, file sertifikat tidak tersedia. Silakan hubungi admin untuk bantuan.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        try {
+            // Generate descriptive filename
+            $filename = $this->generateCertificateFilename($submission);
+            
+            // Show success notification
+            Notification::make()
+                ->title('✅ Unduhan Dimulai')
+                ->body("Sertifikat \"$filename\" sedang diunduh. Periksa folder Downloads Anda.")
+                ->success()
+                ->duration(5000)
+                ->send();
+
+            // Return download response
+            return Storage::download($submission->certificate, $filename);
+            
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('❌ Gagal Mengunduh')
+                ->body('Terjadi kesalahan saat mengunduh sertifikat. Silakan coba lagi atau hubungi admin.')
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Generate human-readable filename for certificate download
+     */
+    private function generateCertificateFilename(Submission $submission): string
+    {
+        $metadata = $this->getCertificateMetadata($submission);
+        $certificateNumber = $metadata['certificate_number'] ?? 'CERT-' . $submission->id;
+        
+        // Clean title for filename
+        $cleanTitle = preg_replace('/[^a-zA-Z0-9\s]/', '', $submission->title);
+        $cleanTitle = preg_replace('/\s+/', '_', trim($cleanTitle));
+        $cleanTitle = substr($cleanTitle, 0, 50); // Limit length
+        
+        return "Sertifikat_{$certificateNumber}_{$cleanTitle}.pdf";
+    }
+
+    /**
+     * Format file size for display
+     */
+    private function formatFileSize(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= pow(1024, $pow);
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 }

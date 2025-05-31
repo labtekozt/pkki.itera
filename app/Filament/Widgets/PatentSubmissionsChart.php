@@ -10,9 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 class PatentSubmissionsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Patent Submissions';
+    protected static ?string $heading = null;
     
     protected static ?int $sort = 2;
+    
+    public function getHeading(): string
+    {
+        return __('resource.widgets.patent_submissions_chart');
+    }
     
     protected function getData(): array
     {
@@ -56,13 +61,13 @@ class PatentSubmissionsChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'All Patent Submissions',
+                    'label' => __('resource.widgets.all_patent_submissions'),
                     'data' => $totalData->toArray(),
                     'backgroundColor' => 'rgba(59, 130, 246, 0.5)',
                     'borderColor' => 'rgb(59, 130, 246)',
                 ],
                 [
-                    'label' => 'Approved Patents',
+                    'label' => __('resource.widgets.approved_patents'),
                     'data' => $approvedData->toArray(),
                     'backgroundColor' => 'rgba(16, 185, 129, 0.5)',
                     'borderColor' => 'rgb(16, 185, 129)',

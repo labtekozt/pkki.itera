@@ -9,7 +9,7 @@
                 tag="a"
                 :href="route('filament.admin.resources.submission-reviews.index')"
             >
-                Cancel
+                Batal
             </x-filament::button>
         </div>
     </form>
@@ -35,19 +35,19 @@
                 // Set color and label based on status
                 switch (this.status) {
                     case 'approved':
-                        this.statusLabel = 'Approved';
+                        this.statusLabel = 'Disetujui';
                         this.statusColor = 'emerald';
                         break;
                     case 'rejected':
-                        this.statusLabel = 'Rejected';
+                        this.statusLabel = 'Ditolak';
                         this.statusColor = 'red';
                         break;
                     case 'revision_needed':
-                        this.statusLabel = 'Revision Needed';
+                        this.statusLabel = 'Perlu Revisi';
                         this.statusColor = 'amber';
                         break;
                     default:
-                        this.statusLabel = 'Pending Review';
+                        this.statusLabel = 'Menunggu Peninjauan';
                         this.statusColor = 'gray';
                 }
                 
@@ -87,7 +87,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Confirm Document Status Change
+                        Konfirmasi Perubahan Status Dokumen
                     </h3>
                     
                     <button type="button" x-on:click="open = false" class="text-gray-400 hover:text-gray-500">
@@ -99,21 +99,21 @@
                 
                 <div class="mb-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Are you sure you want to change the status of <span x-text="requirementName" class="font-medium"></span> to 
+                        Apakah Anda yakin ingin mengubah status <span x-text="requirementName" class="font-medium"></span> menjadi 
                         <span x-text="statusLabel" x-bind:class="'text-' + statusColor + '-500 font-medium'"></span>?
                     </p>
                 </div>
                 
                 <div class="mb-4">
                     <label for="statusNotes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Notes / Reason
+                        Catatan / Alasan
                     </label>
                     <textarea 
                         id="statusNotes"
                         x-model="notes"
                         class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                         rows="3"
-                        placeholder="Add notes about why you're changing the status"></textarea>
+                        placeholder="Tambahkan catatan mengapa Anda mengubah status ini"></textarea>
                 </div>
 
                 <div class="flex justify-end space-x-3">
@@ -122,7 +122,7 @@
                         color="gray"
                         x-on:click="open = false"
                     >
-                        Cancel
+                        Batal
                     </x-filament::button>
                     
                     <x-filament::button
@@ -130,7 +130,7 @@
                         x-bind:color="statusColor === 'emerald' ? 'success' : (statusColor === 'red' ? 'danger' : (statusColor === 'amber' ? 'warning' : 'primary'))"
                         x-on:click="submitStatusChange"
                     >
-                        Confirm
+                        Konfirmasi
                     </x-filament::button>
                 </div>
             </div>

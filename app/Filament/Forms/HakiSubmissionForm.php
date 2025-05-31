@@ -10,80 +10,80 @@ class HakiSubmissionForm
     public static function getFormSchema(): array
     {
         return [
-            Forms\Components\Section::make('Copyright Details')
+            Forms\Components\Section::make(__('resource.haki.details'))
                 ->schema([
                     Forms\Components\TextInput::make('hakiDetail.haki_title')
-                        ->label('Work Title')
-                        ->helperText('Title of the work being applied for')
+                        ->label(__('resource.haki.work_title'))
+                        ->helperText(__('resource.haki.work_title_helper'))
                         ->required()
                         ->maxLength(255)
                         ->columnSpanFull(),
                         
                     Forms\Components\Select::make('hakiDetail.work_type')
-                        ->label('Work Type')
+                        ->label(__('resource.haki.work_type'))
                         ->options([
-                            'literary' => 'Literary Work',
-                            'musical' => 'Musical Work',
-                            'dramatic' => 'Dramatic Work',
-                            'artistic' => 'Artistic Work',
-                            'audiovisual' => 'Audiovisual Work',
-                            'sound_recording' => 'Sound Recording',
-                            'computer_program' => 'Computer Program',
+                            'literary' => __('resource.haki.literary_work'),
+                            'musical' => __('resource.haki.musical_work'),
+                            'dramatic' => __('resource.haki.dramatic_work'),
+                            'artistic' => __('resource.haki.artistic_work'),
+                            'audiovisual' => __('resource.haki.audiovisual_work'),
+                            'sound_recording' => __('resource.haki.sound_recording'),
+                            'computer_program' => __('resource.haki.computer_program'),
                         ])
-                        ->helperText('Type of creation (Jenis Ciptaan)')
+                        ->helperText(__('resource.haki.work_type_helper'))
                         ->required(),
                         
                     Forms\Components\TextInput::make('hakiDetail.work_subtype')
-                        ->label('Work Subtype')
-                        ->helperText('Sub-type of creation (Sub Jenis Ciptaan)'),
+                        ->label(__('resource.haki.work_subtype'))
+                        ->helperText(__('resource.haki.work_subtype_helper')),
                         
                     Forms\Components\Select::make('hakiDetail.haki_category')
-                        ->label('HAKI Category')
+                        ->label(__('resource.haki.category'))
                         ->options([
-                            'computer' => 'Computer',
-                            'non_computer' => 'Non-Computer',
+                            'computer' => __('resource.haki.computer'),
+                            'non_computer' => __('resource.haki.non_computer'),
                         ])
-                        ->helperText('Computer or Non-Computer Copyright')
+                        ->helperText(__('resource.haki.category_helper'))
                         ->required(),
                         
                     Forms\Components\Textarea::make('hakiDetail.work_description')
-                        ->label('Work Description')
-                        ->helperText('Brief description of the work')
+                        ->label(__('resource.haki.work_description'))
+                        ->helperText(__('resource.haki.description_helper'))
                         ->required()
                         ->columnSpanFull(),
                         
                     Forms\Components\DatePicker::make('hakiDetail.first_publication_date')
-                        ->label('First Publication Date')
-                        ->helperText('When the work was first published in print/mass media'),
+                        ->label(__('resource.haki.first_publication_date'))
+                        ->helperText(__('resource.haki.publication_date_helper')),
                         
                     Forms\Components\TextInput::make('hakiDetail.first_publication_place')
-                        ->label('Place of Publication')
-                        ->helperText('Where the work was first published'),
+                        ->label(__('resource.haki.publication_place'))
+                        ->helperText(__('resource.haki.publication_place_helper')),
                         
                     Forms\Components\Toggle::make('hakiDetail.is_kkn_output')
-                        ->label('KKN Output')
-                        ->helperText('Whether it\'s a KKN (community service) output'),
+                        ->label(__('resource.haki.is_kkn_output'))
+                        ->helperText(__('resource.haki.kkn_helper')),
                         
                     Forms\Components\Toggle::make('hakiDetail.from_grant_research')
-                        ->label('From Grant Research')
-                        ->helperText('Whether it\'s from research/community service with grant funding'),
+                        ->label(__('resource.haki.from_grant_research'))
+                        ->helperText(__('resource.haki.grant_helper')),
                         
                     Forms\Components\Toggle::make('hakiDetail.self_funded')
-                        ->label('Self Funded')
-                        ->helperText('Whether it will use self-funding'),
+                        ->label(__('resource.haki.self_funded'))
+                        ->helperText(__('resource.haki.self_funded_helper')),
                         
                     Forms\Components\TextInput::make('hakiDetail.inventors_name')
-                        ->label('Authors/Creators')
-                        ->helperText('Names of the inventors/authors')
+                        ->label(__('resource.haki.authors_creators'))
+                        ->helperText(__('resource.haki.authors_helper'))
                         ->required(),
                         
                     Forms\Components\TextInput::make('hakiDetail.registration_number')
-                        ->label('Registration Number')
-                        ->helperText('Official registration number if already registered'),
+                        ->label(__('resource.haki.registration_number'))
+                        ->helperText(__('resource.haki.registration_number_helper')),
                         
                     Forms\Components\DatePicker::make('hakiDetail.registration_date')
-                        ->label('Registration Date')
-                        ->helperText('Date when the work was officially registered'),
+                        ->label(__('resource.haki.registration_date'))
+                        ->helperText(__('resource.haki.registration_date_helper')),
                 ])
                 ->columns(2)
         ];

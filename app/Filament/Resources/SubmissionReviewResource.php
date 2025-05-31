@@ -20,13 +20,18 @@ class SubmissionReviewResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static ?string $navigationGroup = 'Review Management';
+    protected static ?string $navigationGroup = null;
 
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationLabel(): string
     {
-        return 'Pending Reviews';
+        return __('resource.submission_review.navigation_label');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('menu.nav_group.review_management');
     }
 
     public static function getNavigationBadge(): ?string
@@ -49,48 +54,48 @@ class SubmissionReviewResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Submission Details')
+                Forms\Components\Section::make(__('resource.submission_review.sections.submission_details'))
                     ->schema([
                         Forms\Components\TextInput::make('title')
-                            ->label('Submission Title')
+                            ->label(__('resource.submission_review.fields.title'))
                             ->disabled(),
 
                         Forms\Components\Select::make('status')
-                            ->label('Status')
+                            ->label(__('resource.submission_review.fields.status'))
                             ->options([
-                                'in_review' => 'In Review',
-                                'approved' => 'Approved',
-                                'revision_needed' => 'Revision Needed',
-                                'rejected' => 'Rejected',
+                                'in_review' => __('resource.submission.status.in_review'),
+                                'approved' => __('resource.submission.status.approved'),
+                                'revision_needed' => __('resource.submission.status.revision_needed'),
+                                'rejected' => __('resource.submission.status.rejected'),
                             ])
                             ->required(),
 
                         Forms\Components\Select::make('current_stage_id')
-                            ->label('Current Stage')
+                            ->label(__('resource.submission_review.fields.current_stage'))
                             ->relationship('currentStage', 'name')
                             ->disabled(),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make('Review Decision')
+                Forms\Components\Section::make(__('resource.submission_review.sections.review_decision'))
                     ->schema([
                         Forms\Components\Textarea::make('review_comments')
-                            ->label('Comments')
-                            ->placeholder('Enter your review comments here...')
+                            ->label(__('resource.submission_review.fields.comments'))
+                            ->placeholder(__('resource.submission_review.placeholders.comments'))
                             ->required(),
                             
                         Forms\Components\Textarea::make('reviewer_notes')
-                            ->label('Reviewer Notes for Submitter')
-                            ->helperText('These notes will be visible to the submitter when revision is needed or submission is rejected')
-                            ->placeholder('Enter notes for the submitter regarding required revisions or reasons for rejection')
+                            ->label(__('resource.submission_review.fields.reviewer_notes'))
+                            ->helperText(__('resource.submission_review.help.reviewer_notes'))
+                            ->placeholder(__('resource.submission_review.placeholders.reviewer_notes'))
                             ->columnSpanFull()
                             ->visible(fn(Forms\Get $get) => in_array($get('status'), ['revision_needed', 'rejected'])),
                     ]),
 
-                Forms\Components\Section::make('Assign Next Reviewer')
+                Forms\Components\Section::make(__('resource.submission_review.sections.assign_next_reviewer'))
                     ->schema([
                         Forms\Components\Select::make('next_stage_id')
-                            ->label('Next Stage')
+                            ->label(__('resource.submission_review.fields.next_stage'))
                             ->options(function (Submission $record) {
                                 // Get current stage
                                 $currentStage = $record->currentStage;
@@ -109,7 +114,7 @@ class SubmissionReviewResource extends Resource
                             ->hidden(fn(Forms\Get $get) => $get('status') !== 'approved'),
 
                         Forms\Components\Select::make('next_reviewer_id')
-                            ->label('Assign Reviewer')
+                            ->label(__('resource.submission_review.fields.assign_reviewer'))
                             ->options(function () {
                                 return User::role('reviewer')
                                     ->pluck('name', 'id')
@@ -128,22 +133,23 @@ class SubmissionReviewResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('resource.submission_review.columns.title'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('submissionType.name')
-                    ->label('Type')
+                    ->label(__('resource.submission_review.columns.type'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('currentStage.name')
-                    ->label('Current Stage')
+                    ->label(__('resource.submission_review.columns.current_stage'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
-                    ->label('Status')
+                    ->label(__('resource.submission_review.columns.status'))
+                    ->formatStateUsing(fn (string $state): string => __("resource.submission.status.{$state}"))
                     ->colors([
                         'warning' => 'in_review',
                         'success' => 'approved',
@@ -154,46 +160,48 @@ class SubmissionReviewResource extends Resource
                     ]),
 
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Submitted By')
+                    ->label(__('resource.submission_review.columns.submitted_by'))
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Submission Date')
+                    ->label(__('resource.submission_review.columns.submission_date'))
                     ->date()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Last Updated')
+                    ->label(__('resource.submission_review.columns.last_updated'))
                     ->date()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label(__('resource.submission_review.filters.status'))
                     ->options([
-                        'submitted' => 'Submitted',
-                        'in_review' => 'In Review',
-                        'revision_needed' => 'Revision Needed',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
+                        'submitted' => __('resource.submission.status.submitted'),
+                        'in_review' => __('resource.submission.status.in_review'),
+                        'revision_needed' => __('resource.submission.status.revision_needed'),
+                        'approved' => __('resource.submission.status.approved'),
+                        'rejected' => __('resource.submission.status.rejected'),
+                        'completed' => __('resource.submission.status.completed'),
+                        'cancelled' => __('resource.submission.status.cancelled'),
                     ]),
 
                 Tables\Filters\SelectFilter::make('submission_type_id')
                     ->relationship('submissionType', 'name')
                     ->searchable()
-                    ->label('Submission Type'),
+                    ->label(__('resource.submission_review.filters.submission_type')),
 
                 Tables\Filters\SelectFilter::make('current_stage_id')
                     ->relationship('currentStage', 'name')
                     ->searchable()
-                    ->label('Current Stage'),
+                    ->label(__('resource.submission_review.filters.current_stage')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label(__('actions.view')),
                 Tables\Actions\Action::make('review')
-                    ->label('Review')
+                    ->label(__('resource.submission_review.actions.review'))
                     ->icon('heroicon-o-clipboard-document-check')
                     ->url(fn(Submission $record): string => route('filament.admin.resources.submission-reviews.review', $record)),
             ])
