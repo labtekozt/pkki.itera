@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\Enums\IconPosition;
@@ -44,6 +45,7 @@ class DocumentsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('requirement_id')
+                    ->label('Document Type')
                     ->relationship('requirement', 'name', function (Builder $query) {
                         $submissionTypeId = $this->ownerRecord->submission_type_id;
                         if ($submissionTypeId) {
@@ -53,14 +55,16 @@ class DocumentsRelationManager extends RelationManager
                     ->searchable()
                     ->preload()
                     ->required()
-                    ->disabled(!$this->permissionService->canEditDocuments()),
+                    ->disabled(!$this->permissionService->canEditDocuments())
+                    ->helperText('Select the type of document you are uploading'),
 
                 // Hidden field to track the original document URI
                 Forms\Components\Hidden::make('original_document_uri'),
 
                 Forms\Components\Select::make('status')
+                    ->label('Review Status')
                     ->options([
-                        self::STATUS_PENDING => 'Pending',
+                        self::STATUS_PENDING => 'Pending Review',
                         self::STATUS_APPROVED => 'Approved',
                         self::STATUS_REJECTED => 'Rejected',
                         self::STATUS_REVISION_NEEDED => 'Revision Needed',
@@ -69,11 +73,23 @@ class DocumentsRelationManager extends RelationManager
                     ])
                     ->default(self::STATUS_PENDING)
                     ->required()
-                    ->disabled(!$this->permissionService->canReviewDocuments()),
+                    ->disabled(!$this->permissionService->canReviewDocuments())
+                    ->visible($this->permissionService->canReviewDocuments())
+                    ->helperText('Set the review status for this document'),
 
                 Forms\Components\Textarea::make('notes')
+                    ->label(fn(): string => $this->permissionService->canReviewDocuments() 
+                        ? 'Reviewer Notes' 
+                        : 'Additional Information')
+                    ->placeholder(fn(): string => $this->permissionService->canReviewDocuments() 
+                        ? 'Provide feedback about the document quality, required changes, or approval notes...' 
+                        : 'Add any additional information about this document (optional)...')
                     ->maxLength(65535)
-                    ->columnSpanFull(),
+                    ->rows(4)
+                    ->columnSpanFull()
+                    ->helperText(fn(): string => $this->permissionService->canReviewDocuments() 
+                        ? 'These notes will be visible to the document submitter to help them understand any required changes.'
+                        : 'This information may help reviewers understand the context of your document.'),
             ]);
     }
 
@@ -83,7 +99,8 @@ class DocumentsRelationManager extends RelationManager
         $columns = [
             Tables\Columns\TextColumn::make('requirement.name')
                 ->searchable()
-                ->sortable(),
+                ->sortable()
+                ->weight('medium'),
 
             Tables\Columns\TextColumn::make('document.title')
                 ->searchable()
@@ -91,9 +108,9 @@ class DocumentsRelationManager extends RelationManager
                 ->openUrlInNewTab()
                 ->icon('heroicon-m-document')
                 ->iconPosition(IconPosition::After)
-                ->tooltip('Click to download'),
-
-
+                ->tooltip('Click to download')
+                ->weight('medium')
+                ->wrap(),
 
             Tables\Columns\TextColumn::make('document.mimetype')
                 ->label('File Type')
@@ -113,12 +130,56 @@ class DocumentsRelationManager extends RelationManager
                     self::STATUS_REPLACED => 'info',
                     self::STATUS_FINAL => 'success',
                     default => 'gray',
+                })
+                ->tooltip(fn($record): string => match ($record->status) {
+                    self::STATUS_PENDING => 'Document is awaiting review',
+                    self::STATUS_APPROVED => 'Document has been approved',
+                    self::STATUS_REJECTED => 'Document was rejected and needs to be replaced',
+                    self::STATUS_REVISION_NEEDED => 'Document needs revision based on reviewer feedback',
+                    self::STATUS_REPLACED => 'Document has been replaced with a newer version',
+                    self::STATUS_FINAL => 'Document is final and approved',
+                    default => 'Unknown status',
+                }),
+
+            // Enhanced reviewer notes column with better visibility
+            Tables\Columns\TextColumn::make('notes')
+                ->label('Reviewer Feedback')
+                ->wrap()
+                ->limit(100)
+                ->tooltip(fn($record): ?string => $record->notes)
+                ->placeholder('No feedback yet')
+                ->color(fn($record): string => match ($record->status) {
+                    self::STATUS_REJECTED => 'danger',
+                    self::STATUS_REVISION_NEEDED => 'warning',
+                    self::STATUS_APPROVED => 'success',
+                    default => 'gray',
+                })
+                ->icon(fn($record): ?string => match ($record->status) {
+                    self::STATUS_REJECTED => 'heroicon-m-x-circle',
+                    self::STATUS_REVISION_NEEDED => 'heroicon-m-exclamation-triangle',
+                    self::STATUS_APPROVED => 'heroicon-m-check-circle',
+                    default => null,
+                })
+                ->iconPosition(IconPosition::Before)
+                ->weight(fn($record): string => $record->notes ? 'semibold' : 'normal')
+                ->formatStateUsing(function ($state, $record) {
+                    if (!$state) {
+                        return match ($record->status) {
+                            self::STATUS_PENDING => 'Awaiting review...',
+                            self::STATUS_APPROVED => 'Approved ✓',
+                            default => 'No feedback',
+                        };
+                    }
+                    return $state;
                 }),
 
             Tables\Columns\TextColumn::make('created_at')
+                ->label('Uploaded')
                 ->dateTime()
                 ->sortable()
-                ->toggleable(),
+                ->toggleable()
+                ->since()
+                ->tooltip(fn($record): string => $record->created_at->format('M d, Y g:i A')),
         ];
 
         // Common filters for all users
@@ -142,6 +203,58 @@ class DocumentsRelationManager extends RelationManager
 
         // Common view actions for all users
         $actions = [
+            // View feedback action - prominent for users to understand document status
+            Tables\Actions\Action::make('viewFeedback')
+                ->label('View Feedback')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color(fn($record): string => match ($record->status) {
+                    self::STATUS_REJECTED => 'danger',
+                    self::STATUS_REVISION_NEEDED => 'warning',
+                    self::STATUS_APPROVED => 'success',
+                    default => 'gray',
+                })
+                ->visible(fn($record): bool => !empty($record->notes) || in_array($record->status, [
+                    self::STATUS_APPROVED, 
+                    self::STATUS_REJECTED, 
+                    self::STATUS_REVISION_NEEDED
+                ]))
+                ->modalHeading(fn($record): string => "Reviewer Feedback: {$record->document->title}")
+                ->modalDescription(fn($record): string => "Status: " . ucfirst(str_replace('_', ' ', $record->status)))
+                ->modalContent(function ($record) {
+                    $statusInfo = match ($record->status) {
+                        self::STATUS_APPROVED => [
+                            'icon' => 'heroicon-o-check-circle',
+                            'color' => 'success',
+                            'message' => 'This document has been approved and meets all requirements.'
+                        ],
+                        self::STATUS_REJECTED => [
+                            'icon' => 'heroicon-o-x-circle', 
+                            'color' => 'danger',
+                            'message' => 'This document has been rejected and needs to be replaced with a corrected version.'
+                        ],
+                        self::STATUS_REVISION_NEEDED => [
+                            'icon' => 'heroicon-o-exclamation-triangle',
+                            'color' => 'warning', 
+                            'message' => 'This document needs revision. Please review the feedback below and make necessary changes.'
+                        ],
+                        default => [
+                            'icon' => 'heroicon-o-clock',
+                            'color' => 'gray',
+                            'message' => 'This document is pending review.'
+                        ]
+                    };
+
+                    return view('filament.components.document-feedback', [
+                        'record' => $record,
+                        'statusInfo' => $statusInfo,
+                        'notes' => $record->notes ?: 'No specific feedback provided.',
+                        'reviewedAt' => $record->updated_at,
+                    ]);
+                })
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Close'),
+
+            // View/download file action
             Tables\Actions\Action::make('view')
                 ->label('View File')
                 ->icon('heroicon-o-eye')
@@ -157,7 +270,12 @@ class DocumentsRelationManager extends RelationManager
                     'text/html',
                 ])),
 
-
+            // Download action for all file types
+            Tables\Actions\Action::make('download')
+                ->label('Download')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(fn($record) => route('filament.admin.documents.download', $record->document_id))
+                ->color('gray'),
         ];
 
         // Add edit/delete actions only for admin and superadmin roles
@@ -233,7 +351,23 @@ class DocumentsRelationManager extends RelationManager
             ->columns($columns)
             ->filters($filters)
             ->actions($actions)
-            ->bulkActions($bulkActions);
+            ->bulkActions($bulkActions)
+            ->headerActions([
+                // Add info action to show document status summary
+                Tables\Actions\Action::make('documentStatusInfo')
+                    ->label('Document Status Guide')
+                    ->icon('heroicon-o-information-circle')
+                    ->color('gray')
+                    ->modalHeading('Document Status Guide')
+                    ->modalDescription('Understanding document review statuses and what they mean')
+                    ->modalContent(view('filament.components.document-status-guide'))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close'),
+            ])
+            ->description('Upload and manage documents required for your submission. Click "View Feedback" to see reviewer comments and understand any required changes.')
+            ->emptyStateHeading('No Documents Yet')
+            ->emptyStateDescription('Upload documents required for your submission to get started. Each document will be reviewed and you\'ll receive feedback on any needed changes.')
+            ->emptyStateIcon('heroicon-o-document-plus');
     }
 
     public function isListable(): bool

@@ -195,18 +195,11 @@ class SubmissionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('process')
-                    ->label('Process')
-                    ->color('warning')
-                    ->icon('heroicon-o-cog')
-                    ->url(fn(Submission $record) => route('filament.admin.resources.submissions.process', $record))
-                    ->visible(
-                        fn(Submission $record) =>
-                        $record->status !== 'draft' &&
-                            $record->status !== 'completed' &&
-                            auth()->user()->can('review_submissions')
-                    ),
+                Tables\Actions\EditAction::make()
+                    ->label('Edit Submission')
+                    ->icon('heroicon-o-pencil')
+                    ->tooltip('Interface lengkap dengan semua fitur'),
+    
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

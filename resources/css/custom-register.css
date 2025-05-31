@@ -1,0 +1,44 @@
+/* Custom styles for PKKI ITERA Registration */
+.fi-page-auth-register {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.fi-page-auth-register .fi-simple-layout-content {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.fi-page-auth-register .fi-section-header-heading {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.fi-page-auth-register .fi-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.fi-page-auth-register .fi-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.fi-page-auth-register .fi-btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fi-page-auth-register .fi-simple-layout-content {
+        margin: 1rem;
+        border-radius: 8px;
+    }
+}

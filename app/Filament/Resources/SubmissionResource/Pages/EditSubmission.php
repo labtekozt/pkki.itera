@@ -192,497 +192,637 @@ class EditSubmission extends EditRecord
     {
         return $form
             ->schema([
-                Section::make('Submission Information')
+                // Progress indicator for better user orientation
+                Placeholder::make('progress_indicator')
+                    ->content(function () {
+                        // Determine progress based on completion and status
+                        $progress = 0;
+                        
+                        if ($this->record->title) {
+                            $progress += 33;
+                        }
+                        
+                        if ($this->isDocumentComplete) {
+                            $progress += 33;
+                        }
+                        
+                        if ($this->record->status !== 'draft') {
+                            $progress += 34;
+                        }
+                        
+                        // Generate user-friendly progress display
+                        $content = '
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200 mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-lg font-semibold text-gray-800">Progress Pengajuan Anda</span>
+                                <span class="text-sm text-blue-600 font-medium">' . $progress . '%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-blue-500 h-4 rounded-full" style="width: ' . $progress . '%"></div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                                <div class="flex items-center">
+                                    <span class="text-xl mr-2">' . ($this->record->title ? '✅' : '⭕') . '</span>
+                                    <span class="' . ($this->record->title ? 'text-green-600' : 'text-gray-500') . ' font-medium">Informasi Dasar</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-xl mr-2">' . ($this->isDocumentComplete ? '✅' : '⭕') . '</span>
+                                    <span class="' . ($this->isDocumentComplete ? 'text-green-600' : 'text-gray-500') . ' font-medium">Dokumen Lengkap</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-xl mr-2">' . ($this->record->status !== 'draft' ? '✅' : '⭕') . '</span>
+                                    <span class="' . ($this->record->status !== 'draft' ? 'text-green-600' : 'text-gray-500') . ' font-medium">Pengajuan Terkirim</span>
+                                </div>
+                            </div>
+                        </div>';
+                        
+                        return new \Illuminate\Support\HtmlString($content);
+                    })
+                    ->columnSpanFull(),
+
+                // Simplified submission information section with better readability
+                Section::make('📋 Informasi Pengajuan')
+                    ->description('Detail dasar tentang pengajuan kekayaan intelektual Anda')
+                    ->icon('heroicon-o-document-text')
+                    ->collapsible(false) // Always expanded for better visibility
                     ->schema([
                         Hidden::make('user_id')
                             ->default(fn() => $this->record->user_id),
 
                         Select::make('submission_type_id')
                             ->relationship('submissionType', 'name')
+                            ->label('Jenis Pengajuan')
                             ->required()
                             ->disabled()
-                            ->helperText('Submission type cannot be changed after creation')
+                            ->helperText('Jenis pengajuan tidak dapat diubah setelah dibuat')
                             ->default(fn() => $this->record->submission_type_id)
-                            ->dehydrated(false),
+                            ->dehydrated(false)
+                            ->extraAttributes(['class' => 'text-lg']),
 
                         TextInput::make('title')
+                            ->label('Judul Pengajuan')
                             ->required()
-                            ->helperText('Clear and concise title describing the submission')
+                            ->helperText('Berikan judul yang jelas dan mudah dimengerti')
+                            ->placeholder('Contoh: Aplikasi Mobile untuk Deteksi Penyakit Tanaman')
                             ->maxLength(255)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->extraAttributes([
+                                'class' => 'text-lg',
+                                'style' => 'font-size: 16px; padding: 12px;',
+                            ]),
+                    ])
+                    ->extraAttributes(['class' => 'bg-white shadow-sm rounded-xl border border-gray-200']),
 
+                // Type-specific details section with improved visual hierarchy
+                Section::make('📝 Detail Khusus')
+                    ->description('Informasi khusus sesuai jenis pengajuan')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->schema(function () {
+                        $submissionType = $this->record->submissionType;
 
-                        Section::make('Type Details')
-                            ->schema(function () {
-                                $submissionType = $this->record->submissionType;
+                        if (!$submissionType) {
+                            return [
+                                Placeholder::make('no_type')
+                                    ->content('⚠️ Tidak ada jenis pengajuan yang terkait dengan pengajuan ini')
+                                    ->columnSpanFull(),
+                            ];
+                        }
 
-                                if (!$submissionType) {
-                                    return [
-                                        Placeholder::make('no_type')
-                                            ->content('No submission type associated with this record')
-                                            ->columnSpanFull(),
-                                    ];
-                                }
+                        return SubmissionFormFactory::getFormForSubmissionType($submissionType->slug);
+                    })
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->extraAttributes(['class' => 'bg-white shadow-sm rounded-xl border border-gray-200']),
 
-                                return SubmissionFormFactory::getFormForSubmissionType($submissionType->slug);
-                            }),
+                // Document section with improved visual cues and guidance
+                Section::make('📎 Dokumen Persyaratan')
+                    ->description('Upload semua dokumen yang diperlukan untuk pengajuan Anda')
+                    ->icon('heroicon-o-paper-clip')
+                    ->schema(function () {
+                        if (!$this->record->submissionType) {
+                            return [
+                                Placeholder::make('no_type')
+                                    ->content('⚠️ Tidak ada jenis pengajuan yang terkait dengan pengajuan ini')
+                                    ->columnSpanFull(),
+                            ];
+                        }
 
-                        Section::make('Document Requirements')
-                            ->schema(function () {
-                                if (!$this->record->submissionType) {
-                                    return [
-                                        Placeholder::make('no_type')
-                                            ->content('No submission type associated with this record')
-                                            ->columnSpanFull(),
-                                    ];
-                                }
+                        $requirements = $this->record->submissionType->documentRequirements()->get();
 
-                                $requirements = $this->record->submissionType->documentRequirements()->get();
+                        if ($requirements->isEmpty()) {
+                            return [
+                                Placeholder::make('no_requirements')
+                                    ->content('ℹ️ Tidak ada persyaratan dokumen untuk jenis pengajuan ini')
+                                    ->columnSpanFull(),
+                            ];
+                        }
 
-                                if ($requirements->isEmpty()) {
-                                    return [
-                                        Placeholder::make('no_requirements')
-                                            ->content('No document requirements defined for this submission type')
-                                            ->columnSpanFull(),
-                                    ];
-                                }
+                        $fields = [];
 
-                                $fields = [];
+                        // Document upload guidance for elderly users
+                        $fields[] = Placeholder::make('document_guidance')
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<div class="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-4">
+                                    <div class="flex items-start">
+                                        <span class="text-2xl mr-3">💡</span>
+                                        <div>
+                                            <h4 class="text-lg font-medium text-blue-800 mb-2">Panduan Upload Dokumen:</h4>
+                                            <ul class="text-blue-700 space-y-2 text-base">
+                                                <li class="flex items-center">
+                                                    <span class="mr-2">✅</span>
+                                                    Gunakan format PDF, DOC, atau DOCX
+                                                </li>
+                                                <li class="flex items-center">
+                                                    <span class="mr-2">✅</span>
+                                                    Ukuran maksimal file adalah 10MB
+                                                </li>
+                                                <li class="flex items-center">
+                                                    <span class="mr-2">✅</span>
+                                                    Pastikan dokumen terbaca dengan jelas
+                                                </li>
+                                                <li class="flex items-center">
+                                                    <span class="mr-2">✅</span>
+                                                    Dokumen bertanda <span class="text-primary-500 font-medium mx-1">Wajib</span> harus diupload
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>'
+                            ))
+                            ->columnSpanFull();
 
-                                // Add document validation status at the top of the section
-                                $fields[] = Placeholder::make('document_validation')
-                                    ->content(function () {
-                                        $this->checkDocumentRequirements();
+                        // Add document validation status at the top of the section
+                        $fields[] = Placeholder::make('document_validation')
+                            ->content(function () {
+                                $this->checkDocumentRequirements();
 
-                                        if ($this->isDocumentComplete) {
-                                            return new \Illuminate\Support\HtmlString(
-                                                '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4">
+                                if ($this->isDocumentComplete) {
+                                    return new \Illuminate\Support\HtmlString(
+                                        '<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4">
                                             <div class="flex items-center">
-                                                <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                <span class="font-medium text-green-800">All required documents have been uploaded</span>
+                                                <span class="text-2xl mr-3">🎉</span>
+                                                <div>
+                                                    <span class="text-lg font-medium text-green-800">Semua dokumen wajib sudah diupload!</span>
+                                                    <p class="text-green-700 mt-1">Anda dapat melanjutkan ke tahap berikutnya</p>
+                                                </div>
                                             </div>
-                                            <p class="text-green-700 mt-1">You can proceed with submission</p>
                                         </div>'
+                                    );
+                                }
+
+                                $requirements = $this->record->submissionType->documentRequirements()
+                                    ->where('required', true)
+                                    ->get();
+
+                                $content = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-4">
+                                    <div class="flex items-start">
+                                        <span class="text-2xl mr-3">⚠️</span>
+                                        <div>
+                                            <span class="text-lg font-medium text-yellow-800">Dokumen Wajib yang Belum Diupload:</span>
+                                            <p class="text-yellow-700 mt-1">Mohon upload dokumen-dokumen berikut:</p>
+                                            <ul class="list-disc list-inside mt-2 space-y-1 text-base ml-2">';
+
+                                foreach ($requirements as $requirement) {
+                                    if (
+                                        !isset($this->documentValidationStatus[$requirement->id]) ||
+                                        $this->documentValidationStatus[$requirement->id]['status'] === 'missing'
+                                    ) {
+                                        $content .= "<li class='text-yellow-700'>{$requirement->name}</li>";
+                                    }
+                                }
+
+                                $content .= '</ul></div>
+                                    </div>
+                                </div>';
+
+                                return new \Illuminate\Support\HtmlString($content);
+                            })
+                            ->columnSpanFull()
+                            ->visible(fn() => $this->record->status === 'draft');
+
+                        // Document Feedback Summary with clearer formatting
+                        $fields[] = Placeholder::make('document_feedback_summary')
+                            ->content(function () {
+                                $documentsWithFeedback = $this->record->submissionDocuments()
+                                    ->whereNotNull('notes')
+                                    ->whereIn('status', ['approved', 'rejected', 'revision_needed'])
+                                    ->with(['document', 'requirement'])
+                                    ->latest()
+                                    ->get();
+
+                                if ($documentsWithFeedback->isEmpty()) {
+                                    return '';
+                                }
+
+                                $content = '<div class="space-y-4 mb-6">';
+                                $content .= '<div class="flex items-center space-x-2 mb-2">';
+                                $content .= '<span class="text-2xl">💬</span>';
+                                $content .= '<h3 class="text-lg font-semibold text-gray-900">Feedback Reviewer</h3>';
+                                $content .= '</div>';
+
+                                foreach ($documentsWithFeedback as $docItem) {
+                                    $statusColor = match ($docItem->status) {
+                                        'approved' => 'green',
+                                        'rejected' => 'red',
+                                        'revision_needed' => 'yellow',
+                                        default => 'gray',
+                                    };
+
+                                    $statusIcon = match ($docItem->status) {
+                                        'approved' => '✅',
+                                        'rejected' => '❌',
+                                        'revision_needed' => '⚠️',
+                                        default => '📄',
+                                    };
+
+                                    $statusText = match ($docItem->status) {
+                                        'approved' => 'Disetujui',
+                                        'rejected' => 'Ditolak',
+                                        'revision_needed' => 'Perlu Revisi',
+                                        default => 'Sedang Ditinjau',
+                                    };
+
+                                    $content .= "<div class='border border-{$statusColor}-200 bg-{$statusColor}-50 rounded-lg p-4 mb-3'>";
+                                    $content .= "<div class='flex items-start space-x-3'>";
+                                    $content .= "<span class='text-2xl'>{$statusIcon}</span>";
+                                    $content .= "<div class='flex-1'>";
+                                    $requirementName = $docItem->requirement->name ?? 'Dokumen';
+                                    $content .= "<h4 class='text-lg font-medium text-{$statusColor}-800'>{$requirementName}</h4>";
+                                    $content .= "<div class='flex items-center text-sm text-{$statusColor}-600 mb-2'>";
+                                    $content .= "<span class='mr-2'>{$docItem->document->title}</span>";
+                                    $content .= "<span class='px-2 py-0.5 rounded-full bg-{$statusColor}-100 text-{$statusColor}-800 text-xs font-medium'>{$statusText}</span>";
+                                    $content .= "</div>";
+                                    
+                                    $content .= "<div class='bg-white p-4 rounded border border-{$statusColor}-200'>";
+                                    $content .= "<div class='flex items-center mb-1'>";
+                                    $content .= "<span class='text-lg mr-2'>💬</span>";
+                                    $content .= "<span class='font-medium text-gray-700'>Catatan Reviewer:</span>";
+                                    $content .= "</div>";
+                                    $content .= "<p class='text-base text-gray-700 pl-7'>" . nl2br(e($docItem->notes)) . "</p>";
+                                    $content .= "</div>";
+                                    
+                                    if ($docItem->status === 'revision_needed') {
+                                        $content .= "<div class='mt-3 p-2 bg-blue-50 border border-blue-200 rounded flex items-start'>";
+                                        $content .= "<span class='text-lg mr-2'>💡</span>";
+                                        $content .= "<p class='text-sm text-blue-700'>Silakan tinjau feedback di atas dan upload versi baru dari dokumen ini.</p>";
+                                        $content .= "</div>";
+                                    } else if ($docItem->status === 'rejected') {
+                                        $content .= "<div class='mt-3 p-2 bg-red-50 border border-red-200 rounded flex items-start'>";
+                                        $content .= "<span class='text-lg mr-2'>🔄</span>";
+                                        $content .= "<p class='text-sm text-red-700'>Dokumen ini perlu diganti. Silakan upload versi baru sesuai dengan catatan di atas.</p>";
+                                        $content .= "</div>";
+                                    } else if ($docItem->status === 'approved') {
+                                        $content .= "<div class='mt-3 p-2 bg-green-50 border border-green-200 rounded flex items-start'>";
+                                        $content .= "<span class='text-lg mr-2'>✨</span>";
+                                        $content .= "<p class='text-sm text-green-700'>Dokumen ini sudah disetujui dan memenuhi semua persyaratan.</p>";
+                                        $content .= "</div>";
+                                    }
+                                    
+                                    $content .= "</div>";
+                                    $content .= "</div>";
+                                    $content .= "</div>";
+                                }
+
+                                $content .= '</div>';
+                                return new \Illuminate\Support\HtmlString($content);
+                            })
+                            ->columnSpanFull()
+                            ->visible(function () {
+                                return $this->record->submissionDocuments()
+                                    ->whereNotNull('notes')
+                                    ->whereIn('status', ['approved', 'rejected', 'revision_needed'])
+                                    ->exists();
+                            });
+
+                        // Document requirements with improved visual styling
+                        foreach ($requirements as $requirement) {
+                            $existingDocs = $this->record->submissionDocuments()
+                                ->where('requirement_id', $requirement->id)
+                                ->with('document')
+                                ->latest()
+                                ->get();
+
+                            // Use colorful, distinctive sections for each document type
+                            $fields[] = Section::make($requirement->name)
+                                ->description($requirement->description)
+                                ->extraAttributes([
+                                    'class' => $requirement->required ? 'border-l-4 border-primary-500 bg-white rounded-lg shadow-sm' : 'bg-white rounded-lg shadow-sm',
+                            ])
+                            ->schema([
+                                Placeholder::make('requirement_info_' . $requirement->id)
+                                    ->content(function () use ($requirement) {
+                                        return new \Illuminate\Support\HtmlString(
+                                            $requirement->required 
+                                            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 mb-2">Wajib</span>'
+                                            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mb-2">Opsional</span>'
+                                        );
+                                    }),
+                                
+                                // Show existing documents with improved layout
+                                Placeholder::make('existing_docs_' . $requirement->id)
+                                    ->content(function () use ($existingDocs) {
+                                        if ($existingDocs->isEmpty()) {
+                                            return new \Illuminate\Support\HtmlString(
+                                                '<div class="text-sm italic text-gray-500 mb-4">Belum ada dokumen yang diupload</div>'
                                             );
                                         }
 
-                                        $requirements = $this->record->submissionType->documentRequirements()
-                                            ->where('required', true)
-                                            ->get();
+                                        $content = '<div class="space-y-3 mb-4">';
+                                        $content .= '<div class="text-base font-medium text-gray-900">Dokumen yang sudah diupload:</div>';
+                                        
+                                        foreach ($existingDocs as $docItem) {
+                                            $statusColor = match ($docItem->status) {
+                                                'pending' => 'gray',
+                                                'approved' => 'green',
+                                                'rejected' => 'red',
+                                                'revision_needed' => 'yellow',
+                                                default => 'gray',
+                                            };
+                                            
+                                            $statusText = match ($docItem->status) {
+                                                'pending' => 'Sedang Ditinjau',
+                                                'approved' => 'Disetujui',
+                                                'rejected' => 'Ditolak',
+                                                'revision_needed' => 'Perlu Revisi',
+                                                default => 'Sedang Diproses',
+                                            };
 
-                                        $content = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-4">
-                                            <div class="flex items-center">
-                                                <svg class="h-5 w-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                <span class="font-medium text-yellow-800">Missing required documents</span>
-                                            </div>
-                                            <p class="text-yellow-700 mt-1">Please upload the following required documents:</p>
-                                            <ul class="list-disc list-inside mt-2 space-y-1">';
-
-                                        foreach ($requirements as $requirement) {
-                                            if (
-                                                !isset($this->documentValidationStatus[$requirement->id]) ||
-                                                $this->documentValidationStatus[$requirement->id]['status'] === 'missing'
-                                            ) {
-                                                $content .= "<li class='text-yellow-700'>{$requirement->name}</li>";
-                                            }
-                                        }
-
-                                        $content .= '</ul></div>';
-
-                                        return new \Illuminate\Support\HtmlString($content);
-                                    })
-                                    ->columnSpanFull()
-                                    ->visible(fn() => $this->record->status === 'draft');
-
-                                // Document requirements table
-                                foreach ($requirements as $requirement) {
-                                    $existingDocs = $this->record->submissionDocuments()
-                                        ->where('requirement_id', $requirement->id)
-                                        ->with('document')
-                                        ->latest()
-                                        ->get();
-
-                                    $fields[] = Section::make($requirement->name)
-                                        ->description($requirement->description)
-                                        ->extraAttributes([
-                                            'class' => $requirement->required ? 'border-l-4 border-primary-500' : '',
-                                        ])
-                                        ->schema([
-                                            Placeholder::make('requirement_info')
-                                                ->content(function () use ($requirement, $existingDocs) {
-                                                    $content = "";
-
-                                                    if ($requirement->required) {
-                                                        $content .= "<span class='text-primary-500 font-medium'>Required</span><br>";
-                                                    } else {
-                                                        $content .= "<span class='text-gray-500'>Optional</span><br>";
-                                                    }
-
-                                                    if ($existingDocs->count() > 0) {
-                                                        $content .= "<div class='mt-2 space-y-2'>";
-                                                        foreach ($existingDocs as $docItem) {
-                                                            $statusColor = match ($docItem->status) {
-                                                                'pending' => 'gray',
-                                                                'approved' => 'success',
-                                                                'rejected' => 'danger',
-                                                                'revision_needed' => 'warning',
-                                                                default => 'gray',
-                                                            };
-
-                                                            $downloadUrl = route('filament.admin.documents.download', $docItem->document_id);
-
-                                                            $content .= "<div class='flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded'>";
-                                                            $content .= "<div>";
-                                                            $content .= "<div class='text-sm font-medium'>{$docItem->document->title}</div>";
-                                                            $content .= "<div class='text-xs text-gray-500'>{$docItem->document->mimetype} - " .
-                                                                number_format($docItem->document->size / 1024, 0) . " KB</div>";
-                                                            $content .= "</div>";
-                                                            $content .= "<div class='flex items-center space-x-2'>";
-                                                            $content .= "<span class='px-2 py-1 text-xs rounded-full bg-{$statusColor}-100 text-{$statusColor}-800'>{$docItem->status}</span>";
-                                                            $content .= "<a href='{$downloadUrl}' target='_blank' class='text-primary-600 hover:text-primary-800 text-xs'>Download</a>";
-                                                            $content .= "</div>";
-                                                            $content .= "</div>";
-                                                        }
-                                                        $content .= "</div>";
-                                                    }
-
-                                                    return new \Illuminate\Support\HtmlString($content);
-                                                }),
-
-                                            FileUpload::make("documents.{$requirement->id}")
-                                                ->label('Upload New Document')
-                                                ->acceptedFileTypes(
-                                                    $requirement->allowed_file_types ?
-                                                        array_map(fn($type) => ".$type", explode(',', $requirement->allowed_file_types)) :
-                                                        ['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-                                                )
-                                                ->preserveFilenames()
-                                                ->maxSize($requirement->max_file_size ?? 10240)
-                                                ->live()
-                                                ->afterStateUpdated(function ($state, Set $set) use ($requirement) {
-                                                    if (!$state) return;
-
-                                                    $filename = $state instanceof TemporaryUploadedFile ?
-                                                        $state->getClientOriginalName() : basename($state);
-
-                                                    // Create document record with proper URI handling
-                                                    $document = Document::create([
-                                                        'title' => $filename,
-                                                        'uri' => $this->formatDocumentUri($requirement->id, $filename),
-                                                        'mimetype' => $state instanceof TemporaryUploadedFile ? $state->getMimeType() : Storage::disk('public')->mimeType($state),
-                                                        'size' => $state instanceof TemporaryUploadedFile ? $state->getSize() : Storage::disk('public')->size($state),
-                                                    ]);
-
-                                                    // Move file from temporary storage to permanent storage
-                                                    if ($state instanceof TemporaryUploadedFile) {
-                                                        // Get the proper URI for storage
-                                                        $uri = $this->formatDocumentUri($requirement->id, $state->getClientOriginalName());
-
-                                                        // Store the file using public disk
-                                                        Storage::disk('public')->put(
-                                                            $uri,
-                                                            file_get_contents($state->getRealPath())
-                                                        );
-
-                                                        // Update document record with correct URI
-                                                        $document->update(['uri' => $uri]);
-                                                    }
-
-                                                    // Create submission document relationship
-                                                    $this->record->submissionDocuments()->create([
-                                                        'document_id' => $document->id,
-                                                        'requirement_id' => $requirement->id,
-                                                        'status' => 'pending',
-                                                    ]);
-
-                                                    // Clear the upload field to indicate successful upload
-                                                    $set("documents.{$requirement->id}", null);
-
-                                                    // Update validation status
-                                                    $this->checkDocumentRequirements();
-
-                                                    // Show notification
-                                                    Notification::make()
-                                                        ->title('Document uploaded successfully')
-                                                        ->success()
-                                                        ->send();
-                                                }),
-                                        ])
-                                        ->collapsible();
-                                }
-
-                                return $fields;
-                            }),
-
-                        Section::make('Status Management')
-                            ->schema([
-                                Placeholder::make('current_status')
-                                    ->content(function () {
-                                        $status = $this->record->status;
-                                        $statusColor = match ($status) {
-                                            'draft' => 'gray',
-                                            'submitted' => 'info',
-                                            'in_review' => 'warning',
-                                            'revision_needed' => 'danger',
-                                            'approved' => 'success',
-                                            'rejected' => 'danger',
-                                            'completed' => 'success',
-                                            'cancelled' => 'gray',
-                                            default => 'gray',
-                                        };
-
-                                        $content = "<div class='p-4 bg-{$statusColor}-50 border border-{$statusColor}-200 rounded-xl'>";
-                                        $content .= "<h3 class='text-lg font-medium text-{$statusColor}-700'>Current Status: " . ucfirst(str_replace('_', ' ', $status)) . "</h3>";
-
-                                        // Display current stage with more emphasis
-                                        if ($this->record->currentStage) {
-                                            $content .= "<div class='mt-2 flex items-center'>";
-                                            $content .= "<span class='font-medium text-{$statusColor}-600 mr-2'>Current Stage:</span>";
-                                            $content .= "<span class='px-3 py-1 text-sm bg-{$statusColor}-100 rounded-full font-medium text-{$statusColor}-800'>{$this->record->currentStage->name}</span>";
+                                            $content .= "<div class='border border-{$statusColor}-200 rounded-lg overflow-hidden'>";
+                                            $content .= "<div class='flex items-center justify-between p-3 bg-{$statusColor}-50'>";
+                                            $content .= "<div class='flex items-center space-x-3'>";
+                                            $content .= "<span class='text-xl'>📄</span>";
+                                            $content .= "<div>";
+                                            $content .= "<div class='font-medium text-gray-900'>{$docItem->document->title}</div>";
+                                            $content .= "<div class='text-xs text-gray-500'>" . $this->formatFileSize($docItem->document->size) . " • " . strtoupper(pathinfo($docItem->document->title, PATHINFO_EXTENSION)) . "</div>";
                                             $content .= "</div>";
-
-                                            // Add stage description if available
-                                            if (!empty($this->record->currentStage->description)) {
-                                                $content .= "<p class='mt-1 text-sm text-{$statusColor}-600'>{$this->record->currentStage->description}</p>";
-                                            }
-                                        } else {
-                                            $content .= "<p class='mt-2 text-{$statusColor}-600 italic'>No workflow stage assigned</p>";
+                                            $content .= "</div>";
+                                            
+                                            // Status badge
+                                            $content .= "<span class='px-2.5 py-1 rounded-full text-xs font-medium bg-{$statusColor}-100 text-{$statusColor}-800'>{$statusText}</span>";
+                                            $content .= "</div>";
+                                            
+                                            // Add download button and upload date
+                                            $content .= "<div class='p-3 bg-white flex justify-between items-center'>";
+                                            $content .= "<span class='text-xs text-gray-500'>Diupload: " . $docItem->created_at->format('d/m/Y H:i') . "</span>";
+                                            
+                                            $downloadUrl = route('filament.admin.documents.download', $docItem->document_id);
+                                            $content .= "<a href='{$downloadUrl}' target='_blank' class='inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>";
+                                            $content .= "<span class='mr-1'>📥</span> Download";
+                                            $content .= "</a>";
+                                            $content .= "</div>";
+                                            $content .= "</div>";
                                         }
-
-                                        $content .= "</div>";
-
+                                        
+                                        $content .= '</div>';
                                         return new \Illuminate\Support\HtmlString($content);
                                     }),
+                                
+                                // File upload with improved UI for elderly users
+                                FileUpload::make('documents.' . $requirement->id)
+                                    ->label('Upload Dokumen')
+                                    ->disk('public')
+                                    ->directory('temp')
+                                    ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                                    ->maxSize(10240)
+                                    ->helperText('Format yang diterima: PDF, DOC, atau DOCX. Maksimal 10MB')
+                                    ->loadingIndicatorPosition('left')
+                                    ->removeUploadedFileButtonPosition('right')
+                                    ->uploadButtonPosition('left')
+                                    ->uploadProgressIndicatorPosition('left')
+                                    ->panelLayout('compact')
+                                    ->extraAttributes([
+                                        'class' => 'elderly-friendly-upload',
+                                    ])
+                                    ->downloadable(),
                             ])
-                            ->columns(2),
+                            ->collapsible(true)
+                            ->collapsed(false);
+                        }
+
+                        return $fields;
+                    })
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->extraAttributes(['class' => 'bg-white shadow-sm rounded-xl border border-gray-200']),
+
+                // Status management section with clearer call-to-actions
+                Section::make('📊 Status Pengajuan')
+                    ->description('Atur status pengajuan Anda')
+                    ->icon('heroicon-o-document-check')
+                    ->schema([
+                        // Current status indicator
+                        Placeholder::make('current_status')
+                            ->content(function () {
+                                $status = $this->record->status;
+                                $statusText = match ($status) {
+                                    'draft' => 'Draft (Belum Dikirim)',
+                                    'submitted' => 'Terkirim (Sedang Ditinjau)',
+                                    'in_review' => 'Dalam Peninjauan',
+                                    'revision_needed' => 'Perlu Revisi',
+                                    'approved' => 'Disetujui',
+                                    'rejected' => 'Ditolak',
+                                    'cancelled' => 'Dibatalkan',
+                                    'completed' => 'Selesai',
+                                    default => ucfirst($status),
+                                };
+                                
+                                $statusIcon = match ($status) {
+                                    'draft' => '📝',
+                                    'submitted' => '📤',
+                                    'in_review' => '👁️',
+                                    'revision_needed' => '✏️',
+                                    'approved' => '✅',
+                                    'rejected' => '❌',
+                                    'cancelled' => '🚫',
+                                    'completed' => '🏆',
+                                    default => '📄',
+                                };
+                                
+                                $statusColor = match ($status) {
+                                    'draft' => 'gray',
+                                    'submitted', 'in_review' => 'blue',
+                                    'revision_needed' => 'yellow',
+                                    'approved', 'completed' => 'green',
+                                    'rejected', 'cancelled' => 'red',
+                                    default => 'gray',
+                                };
+
+                                $content = "<div class='p-4 bg-{$statusColor}-50 border border-{$statusColor}-200 rounded-xl flex items-start space-x-4'>";
+                                $content .= "<div class='text-3xl'>{$statusIcon}</div>";
+                                $content .= "<div>";
+                                $content .= "<div class='text-lg font-medium text-{$statusColor}-800 mb-1'>Status: {$statusText}</div>";
+                                
+                                // Add status-specific guidance
+                                $guidance = match ($status) {
+                                    'draft' => 'Pengajuan ini belum dikirim dan masih dalam tahap persiapan. Lengkapi informasi dan dokumen yang diperlukan sebelum mengirimkan.',
+                                    'submitted' => 'Pengajuan sudah dikirim dan sedang menunggu untuk ditinjau oleh tim kami. Anda akan mendapat notifikasi saat ada update.',
+                                    'in_review' => 'Tim kami sedang meninjau pengajuan Anda. Proses ini mungkin membutuhkan waktu 3-7 hari kerja.',
+                                    'revision_needed' => 'Ada bagian yang perlu diperbaiki. Silakan tinjau catatan reviewer dan lakukan revisi yang diperlukan.',
+                                    'approved' => 'Selamat! Pengajuan Anda telah disetujui.',
+                                    'rejected' => 'Maaf, pengajuan Anda tidak dapat diproses. Silakan tinjau catatan dari reviewer.',
+                                    'cancelled' => 'Pengajuan ini telah dibatalkan.',
+                                    'completed' => 'Pengajuan ini telah selesai diproses dan sertifikat telah diterbitkan.',
+                                    default => 'Status pengajuan saat ini.',
+                                };
+                                
+                                $content .= "<p class='text-base text-{$statusColor}-700'>{$guidance}</p>";
+                                
+                                // Next steps
+                                if ($status === 'draft') {
+                                    $nextStep = $this->isDocumentComplete 
+                                        ? 'Anda dapat mengirim pengajuan ini untuk ditinjau.' 
+                                        : 'Lengkapi semua dokumen yang diperlukan sebelum mengirim.';
+                                    $content .= "<p class='text-sm bg-blue-50 p-2 mt-2 rounded border border-blue-200 flex items-center'>";
+                                    $content .= "<span class='mr-1'>💡</span> Langkah selanjutnya: {$nextStep}";
+                                    $content .= "</p>";
+                                } else if ($status === 'revision_needed') {
+                                    $content .= "<p class='text-sm bg-yellow-50 p-2 mt-2 rounded border border-yellow-200 flex items-center'>";
+                                    $content .= "<span class='mr-1'>💡</span> Langkah selanjutnya: Tinjau feedback, lakukan revisi yang diperlukan, lalu kirim ulang.";
+                                    $content .= "</p>";
+                                }
+                                
+                                $content .= "</div>";
+                                $content .= "</div>";
+
+                                return new \Illuminate\Support\HtmlString($content);
+                            })
+                            ->columnSpanFull(),
+                            
+                        // Status selector with clear options
                         Select::make('status')
                             ->options(function () {
                                 $options = [
-                                    'draft' => 'Draft - Save for later editing',
-                                    'cancelled' => 'Cancelled - Process terminated',
-                                ];
+                                    'draft' => '💾 Simpan sebagai Draft - Lanjutkan nanti',
+                            ];
 
-                                if (($this->isDocumentComplete || $this->record->status !== 'draft') &&
-                                    in_array($this->record->status, ['draft', 'cancelled'])
-                                ) {
-                                    $options['submitted'] = 'Submitted - Ready for review';
-                                }
-                                
-                                // Add resubmit option when status is revision_needed
-                                if ($this->record->status === 'revision_needed' && $this->isDocumentComplete) {
-                                    $options['submitted'] = 'Resubmit - Send back for review';
-                                }
+                            if (($this->isDocumentComplete || $this->record->status !== 'draft') &&
+                                in_array($this->record->status, ['draft', 'cancelled'])
+                            ) {
+                                $options['submitted'] = '🚀 Kirim Pengajuan - Mulai proses peninjauan';
+                            }
+                            
+                            // Add resubmit option when status is revision_needed
+                            if ($this->record->status === 'revision_needed' && $this->isDocumentComplete) {
+                                $options['submitted'] = '🔄 Kirim Ulang Pengajuan - Setelah revisi';
+                            }
+                            
+                            if (in_array($this->record->status, ['draft', 'revision_needed'])) {
+                                $options['cancelled'] = '❌ Batalkan Pengajuan - Tidak lanjut proses';
+                            }
 
-                                return $options;
-                            })
-                            ->default(fn() => $this->record->status)
-                            ->required()
-                            ->reactive()
-                            ->disabled(function () {
-                                // Allow status change if status is draft, cancelled, or revision_needed
-                                return !in_array($this->record->status, ['draft', 'cancelled', 'revision_needed']);
-                            })
-                            ->afterStateUpdated(function (string $state, Set $set) {
-                                if ($state === 'submitted' && $this->record->status === 'draft') {
-                                    if ($this->record->submissionType && !$this->record->current_stage_id) {
-                                        $firstStage = $this->record->submissionType->firstStage();
-                                        if ($firstStage) {
-                                            $set('current_stage_id', $firstStage->id);
-                                        }
+                            return $options;
+                        })
+                        ->default(fn() => $this->record->status)
+                        ->required()
+                        ->reactive()
+                        ->disabled(function () {
+                            // Allow status change if status is draft, cancelled, or revision_needed
+                            return !in_array($this->record->status, ['draft', 'cancelled', 'revision_needed']);
+                        })
+                        ->afterStateUpdated(function (string $state, Set $set) {
+                            if ($state === 'submitted' && $this->record->status === 'draft') {
+                                if ($this->record->submissionType && !$this->record->current_stage_id) {
+                                    $firstStage = $this->record->submissionType->firstStage();
+                                    if ($firstStage) {
+                                        $set('current_stage_id', $firstStage->id);
                                     }
-
-                                    $set('status_notes', 'Submission ready for review');
-                                } else if ($state === 'submitted' && $this->record->status === 'revision_needed') {
-                                    $set('status_notes', 'Submission updated and resubmitted for review');
-                                }
-                            })
-                            ->helperText(function () {
-                                if (!in_array($this->record->status, ['draft', 'cancelled', 'revision_needed'])) {
-                                    return 'Status cannot be changed once submitted';
                                 }
 
-                                if ($this->record->status === 'draft' && !$this->isDocumentComplete) {
-                                    return 'You need to upload all required documents before submitting';
-                                }
-                                
-                                if ($this->record->status === 'revision_needed') {
-                                    return 'After making the required changes, you can resubmit your application for review';
-                                }
-                                
-                                return 'Changing status may trigger workflow actions';
-                            }),
+                                $set('status_notes', 'Pengajuan siap untuk ditinjau');
+                            } else if ($state === 'submitted' && $this->record->status === 'revision_needed') {
+                                $set('status_notes', 'Pengajuan sudah diperbarui dan dikirim ulang untuk ditinjau');
+                            }
+                        })
+                        ->helperText(function () {
+                            if (!in_array($this->record->status, ['draft', 'cancelled', 'revision_needed'])) {
+                                return 'Status tidak dapat diubah karena pengajuan sudah dalam proses';
+                            }
 
+                            if ($this->record->status === 'draft' && !$this->isDocumentComplete) {
+                                return '⚠️ Anda harus mengupload semua dokumen wajib sebelum dapat mengirim pengajuan';
+                            }
+                            
+                            if ($this->record->status === 'revision_needed') {
+                                return '🔄 Setelah melakukan revisi yang diminta, Anda dapat mengirim ulang pengajuan untuk ditinjau';
+                            }
+                            
+                            return 'Pilih tindakan yang ingin Anda lakukan';
+                        })
+                        ->extraAttributes([
+                            'class' => 'text-lg',
+                            'style' => 'font-size: 16px; padding: 12px;',
+                        ]),
+                    
+                        // Reviewer notes with clear formatting
                         Textarea::make('reviewer_notes')
-                            ->label('Reviewer Notes')
-                            ->placeholder('notes about the submission')
-                            ->helperText('These notes will be visible to the submitter when revision is needed or submission is rejected')
+                            ->label('Catatan Reviewer')
+                            ->placeholder('Catatan tentang pengajuan ini')
+                            ->helperText('Catatan ini akan terlihat oleh pengaju saat revisi diperlukan atau pengajuan ditolak')
                             ->rows(3)
                             ->disabled(function () {
                                 // Disable the reviewer notes field if current status is not revision_needed or rejected
                                 return !in_array($this->record->status, ['revision_needed', 'rejected']);
-                            }),
-                    ]),
-            ]);
-    }
-
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        $data['processed_by'] = Auth::id();
-
-        $comment = '';
-        if (!empty($data['status_notes'])) {
-            $comment = $data['status_notes'];
-            unset($data['status_notes']);
-        } elseif (!empty($data['comment'])) {
-            $comment = $data['comment'];
-        } elseif (isset($data['status']) && $data['status'] !== $this->record->status) {
-            $comment = "Status changed from {$this->record->status} to {$data['status']}";
-        }
-
-        $data['comment'] = $comment;
-
-        return $data;
-    }
-
-    protected function handleRecordUpdate(Model $record, array $data): Model
-    {
-        $submissionService = app(SubmissionService::class);
-        $documents = [];
-
-        try {
-            // Process any document uploads that weren't processed via live updates
-            $this->processDocumentUploads($data);
-
-            // Re-check requirements after possible uploads
-            $this->checkDocumentRequirements();
-
-            if (isset($data['status']) && $data['status'] === 'submitted' && $record->status === 'draft') {
-                if (!$this->isDocumentComplete) {
-                    Notification::make()
-                        ->title('Cannot submit incomplete application')
-                        ->body('Please upload all required documents before submitting')
-                        ->danger()
-                        ->send();
-
-                    return $record;
-                }
-
-                if (!isset($data['current_stage_id']) && $record->submissionType) {
-                    $firstStage = $record->submissionType->firstStage();
-                    if ($firstStage) {
-                        $data['current_stage_id'] = $firstStage->id;
-                    }
-                }
-            }
-
-            // Special handling for resubmission from revision_needed
-            $wasRevisionNeeded = $record->status === 'revision_needed';
-
-            $updatedRecord = $submissionService->updateSubmission(
-                $record,
-                $data,
-                documents: $documents
-            );
-
-            // Handle notifications based on status change
-            if (isset($data['status']) && $data['status'] === 'submitted') {
-                if ($record->status === 'draft') {
-                    Notification::make()
-                        ->title('Submission successfully sent for review')
-                        ->body('Your submission has been received and is now in the review process')
-                        ->success()
-                        ->send();
-                } else if ($record->status === 'revision_needed') {
-                    // This is a resubmission after revisions
-                    Notification::make()
-                        ->title('Resubmission successful')
-                        ->body('Your revised submission has been sent back to the reviewer')
-                        ->success()
-                        ->send();
-                    
-                    // Notify reviewers through workflow assignments
-                    $this->notifyReviewers($updatedRecord);
-                    
-                    // Create tracking history entry for the resubmission
-                    \App\Models\TrackingHistory::create([
-                        'id' => \Illuminate\Support\Str::uuid()->toString(),
-                        'submission_id' => $updatedRecord->id,
-                        'stage_id' => $updatedRecord->current_stage_id,
-                        'action' => 'resubmitted',
-                        'status' => 'in_review',
-                        'comment' => $data['comment'] ?? 'Submission resubmitted after revision',
-                        'processed_by' => Auth::id(),
-                        'source_status' => 'revision_needed',
-                        'target_status' => 'submitted',
-                        'event_type' => 'status_change',
-                        'metadata' => [
-                            'user_role' => Auth::user()->roles->pluck('name')->first() ?? 'submitter',
-                        ],
-                        'event_timestamp' => now(),
-                    ]);
-                }
-            } else {
-                Notification::make()
-                    ->title('Submission updated successfully')
-                    ->success()
-                    ->send();
-            }
-
-            return $updatedRecord;
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title('Error updating submission')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-
-            return $record;
-        }
-    }
-    
-    /**
-     * Notify all relevant reviewers when a submission is resubmitted
-     */
-    protected function notifyReviewers(Model $record): void
-    {
-        // Find the latest reviewer assignment for this submission
-        $latestAssignments = $record->currentStageAssignments()
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
-        if ($latestAssignments->isEmpty()) {
-            return;
-        }
-        
-        // Get all reviewers who should be notified
-        $reviewerIds = $latestAssignments->pluck('reviewer_id')->unique();
-        
-        // Set all current assignments back to pending
-        foreach ($latestAssignments as $assignment) {
-            $assignment->update([
-                'status' => 'pending',
-                'completed_at' => null,
-            ]);
-        }
-        
-        // Get user information for the notification
-        $submitter = Auth::user();
-        $submitterName = $submitter ? $submitter->fullname ?? $submitter->name : 'A user';
-        
-        // Send notification to all reviewers
-        foreach ($reviewerIds as $reviewerId) {
-            $reviewer = \App\Models\User::find($reviewerId);
-            if ($reviewer) {
-                $reviewer->notify(new \App\Notifications\ReviewActionNotification(
-                    $record,
-                    "Submission resubmitted after revision",
-                    "{$submitterName} has updated and resubmitted submission '{$record->title}' after making requested revisions."
-                ));
-            }
-        }
-    }
+                            })
+                            ->extraAttributes([
+                                'class' => 'text-lg',
+                                'style' => 'font-size: 16px; padding: 12px;',
+                            ]),
+                            
+                        // Help section with contextual guidance
+                        Placeholder::make('help_section')
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<div class="p-4 bg-blue-50 border border-blue-200 rounded-xl mt-4">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-2">❓</span>
+                                        <h4 class="text-lg font-medium text-blue-800">Butuh Bantuan?</h4>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="flex items-start space-x-3">
+                                            <span class="text-xl">📞</span>
+                                            <div>
+                                                <p class="font-medium text-blue-700">Hubungi Tim PKKI</p>
+                                                <p>0721-123456 / admin@pkki.itera.ac.id</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-start space-x-3">
+                                            <span class="text-xl">📖</span>
+                                            <div>
+                                                <p class="font-medium text-blue-700">Panduan Pengajuan</p>
+                                                <p>Klik <a href="/admin/panduan" class="text-blue-600 underline">disini</a> untuk melihat panduan lengkap</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>'
+                            ))
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->extraAttributes(['class' => 'bg-white shadow-sm rounded-xl border border-gray-200']),
+            ])
+            ->columns([
+                'sm' => 1, // Single column on small screens
+                'md' => 1, // Single column on medium screens
+                'lg' => 1, // Single column on large screens for consistency
+            ])
+            // Add accessibility and elderly-friendly global styling
+            ->extraAttributes(['class' => 'space-y-6 elderly-friendly-form']);
 }
+
+/**
+ * Helper function to format file size in a human-readable way
+ */
+protected function formatFileSize($bytes)
+{
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+    $bytes /= (1 << (10 * $pow));
+    
+    return round($bytes, 1) . ' ' . $units[$pow];
+}
+
+}
+
+// End of EditSubmission.php

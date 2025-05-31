@@ -8,6 +8,8 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Login extends BasePage
 {
+    protected static string $view = 'filament.pages.auth.login';
+
     public function mount(): void
     {
         parent::mount();

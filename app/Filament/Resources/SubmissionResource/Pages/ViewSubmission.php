@@ -31,17 +31,29 @@ class ViewSubmission extends ViewRecord
 
         $actions = [];
 
+        // Add simplified edit option for elderly users
+        if (in_array($this->record->status, ['draft', 'revision_needed'])) {
+            $actions[] = Actions\Action::make('edit_simple')
+                ->label('📝 Edit Mudah')
+                ->icon('heroicon-o-heart')
+                ->color('success')
+                ->tooltip('Interface yang lebih sederhana dan mudah digunakan')
+                ->url(fn () => $this->getResource()::getUrl('edit-simple', ['record' => $this->record]));
+        }
+
         // Customize the edit button text based on submission status
         if ($this->record->status === 'draft') {
             $actions[] = Actions\EditAction::make()
-                ->label('Edit Draft')
+                ->label('Edit Advanced')
                 ->icon('heroicon-o-pencil-square')
-                ->color('primary');
+                ->color('primary')
+                ->tooltip('Interface lengkap dengan semua fitur');
         } elseif ($this->record->status === 'revision_needed') {
             $actions[] = Actions\EditAction::make()
                 ->label('Update Submission')
                 ->icon('heroicon-o-pencil-square')
-                ->color('warning');
+                ->color('warning')
+                ->tooltip('Interface lengkap dengan semua fitur');
         } else {
             $actions[] = Actions\EditAction::make();
         }
@@ -69,11 +81,17 @@ class ViewSubmission extends ViewRecord
         $baseSchema = SubmissionResource::getInfolistSchema($this->record);
         
         // Create our custom schema components
+        $interfaceSelectionSection = $this->getInterfaceSelectionSection();
         $statusGuidanceSection = $this->getStatusGuidanceSection();
         $documentStatusSection = $this->getDocumentStatusSection();
         
         // Build the schema array, ensuring no null values
         $schema = [];
+        
+        // Add interface selection guide if submission can be edited
+        if ($interfaceSelectionSection !== null) {
+            $schema[] = $interfaceSelectionSection;
+        }
         
         // Add status guidance section if not null
         if ($statusGuidanceSection !== null) {
@@ -87,6 +105,12 @@ class ViewSubmission extends ViewRecord
         
         // Add the base schema components
         $schema = array_merge($schema, $baseSchema);
+        
+        // Add document feedback section if there are reviewer notes
+        $documentFeedbackSection = $this->getDocumentFeedbackSection();
+        if ($documentFeedbackSection !== null) {
+            $schema[] = $documentFeedbackSection;
+        }
         
         // Add reviewer notes section if applicable
         if (!empty($this->record->reviewer_notes) && 
@@ -118,13 +142,17 @@ class ViewSubmission extends ViewRecord
             ->description($this->getStatusDescription($this->record->status))
             ->icon($this->getStatusIcon($this->record->status))
             ->schema([
-                ViewEntry::make('status_guidance')
-                    ->view('filament.components.submission-status-guidance', [
-                        'submission' => $this->record,
-                        'status' => $this->record->status,
-                        'nextSteps' => $this->getNextSteps($this->record->status),
-                        'documentComplete' => $this->isDocumentationComplete(),
-                    ])
+                TextEntry::make('status_guidance')
+                    ->html()
+                    ->formatStateUsing(function () {
+                        return view('filament.components.submission-status-guidance', [
+                            'submission' => $this->record,
+                            'status' => $this->record->status,
+                            'nextSteps' => $this->getNextSteps($this->record->status),
+                            'documentComplete' => $this->isDocumentationComplete(),
+                        ])->render();
+                    })
+                    ->hiddenLabel()
             ])
             ->extraAttributes([
                 'class' => match ($this->record->status) {
@@ -161,12 +189,16 @@ class ViewSubmission extends ViewRecord
             ->icon($icon)
             ->iconColor($iconColor)
             ->schema([
-                ViewEntry::make('document_status')
-                    ->view('filament.components.document-status', [
-                        'submission' => $this->record,
-                        'documentComplete' => $documentComplete,
-                        'missingDocuments' => $this->getMissingDocuments(),
-                    ])
+                TextEntry::make('document_status')
+                    ->html()
+                    ->formatStateUsing(function () use ($documentComplete) {
+                        return view('filament.components.document-status', [
+                            'submission' => $this->record,
+                            'documentComplete' => $documentComplete,
+                            'missingDocuments' => $this->getMissingDocuments(),
+                        ])->render();
+                    })
+                    ->hiddenLabel()
             ]);
     }
 
@@ -316,5 +348,71 @@ class ViewSubmission extends ViewRecord
                 'submission' => $this->record,
             ]),
         ];
+    }
+
+    /**
+     * Get interface selection section to guide users between simple and advanced editing
+     */
+    protected function getInterfaceSelectionSection()
+    {
+        // Only show interface selection if submission can be edited
+        if (!in_array($this->record->status, ['draft', 'revision_needed'])) {
+            return null;
+        }
+
+        return Section::make('📝 Pilih Cara Edit')
+            ->description('Pilih interface yang paling sesuai dengan kebutuhan Anda')
+            ->icon('heroicon-o-adjustments-horizontal')
+            ->schema([
+                TextEntry::make('interface_selection')
+                    ->html()
+                    ->formatStateUsing(function () {
+                        return view('filament.components.interface-selection-guide', [
+                            'submission' => $this->record,
+                            'simpleEditUrl' => $this->getResource()::getUrl('edit-simple', ['record' => $this->record]),
+                            'advancedEditUrl' => $this->getResource()::getUrl('edit', ['record' => $this->record]),
+                        ])->render();
+                    })
+                    ->hiddenLabel()
+            ])
+            ->extraAttributes([
+                'class' => 'border-l-4 border-green-500 bg-green-50',
+            ])
+            ->collapsible()
+            ->collapsed(false);
+    }
+
+    /**
+     * Get document feedback section to display reviewer notes prominently
+     */
+    protected function getDocumentFeedbackSection()
+    {
+        $documentsWithFeedback = $this->record->submissionDocuments()
+            ->whereNotNull('notes')
+            ->whereIn('status', ['approved', 'rejected', 'revision_needed'])
+            ->with(['document', 'requirement'])
+            ->latest()
+            ->get();
+
+        if ($documentsWithFeedback->isEmpty()) {
+            return null;
+        }
+
+        return Section::make('Document Review Feedback')
+            ->description('Feedback from reviewers on your submitted documents')
+            ->icon('heroicon-o-chat-bubble-left-right')
+            ->schema([
+                TextEntry::make('document_feedback')
+                    ->html()
+                    ->formatStateUsing(function () use ($documentsWithFeedback) {
+                        return view('filament.components.document-feedback-list', [
+                            'documentsWithFeedback' => $documentsWithFeedback,
+                        ])->render();
+                    })
+                    ->hiddenLabel()
+            ])
+            ->extraAttributes([
+                'class' => 'border-l-4 border-blue-500',
+            ]);
     }
 }

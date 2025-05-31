@@ -1,0 +1,39 @@
+nohup: ignoring input
+
+   INFO  Server running on [http://127.0.0.1:8000].  
+
+  Press Ctrl+C to stop the server
+
+  PHP Deprecated:  Optional parameter $settings declared before required parameter $user is implicitly treated as a required parameter in /mnt/2A28ACA028AC6C8F/Programming/webdevoloper/laravel/pkki_itera/app/Filament/Resources/UserResource.php on line 274
+  2025-05-31 13:28:15 /livewire/update ................................. ~ 5s
+  2025-05-31 13:28:45 /livewire/update ................................. ~ 3s
+  2025-05-31 13:29:05 / ................................................ ~ 3s
+  2025-05-31 13:29:15 /livewire/update ................................. ~ 3s
+  2025-05-31 13:29:20 /admin/submissions/9f0a5b7a-4997-4344-a9ca-431457652a04/edit  ~ 3s
+  2025-05-31 13:29:24 /css/bezhansalleh/filament-exceptions/filament-exceptions.css?v=2.1.2.0  ~ 0.36ms
+  2025-05-31 13:29:24 /sites/logo.png .................................. ~ 3s
+  2025-05-31 13:29:24 /css/datlechin/filament-menu-builder/filament-menu-builder-styles.css?v=0.5.4.0  ~ 4s
+  2025-05-31 13:29:24 /js/bezhansalleh/filament-exceptions/filament-exceptions.js?v=2.1.2.0  ~ 4s
+  2025-05-31 13:29:24 /css/filament/forms/forms.css?v=3.3.4.0 .......... ~ 4s
+  2025-05-31 13:29:24 /css/filament/support/support.css?v=3.3.4.0 ...... ~ 4s
+  2025-05-31 13:29:24 /css/riodwanto/filament-ace-editor/filament-ace-editor.css?v=1.1.1.0  ~ 4s
+  2025-05-31 13:29:27 /js/filament/notifications/notifications.js?v=3.3.4.0  ~ 12.18ms
+  2025-05-31 13:29:27 /js/filament/support/support.js?v=3.3.4.0 .... ~ 0.23ms
+  2025-05-31 13:29:27 /js/filament/filament/echo.js?v=3.3.4.0 ...... ~ 1.45ms
+  2025-05-31 13:29:27 /js/filament/filament/app.js?v=3.3.4.0 ....... ~ 4.15ms
+  2025-05-31 13:29:28 /js/filament/forms/components/textarea.js?v=3.3.4.0  ~ 0.23ms
+  2025-05-31 13:29:28 /js/filament/forms/components/file-upload.js?v=3.3.4.0  ~ 1.11ms
+  2025-05-31 13:29:28 /sites/logo.ico .................................. ~ 3s
+  2025-05-31 13:29:31 /livewire/update ................................. ~ 3s
+  2025-05-31 13:29:55 /livewire/update ................................. ~ 3s
+  2025-05-31 13:29:58 /js/filament/tables/components/table.js?v=3.3.4.0  ~ 0.61ms
+  2025-05-31 13:29:58 /js/filament/forms/components/select.js?v=3.3.4.0  ~ 1.21ms
+  2025-05-31 13:30:04 /livewire/update ................................. ~ 3s
+  2025-05-31 13:30:34 /livewire/update ................................. ~ 3s
+  2025-05-31 13:31:04 /livewire/update ................................. ~ 3s
+  2025-05-31 13:31:34 /livewire/update ................................. ~ 4s
+  2025-05-31 13:32:04 /livewire/update ................................. ~ 3s
+  2025-05-31 13:32:10 /admin/submissions/9f0a5b7a-4997-4344-a9ca-431457652a04/edit  ~ 1s
+  2025-05-31 13:32:11 /admin/submissions/9f0a5b7a-4997-4344-a9ca-431457652a04/edit  ~ 500.83ms
+  2025-05-31 13:32:11 / ................................................ ~ 1s
+  2025-05-31 13:32:12 / ................................................ ~ 1s
