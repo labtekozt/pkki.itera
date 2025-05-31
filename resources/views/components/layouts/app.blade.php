@@ -30,11 +30,17 @@
     </head>
 
     <body class="antialiased">
+        {{-- Accessibility Toolbar for elderly users --}}
+        @include('filament.components.accessibility-toolbar')
+        
         {{ $slot }}
 
         @livewire('notifications')
 
         @filamentScripts
         @vite('resources/js/app.js')
+        
+        {{-- User Feedback Collection for elderly-friendly improvements --}}
+        <script src="{{ asset('js/user-feedback.js') }}"></script>
     </body>
 </html>

@@ -25,7 +25,7 @@ class EmailVerification extends EmailVerificationPrompt
         return Action::make('resendNotification')
             ->link()
             ->label(__('filament-panels::pages/auth/email-verification/email-verification-prompt.actions.resend_notification.label') . '.')
-            ->action(function (MailSettings $settings = null): void {
+            ->action(function (): void {
                 try {
                     $this->rateLimit(2);
                 } catch (TooManyRequestsException $exception) {
@@ -55,7 +55,16 @@ class EmailVerification extends EmailVerificationPrompt
                 $notification = new VerifyEmail();
                 $notification->url = Filament::getVerifyEmailUrl($user);
 
-                $settings->loadMailSettingsToConfig();
+                // Try to load mail settings if available and properly configured
+                try {
+                    $settings = app(MailSettings::class);
+                    if ($settings && method_exists($settings, 'loadMailSettingsToConfig') && $settings->isMailSettingsConfigured()) {
+                        $settings->loadMailSettingsToConfig();
+                    }
+                } catch (\Exception $e) {
+                    // Continue without custom mail settings if they're not configured
+                    // This allows email verification to work with default Laravel mail config
+                }
 
                 $user->notify($notification);
 
