@@ -11,6 +11,9 @@ const handlePanduan = () => {
 const handleKontak = () => {
     window.location.href = "/kontak";
 };
+const handleInfografis = () => {
+    window.location.href = "/infografis";
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); 
@@ -44,7 +47,7 @@ const Navbar = () => {
         <div className="hidden md:flex space-x-4 font-manrope">
           <button onClick={handleHome} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Home</button>
           <button onClick={handlePanduan} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Panduan</button>
-          <button className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Infografis</button>
+          <button onClick={handleInfografis} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Infografis</button>
           {/* <Link href={"#"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Berita</Link> */}
           <button onClick={handleKontak} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Kontak</button>
         </div>
@@ -63,7 +66,7 @@ const Navbar = () => {
 
           <button onClick={handleHome} className="block nav-link py-2 px-4" prefetch>Home</button>
           <button onClick={handlePanduan} className="block nav-link py-2 px-4" prefetch>Panduan</button>
-          <button className="block nav-link py-2 px-4" prefetch>Infografis</button>
+          <button onClick={handleInfografis} className="block nav-link py-2 px-4" prefetch>Infografis</button>
           {/* <Link href={"#"} className="block nav-link py-2 px-4">Berita</Link> */}
           <button onClick={handleKontak} className="block nav-link py-2 px-4" prefetch>Kontak</button>
         </div>
