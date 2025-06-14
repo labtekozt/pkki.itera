@@ -21,19 +21,22 @@ use App\Http\Controllers\TrackingHistoryController;
 */
 
 Route::get('/', function () {
-    return Inertia::render(component: 'Welcome');
-});
-Route::get('/kegiatan', function () {
-    return Inertia::render('Kegiatan');
+    return Inertia::render('Welcome');
 });
 // Route::get('/kegiatan', function () {
-//     return Inertia::render(component:'Kegiatan');  
+//     return Inertia::render('Kegiatan');
 // });
-Route::get('/news', function () {
-    return Inertia::render(component:'news');  
+Route::get('/kegiatan', function () {
+    return Inertia::render('Kegiatan');  
 });
+// Route::get('/news', function () {
+//     return Inertia::render(component:'news');  
+// });
 Route::get('/kontak', function () {
-    return Inertia::render(component:'contact');  
+    return Inertia::render('contact');  
+});
+Route::get('/infografis', function () {
+    return Inertia::render('Infografis');  
 });
 
 // Add a 'login' named route that redirects to Filament login
