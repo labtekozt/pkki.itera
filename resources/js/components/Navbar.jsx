@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from "@inertiajs/inertia-react";
-import Logo from "../../../public/images/logo.png"; 
+// import { Link } from "@inertiajs/inertia-react";
+import Logo from "../../../public/images/logo.png";
+
+const handleHome = () => {
+    window.location.href = "/";
+};
+const handlePanduan = () => {
+    window.location.href = "/kegiatan";
+};
+const handleKontak = () => {
+    window.location.href = "/kontak";
+};
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false); // To handle mobile menu open/close
+  const [isOpen, setIsOpen] = useState(false); 
   const [isSticky, setIsSticky] = useState(false);
 
   useEffect(() => {
@@ -27,16 +37,16 @@ const Navbar = () => {
     <nav className={`navbar md:sticky ${isSticky ? 'navbar-fixed' : 'absolute'}`}>
       <div className="container mx-auto flex items-center justify-between p-4">
         <div className="flex items-center space-x-4">
-          <Link href={"/"}>
+          <button onClick={handleHome}>
             <img src={Logo} alt="Logo" className='w-20 md:w-40' />
-          </Link>
+          </button>
         </div>
         <div className="hidden md:flex space-x-4 font-manrope">
-          <Link href={"/"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Home</Link>
-          <Link href={"/kegiatan"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Kegiatan</Link>
-          <Link href={"/infografis"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Infografis</Link>
-          <Link href={"/news"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Berita</Link>
-          <Link href={"/kontak"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Kontak</Link>
+          <button onClick={handleHome} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Home</button>
+          <button onClick={handlePanduan} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Panduan</button>
+          <button className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Infografis</button>
+          {/* <Link href={"#"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Berita</Link> */}
+          <button onClick={handleKontak} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Kontak</button>
         </div>
 
         <div className="md:hidden">
@@ -51,12 +61,11 @@ const Navbar = () => {
       {isOpen && (
         <div className={`md:hidden p-2 font-manrope font-medium ${isSticky ? 'bg-[#B82132] bg-opacity-40 text-white' : 'bg-[#B82132] text-white'}`}>
 
-          <Link href={"/"} className="block nav-link py-2 px-4">Home</Link>
-          <Link href={"/laporan"} className="block nav-link py-2 px-4">Laporan</Link>
-          <Link href={"/kegiatan"} className="block nav-link py-2 px-4">Kegiatan</Link>
-          <Link href={"/infografis"} className="block nav-link py-2 px-4">Infografis</Link>
-          <Link href={"/berita"} className="block nav-link py-2 px-4">Berita</Link>
-          <Link href={"/kontak"} className="block nav-link py-2 px-4">Kontak</Link>
+          <button onClick={handleHome} className="block nav-link py-2 px-4" prefetch>Home</button>
+          <button onClick={handlePanduan} className="block nav-link py-2 px-4" prefetch>Panduan</button>
+          <button className="block nav-link py-2 px-4" prefetch>Infografis</button>
+          {/* <Link href={"#"} className="block nav-link py-2 px-4">Berita</Link> */}
+          <button onClick={handleKontak} className="block nav-link py-2 px-4" prefetch>Kontak</button>
         </div>
       )}
     </nav>
