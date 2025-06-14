@@ -19,8 +19,8 @@ export default function Welcome({ auth }) {
       <Navbar/>
       <Hero/>
       <ServiceCards/>
-      <NewsSection/>
-      <Team/>
+      {/* <NewsSection/> */}
+      {/* <Team/> */}
       <Faq/>
       <Footer/>
     </>

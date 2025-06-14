@@ -24,10 +24,16 @@ Route::get('/', function () {
     return Inertia::render(component: 'Welcome');
 });
 Route::get('/kegiatan', function () {
-    return Inertia::render(component:'Kegiatan');  
+    return Inertia::render('Kegiatan');
 });
+// Route::get('/kegiatan', function () {
+//     return Inertia::render(component:'Kegiatan');  
+// });
 Route::get('/news', function () {
     return Inertia::render(component:'news');  
+});
+Route::get('/kontak', function () {
+    return Inertia::render(component:'contact');  
 });
 
 // Add a 'login' named route that redirects to Filament login

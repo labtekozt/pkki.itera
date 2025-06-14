@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, Suspense  } from "react";
 import BannerCustom from "../components/HeroCustom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+// const BannerCustom = React.lazy(() => import('../components/HeroCustom'));
 
 const sidebarItems = [
   "Paten",
