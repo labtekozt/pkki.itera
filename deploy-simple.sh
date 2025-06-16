@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# PKKI ITERA VPS One-Click Deployment Script
+# Usage: Run this script on your VPS after SSH connection
+
+set -e
+
+echo "🚀 PKKI ITERA VPS Deployment Starting..."
+
+# Update system
+echo "📦 Updating system packages..."
+sudo apt update && sudo apt upgrade -y
+
+# Install required packages
+echo "⚙️ Installing required packages..."
+sudo apt install -y nginx mysql-server php8.2 php8.2-fpm php8.2-mysql php8.2-xml php8.2-curl php8.2-zip php8.2-gd php8.2-mbstring php8.2-bcmath php8.2-intl composer nodejs npm git unzip curl
+
+# Start and enable services
+echo "🔧 Starting services..."
+sudo systemctl enable nginx mysql php8.2-fpm
+sudo systemctl start nginx mysql php8.2-fpm
+
+# Create database
+echo "🗄️ Setting up database..."
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS pkki_itera CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "CREATE USER IF NOT EXISTS 'pkki_user'@'localhost' IDENTIFIED BY 'PKKIitera2024!';"
+sudo mysql -e "GRANT ALL PRIVILEGES ON pkki_itera.* TO 'pkki_user'@'localhost';"
+sudo mysql -e "FLUSH PRIVILEGES;"
+
+# Clone application
+echo "📁 Deploying application..."
+sudo mkdir -p /var/www/pkki-itera
+sudo chown -R $USER:$USER /var/www/pkki-itera
+git clone https://github.com/labtekozt/pkki.itera.git /var/www/pkki-itera
+cd /var/www/pkki-itera
+
+# Install dependencies
+echo "📦 Installing dependencies..."
+composer install --no-dev --optimize-autoloader
+npm install && npm run build
+
+# Setup environment
+echo "⚙️ Configuring environment..."
+cp .env.example .env
+sed -i 's/DB_DATABASE=.*/DB_DATABASE=pkki_itera/' .env
+sed -i 's/DB_USERNAME=.*/DB_USERNAME=pkki_user/' .env
+sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=PKKIitera2024!/' .env
+sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+sed -i 's|APP_URL=.*|APP_URL=http://$(curl -s http://checkip.amazonaws.com)|' .env
+
+# Generate key and setup
+echo "🔑 Setting up Laravel..."
+php artisan key:generate --force
+php artisan migrate --force
+php artisan db:seed --force
+php artisan storage:link
+php artisan shield:generate --all
+
+# Set permissions
+echo "🔒 Setting permissions..."
+sudo chown -R www-data:www-data storage bootstrap/cache
+sudo chmod -R 775 storage bootstrap/cache
+
+# Configure Nginx
+echo "🌐 Configuring Nginx..."
+sudo tee /etc/nginx/sites-available/pkki-itera > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name _;
+    root /var/www/pkki-itera/public;
+    index index.php index.html;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+
+    client_max_body_size 50M;
+}
+EOF
+
+# Enable site
+sudo ln -sf /etc/nginx/sites-available/pkki-itera /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+
+# Optimize for production
+echo "⚡ Optimizing for production..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Setup cron job
+echo "⏰ Setting up cron job..."
+(crontab -l 2>/dev/null; echo "* * * * * cd /var/www/pkki-itera && php artisan schedule:run >> /dev/null 2>&1") | crontab -
+
+# Create admin user
+echo "👤 Creating admin user..."
+php artisan make:filament-user --name="Administrator" --email="admin@itera.ac.id" --password="admin123"
+
+# Get server IP
+SERVER_IP=$(curl -s http://checkip.amazonaws.com)
+
+echo "✅ Deployment completed successfully!"
+echo ""
+echo "🌐 Your application is now accessible at:"
+echo "   Frontend: http://$SERVER_IP"
+echo "   Admin Panel: http://$SERVER_IP/admin"
+echo ""
+echo "👤 Default admin credentials:"
+echo "   Email: admin@itera.ac.id"
+echo "   Password: admin123"
+echo ""
+echo "⚠️ Important next steps:"
+echo "1. Change the default admin password"
+echo "2. Configure your domain name"
+echo "3. Setup SSL certificate with: sudo certbot --nginx"
+echo "4. Configure email settings in .env file"
+echo ""
+echo "🎉 PKKI ITERA is now ready to use!"
