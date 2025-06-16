@@ -13,8 +13,6 @@ class ContactUsTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $faker = \Faker\Factory::create();
-
         // Define possible values for employees field
         $employeeOptions = [
             '1-10',
@@ -31,27 +29,27 @@ class ContactUsTableSeeder extends Seeder
 
         // Create 50 contact requests
         for ($i = 0; $i < 50; $i++) {
-            $status = $faker->randomElement($statusOptions);
+            $status = fake()->randomElement($statusOptions);
 
             $contactUs = ContactUs::create([
                 'id' => Str::ulid(),
-                'firstname' => $faker->firstName(),
-                'lastname' => $faker->lastName(),
-                'email' => $faker->safeEmail(),
-                'phone' => $faker->phoneNumber(),
-                'company' => $faker->company(),
-                'employees' => $faker->randomElement($employeeOptions),
-                'title' => $faker->sentence(rand(4, 8)),
-                'message' => $faker->paragraphs(rand(2, 5), true),
+                'firstname' => fake()->firstName(),
+                'lastname' => fake()->lastName(),
+                'email' => fake()->safeEmail(),
+                'phone' => fake()->phoneNumber(),
+                'company' => fake()->company(),
+                'employees' => fake()->randomElement($employeeOptions),
+                'title' => fake()->sentence(rand(4, 8)),
+                'message' => fake()->paragraphs(rand(2, 5), true),
                 'status' => $status,
-                'created_at' => $faker->dateTimeBetween('-3 months', 'now'),
+                'created_at' => fake()->dateTimeBetween('-3 months', 'now'),
             ]);
 
             // If the status is 'responded', add reply data
             if ($status === 'responded') {
                 $contactUs->update([
                     'reply_title' => 'RE: ' . $contactUs->title,
-                    'reply_message' => $faker->paragraphs(rand(1, 3), true),
+                    'reply_message' => fake()->paragraphs(rand(1, 3), true),
                 ]);
             }
         }
