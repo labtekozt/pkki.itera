@@ -22,18 +22,34 @@ class SubmissionTypeResource extends Resource
 
     // Improved navigation and labels
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
-    protected static ?string $navigationGroup = __('resource.system_configuration');
     protected static ?int $navigationSort = 10;
     protected static ?string $recordTitleAttribute = 'name';
-    protected static ?string $modelLabel = __('resource.submission_type');
-    protected static ?string $pluralModelLabel = __('resource.submission_types');
-    protected static ?string $navigationLabel = __('resource.submission_types');
 
     // Change navbar icon color
     protected static ?string $activeNavigationIconColor = 'primary';
 
     // Add resource description
     protected static ?string $navigationDescription = 'Manage submission types and their workflow configuration';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.system_configuration');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('resource.submission_type');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.submission_types');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.submission_types');
+    }
 
     public static function getGloballySearchableAttributes(): array
     {

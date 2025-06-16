@@ -17,9 +17,12 @@ class WorkflowStageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     
-    protected static ?string $navigationGroup = __('resource.workflow_management');
-    
     protected static ?int $navigationSort = 2;
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.workflow_management');
+    }
     
     public static function getNavigationLabel(): string
     {

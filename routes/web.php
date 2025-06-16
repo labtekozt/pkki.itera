@@ -64,7 +64,7 @@ Route::get('/admin/documents/{document}/download', function (Document $document)
 // Document routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/documents/{document}/download', [App\Http\Controllers\DocumentController::class, 'download'])
-        ->name('filament.admin.documents.download');
+        ->name('filament.admin.documents.download.controller');
     Route::get('/documents/{document}/view', [App\Http\Controllers\DocumentController::class, 'view'])
         ->name('filament.admin.documents.view');
     

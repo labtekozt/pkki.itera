@@ -35,9 +35,14 @@ git clone https://github.com/labtekozt/pkki.itera.git /var/www/pkki-itera
 cd /var/www/pkki-itera
 
 # Install dependencies
-echo "📦 Installing dependencies..."
+echo "📦 Installing PHP dependencies..."
 composer install --no-dev --optimize-autoloader
-npm install && npm run build
+
+echo "📦 Installing Node.js dependencies..."
+npm ci --production=false
+
+echo "🎨 Building React Inertia frontend..."
+npm run build
 
 # Setup environment
 echo "⚙️ Configuring environment..."
@@ -47,7 +52,7 @@ sed -i 's/DB_USERNAME=.*/DB_USERNAME=pkki_user/' .env
 sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=PKKIitera2024!/' .env
 sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
 sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
-sed -i 's|APP_URL=.*|APP_URL=http://$(curl -s http://checkip.amazonaws.com)|' .env
+sed -i 's|APP_URL=.*|APP_URL=http://hki.proyekai.com:3003|' .env
 
 # Generate key and setup
 echo "🔑 Setting up Laravel..."
@@ -66,8 +71,8 @@ sudo chmod -R 775 storage bootstrap/cache
 echo "🌐 Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/pkki-itera > /dev/null << 'EOF'
 server {
-    listen 80;
-    server_name _;
+    listen 3003;
+    server_name hki.proyekai.com;
     root /var/www/pkki-itera/public;
     index index.php index.html;
 
@@ -117,7 +122,10 @@ echo "⏰ Setting up cron job..."
 
 # Create admin user
 echo "👤 Creating admin user..."
-php artisan make:filament-user --name="Administrator" --email="admin@itera.ac.id" --password="admin123"
+php artisan make:filament-user --name="Administrator" --email="admin@itera.ac.id" --password="admin123" || {
+    echo "⚠️ Admin user creation failed, you can create it manually later with:"
+    echo "   php artisan make:filament-user"
+}
 
 # Get server IP
 SERVER_IP=$(curl -s http://checkip.amazonaws.com)
@@ -125,8 +133,9 @@ SERVER_IP=$(curl -s http://checkip.amazonaws.com)
 echo "✅ Deployment completed successfully!"
 echo ""
 echo "🌐 Your application is now accessible at:"
-echo "   Frontend: http://$SERVER_IP"
-echo "   Admin Panel: http://$SERVER_IP/admin"
+echo "   Frontend: http://hki.proyekai.com:3003"
+echo "   Admin Panel: http://hki.proyekai.com:3003/admin"
+echo "   Direct IP: http://$SERVER_IP:3003"
 echo ""
 echo "👤 Default admin credentials:"
 echo "   Email: admin@itera.ac.id"

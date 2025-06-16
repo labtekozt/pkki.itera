@@ -106,8 +106,8 @@ deploy() {
     print_status "Generating application key..."
     ssh_exec "cd $DEPLOY_PATH && php artisan key:generate --force"
     
-    # Build assets
-    print_status "Building frontend assets..."
+    # Build React Inertia frontend
+    print_status "Building React Inertia frontend..."
     ssh_exec "cd $DEPLOY_PATH && npm run build"
     
     # Create storage link
