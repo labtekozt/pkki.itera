@@ -6,15 +6,12 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Faker\Factory as Faker;
 use Illuminate\Support\Facades\Artisan;
 
 class UsersTableSeeder extends Seeder
 {
     public function run()
     {
-        $faker = Faker::create();
-
         // Superadmin user
         $sid = Str::uuid();
         DB::table('users')->insert([
