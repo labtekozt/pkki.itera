@@ -60,6 +60,102 @@ composer.phar
 /bootstrap/cache/*
 !/bootstrap/cache/.gitkeep
 
+# Compiled assets and build files
+/public/css
+/public/js
+/public/mix-manifest.json
+/public/build
+/public/hot
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Deployment and CI/CD
+/deploy.php
+/deployment.log
+/.deploy
+.deployment
+/dist/
+
+# Backup files
+*.backup
+*.sql
+*.dump
+*.tar.gz
+*.zip
+backup_*
+
+# Testing
+/coverage
+/.coverage
+/tests/coverage
+.phpunit.result.cache
+/clover.xml
+/.nyc_output
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Package managers
+package-lock.json
+yarn.lock
+composer.lock
+
+# Local development
+/database/database.sqlite
+.vscode/
+.history/
+
+# Server logs
+server.log
+error.log
+access.log
+
+# Uploaded files in development
+/storage/app/submissions/*
+/storage/app/documents/*
+!/storage/app/submissions/.gitkeep
+!/storage/app/documents/.gitkeep
+
+# Cache files
+*.cache
+
+# Docker specific
+.docker/
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Sensitive configuration
+/config/production/
+/config/staging/
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-*
+.project
+.buildpath
+
+# Bootstrap cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
 # Compiled assets
 /public/css
 /public/js
