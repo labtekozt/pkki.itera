@@ -126,16 +126,97 @@ apt install -y \
     nano \
     bc
 
-# Verify Node.js and npm installation
-log "🔧 Verifying Node.js installation..."
-node --version
-npm --version
+# Setup Node.js/npm (detect existing NVM installation or install system-wide)
+setup_nodejs() {
+    log "🔧 Setting up Node.js and npm..."
+    
+    # Check if Node.js is already available in system PATH
+    if command -v node &> /dev/null && command -v npm &> /dev/null; then
+        log "✅ Node.js and npm already available in system PATH"
+        node --version
+        npm --version
+        return 0
+    fi
+    
+    # Check for NVM installations for common users
+    local nvm_paths=(
+        "/home/$SUDO_USER/.nvm"
+        "/root/.nvm"
+        "/partikelxyz/.nvm"
+        "/home/partikelxyz/.nvm"
+    )
+    
+    local node_found=false
+    local node_path=""
+    local npm_path=""
+    
+    for nvm_path in "${nvm_paths[@]}"; do
+        if [ -d "$nvm_path" ]; then
+            log "🔍 Found NVM installation at: $nvm_path"
+            
+            # Find the latest Node.js version in NVM
+            local latest_version=$(find "$nvm_path/versions/node" -maxdepth 1 -type d -name "v*" 2>/dev/null | sort -V | tail -1)
+            
+            if [ -n "$latest_version" ] && [ -f "$latest_version/bin/node" ] && [ -f "$latest_version/bin/npm" ]; then
+                node_path="$latest_version/bin/node"
+                npm_path="$latest_version/bin/npm"
+                
+                log "✅ Found Node.js: $($node_path --version)"
+                log "✅ Found npm: $($npm_path --version)"
+                
+                # Create symlinks to make them available system-wide
+                ln -sf "$node_path" /usr/local/bin/node
+                ln -sf "$npm_path" /usr/local/bin/npm
+                
+                # Also create in /usr/bin for broader compatibility
+                ln -sf "$node_path" /usr/bin/node
+                ln -sf "$npm_path" /usr/bin/npm
+                
+                node_found=true
+                break
+            fi
+        fi
+    done
+    
+    if [ "$node_found" = true ]; then
+        success "✅ NVM Node.js installation linked to system PATH"
+        return 0
+    fi
+    
+    # If no NVM installation found, install Node.js system-wide
+    warn "No NVM installation found, installing Node.js system-wide..."
+    
+    # Remove any existing nodejs packages that might conflict
+    apt-get remove -y nodejs npm 2>/dev/null || true
+    apt-get autoremove -y || true
+    
+    # Install Node.js 20.x LTS
+    log "📦 Installing Node.js 20.x LTS..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    
+    # Verify installation
+    if command -v node &> /dev/null && command -v npm &> /dev/null; then
+        log "✅ Node.js installed successfully"
+        node --version
+        npm --version
+        return 0
+    else
+        error "❌ Node.js installation failed"
+        return 1
+    fi
+}
 
-# Fix npm if corrupted
-log "🔧 Fixing npm installation if needed..."
+# Setup Node.js
+if ! setup_nodejs; then
+    error "Node.js setup failed"
+    exit 1
+fi
+
+# Update npm to latest version
+log "🔧 Updating npm to latest version..."
 npm install -g npm@latest || {
-    warn "npm update failed, reinstalling..."
-    curl -L https://www.npmjs.com/install.sh | sh
+    warn "npm update failed, but continuing..."
 }
 
 # Verify installations
@@ -292,6 +373,92 @@ composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node.js dependencies and build assets
 log "📦 Installing Node.js dependencies..."
+
+# Robust Node.js/npm setup function
+setup_nodejs_for_deployment() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        log "🔄 Node.js setup attempt $attempt/$max_attempts"
+        
+        # Check if Node.js and npm are available
+        if command -v node &> /dev/null && command -v npm &> /dev/null; then
+            log "✅ Node.js and npm are available"
+            node --version
+            npm --version
+            return 0
+        else
+            warn "❌ Node.js or npm not found"
+            
+            # Try to use NVM installation if available
+            local nvm_paths=(
+                "/partikelxyz/.nvm"
+                "/home/partikelxyz/.nvm"
+                "/home/$SUDO_USER/.nvm"
+                "/root/.nvm"
+            )
+            
+            local node_found=false
+            for nvm_path in "${nvm_paths[@]}"; do
+                if [ -d "$nvm_path" ]; then
+                    log "🔍 Found NVM installation at: $nvm_path"
+                    local latest_version=$(find "$nvm_path/versions/node" -maxdepth 1 -type d -name "v*" 2>/dev/null | sort -V | tail -1)
+                    
+                    if [ -n "$latest_version" ] && [ -f "$latest_version/bin/node" ] && [ -f "$latest_version/bin/npm" ]; then
+                        log "🔗 Linking NVM Node.js installation..."
+                        ln -sf "$latest_version/bin/node" /usr/local/bin/node
+                        ln -sf "$latest_version/bin/npm" /usr/local/bin/npm
+                        ln -sf "$latest_version/bin/node" /usr/bin/node
+                        ln -sf "$latest_version/bin/npm" /usr/bin/npm
+                        
+                        # Fix npm permissions
+                        chmod +x /usr/local/bin/node /usr/local/bin/npm /usr/bin/node /usr/bin/npm
+                        
+                        node_found=true
+                        log "✅ Successfully linked NVM Node.js: $(node --version)"
+                        break
+                    fi
+                fi
+            done
+            
+            if [ "$node_found" = false ]; then
+                # Remove any existing Node.js installations
+                log "🗑️ Cleaning existing Node.js installations..."
+                apt-get remove -y nodejs npm || true
+                apt-get autoremove -y || true
+                
+                # Install Node.js
+                log "📦 Installing Node.js 20.x LTS..."
+                curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                apt-get update
+                apt-get install -y nodejs
+            fi
+            
+            # Verify installation
+            sleep 2
+            if command -v node &> /dev/null && command -v npm &> /dev/null; then
+                log "✅ Node.js installation successful"
+                node --version
+                npm --version
+                return 0
+            else
+                warn "❌ Node.js installation failed, attempt $attempt"
+                ((attempt++))
+                sleep 5
+            fi
+        fi
+    done
+    
+    error "Failed to setup Node.js after $max_attempts attempts"
+    return 1
+}
+
+# Setup Node.js
+if ! setup_nodejs_for_deployment; then
+    error "Node.js setup failed"
+    exit 1
+fi
 
 # Check Node.js/npm availability and fix if needed
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
