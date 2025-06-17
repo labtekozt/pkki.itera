@@ -142,21 +142,108 @@ log "🔧 Starting and enabling services..."
 systemctl enable nginx mysql php8.2-fpm
 systemctl start nginx mysql php8.2-fpm
 
+# Wait for MySQL to be ready
+log "⏳ Waiting for MySQL to start..."
+sleep 5
+
+# Function to setup MySQL safely
+setup_mysql() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        log "🔄 MySQL setup attempt $attempt/$max_attempts"
+        
+        # Try different authentication methods
+        if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+            log "✅ MySQL accessible without password"
+            return 0
+        elif mysql -u root -proot_secure_password -e "SELECT 1;" 2>/dev/null; then
+            log "✅ MySQL accessible with set password"
+            return 0
+        elif sudo mysql -u root -e "SELECT 1;" 2>/dev/null; then
+            log "✅ MySQL accessible with sudo"
+            return 0
+        else
+            warn "❌ MySQL connection failed, attempt $attempt"
+            systemctl restart mysql
+            sleep 5
+            ((attempt++))
+        fi
+    done
+    
+    error "Failed to connect to MySQL after $max_attempts attempts"
+    return 1
+}
+
+# Setup MySQL
+if ! setup_mysql; then
+    error "MySQL setup failed"
+    exit 1
+fi
+
 # Secure MySQL installation
 log "🔒 Securing MySQL installation..."
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root_secure_password';"
-sudo mysql -e "DELETE FROM mysql.user WHERE User='';"
-sudo mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-sudo mysql -e "DROP DATABASE IF EXISTS test;"
-sudo mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
-sudo mysql -e "FLUSH PRIVILEGES;"
+
+# Try different connection methods to secure MySQL
+if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    log "Securing MySQL with no existing password..."
+    mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root_secure_password';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+EOF
+elif sudo mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    log "Securing MySQL with sudo access..."
+    sudo mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root_secure_password';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+EOF
+else
+    log "MySQL already secured or password set"
+fi
 
 # Create application database
 log "🗄️ Creating application database..."
-sudo mysql -u root -proot_secure_password -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -u root -proot_secure_password -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';"
-sudo mysql -u root -proot_secure_password -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
-sudo mysql -u root -proot_secure_password -e "FLUSH PRIVILEGES;"
+
+# Try with password first, then fallback methods
+if mysql -u root -proot_secure_password -e "SELECT 1;" 2>/dev/null; then
+    log "Creating database with password authentication..."
+    mysql -u root -proot_secure_password <<EOF
+CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+elif mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    log "Creating database with no password authentication..."
+    mysql -u root <<EOF
+CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root_secure_password';
+FLUSH PRIVILEGES;
+EOF
+elif sudo mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    log "Creating database with sudo authentication..."
+    sudo mysql -u root <<EOF
+CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root_secure_password';
+FLUSH PRIVILEGES;
+EOF
+else
+    error "Unable to connect to MySQL with any method"
+    exit 1
+fi
 
 success "Database created successfully"
 
