@@ -157,7 +157,9 @@ sudo -u www-data php artisan view:clear || true
 echo "⚡ Optimizing for production..."
 sudo -u www-data php artisan config:cache
 sudo -u www-data php artisan route:cache
-sudo -u www-data php artisan view:cache
+
+# Don't cache views for Filament - it causes component issues
+echo "ℹ️ Skipping view cache (Filament compatibility)"
 
 # Setup cron job
 echo "⏰ Setting up cron job..."
