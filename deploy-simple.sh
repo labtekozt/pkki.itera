@@ -81,8 +81,20 @@ php artisan shield:generate --all
 
 # Set permissions
 echo "🔒 Setting permissions..."
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
+sudo chown -R www-data:www-data /var/www/pkki-itera
+sudo chmod -R 755 /var/www/pkki-itera
+sudo chmod -R 775 /var/www/pkki-itera/storage
+sudo chmod -R 775 /var/www/pkki-itera/bootstrap/cache
+
+# Ensure proper directory structure
+sudo mkdir -p /var/www/pkki-itera/storage/logs
+sudo mkdir -p /var/www/pkki-itera/storage/framework/{cache,sessions,views}
+sudo mkdir -p /var/www/pkki-itera/storage/app/public
+sudo mkdir -p /var/www/pkki-itera/bootstrap/cache
+
+# Fix specific Laravel directories
+sudo chown -R www-data:www-data /var/www/pkki-itera/storage
+sudo chown -R www-data:www-data /var/www/pkki-itera/bootstrap/cache
 
 # Configure Nginx
 echo "🌐 Configuring Nginx..."
