@@ -79,22 +79,25 @@ echo "🔗 Creating storage link..."
 php artisan storage:link
 php artisan shield:generate --all
 
-# Set permissions
+# Set permissions BEFORE optimization
 echo "🔒 Setting permissions..."
-sudo chown -R www-data:www-data /var/www/pkki-itera
-sudo chmod -R 755 /var/www/pkki-itera
-sudo chmod -R 775 /var/www/pkki-itera/storage
-sudo chmod -R 775 /var/www/pkki-itera/bootstrap/cache
 
-# Ensure proper directory structure
+# Ensure proper directory structure first
 sudo mkdir -p /var/www/pkki-itera/storage/logs
 sudo mkdir -p /var/www/pkki-itera/storage/framework/{cache,sessions,views}
 sudo mkdir -p /var/www/pkki-itera/storage/app/public
 sudo mkdir -p /var/www/pkki-itera/bootstrap/cache
 
-# Fix specific Laravel directories
+# Set ownership and permissions
+sudo chown -R www-data:www-data /var/www/pkki-itera
+sudo chmod -R 755 /var/www/pkki-itera
+sudo chmod -R 775 /var/www/pkki-itera/storage
+sudo chmod -R 775 /var/www/pkki-itera/bootstrap/cache
+
+# Ensure web server can write to critical directories
 sudo chown -R www-data:www-data /var/www/pkki-itera/storage
 sudo chown -R www-data:www-data /var/www/pkki-itera/bootstrap/cache
+sudo chmod -R 755 /var/www/pkki-itera/public
 
 # Configure Nginx
 echo "🌐 Configuring Nginx..."
@@ -139,11 +142,22 @@ sudo ln -sf /etc/nginx/sites-available/pkki-itera /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 
-# Optimize for production
+# Final permission check before optimization
+echo "🔒 Final permission check..."
+sudo chown -R www-data:www-data /var/www/pkki-itera/storage /var/www/pkki-itera/bootstrap/cache
+sudo chmod -R 775 /var/www/pkki-itera/storage /var/www/pkki-itera/bootstrap/cache
+
+# Clear any existing cache first
+echo "🧹 Clearing existing cache..."
+sudo -u www-data php artisan config:clear || true
+sudo -u www-data php artisan route:clear || true
+sudo -u www-data php artisan view:clear || true
+
+# Optimize for production (run as www-data user)
 echo "⚡ Optimizing for production..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+sudo -u www-data php artisan config:cache
+sudo -u www-data php artisan route:cache
+sudo -u www-data php artisan view:cache
 
 # Setup cron job
 echo "⏰ Setting up cron job..."
