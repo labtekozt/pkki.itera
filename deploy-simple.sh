@@ -126,11 +126,6 @@ apt install -y \
     nano \
     bc
 
-# Install Node.js 18.x
-log "📦 Installing Node.js 18.x..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs
-
 # Verify installations
 log "✅ Verifying installations..."
 php --version | head -1
