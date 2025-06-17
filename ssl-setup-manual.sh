@@ -491,7 +491,7 @@ else
     echo "   tail -f /var/log/letsencrypt/letsencrypt.log"
     echo ""
     echo "5. Try manual certificate request:"
-    echo "   sudo certbot --nginx -d $DOMAIN -d $WWW_DOMAIN"
+    echo "   sudo certbot --nginx -d $DOMAIN 
     echo ""
 fi
 
@@ -573,11 +573,11 @@ else
     echo "If automatic setup failed, try these commands:"
     echo ""
     echo "1. Manual certificate request:"
-    echo "   sudo certbot --nginx -d $DOMAIN -d $WWW_DOMAIN"
+    echo "   sudo certbot --nginx -d $DOMAIN 
     echo ""
     echo "2. Or standalone mode:"
     echo "   sudo systemctl stop nginx"
-    echo "   sudo certbot certonly --standalone -d $DOMAIN -d $WWW_DOMAIN"
+    echo "   sudo certbot certonly --standalone -d $DOMAIN 
     echo "   sudo systemctl start nginx"
     echo ""
     echo "3. Check logs for errors:"
