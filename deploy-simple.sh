@@ -63,8 +63,19 @@ sed -i 's|APP_URL=.*|APP_URL=http://hki.proyekai.com:3003|' .env
 # Generate key and setup
 echo "🔑 Setting up Laravel..."
 php artisan key:generate --force
+
+# Run migrations and seeders safely
+echo "🗄️ Setting up database..."
 php artisan migrate --force
-php artisan db:seed --force
+
+echo "🌱 Seeding database..."
+# Run specific seeders to avoid errors
+php artisan db:seed --class=RolesAndPermissionsSeeder --force
+php artisan db:seed --class=SubmissionTypeSeeder --force
+php artisan db:seed --class=WorkflowStageSeeder --force
+php artisan db:seed --class=UsersTableSeeder --force
+
+echo "🔗 Creating storage link..."
 php artisan storage:link
 php artisan shield:generate --all
 

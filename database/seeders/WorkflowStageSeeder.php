@@ -13,6 +13,8 @@ class WorkflowStageSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->command->info('Creating workflow stages...');
+        
         // Get submission type IDs
         $paten = SubmissionType::where('slug', 'paten')->first();
         $brand = SubmissionType::where('slug', 'brand')->first();
@@ -163,6 +165,8 @@ class WorkflowStageSeeder extends Seeder
         $this->createStages($brand->id, $brandStages);
         $this->createStages($haki->id, $hakiStages);
         $this->createStages($industrialDesign->id, $designStages);
+        
+        $this->command->info('Workflow stages seeding completed.');
     }
 
     private function createStages($submissionTypeId, $stages): void
@@ -171,30 +175,49 @@ class WorkflowStageSeeder extends Seeder
             $requiredDocs = $stageData['required_documents'] ?? [];
             unset($stageData['required_documents']);
             
-            $stage = WorkflowStage::create([
-                'id' => Str::uuid(),
-                'submission_type_id' => $submissionTypeId,
-                'code' => $stageData['code'],
-                'name' => $stageData['name'],
-                'order' => $stageData['order'],
-                'description' => $stageData['description'] ?? null,
-            ]);
+            $stage = WorkflowStage::firstOrCreate(
+                [
+                    'submission_type_id' => $submissionTypeId,
+                    'code' => $stageData['code']
+                ],
+                [
+                    'id' => Str::uuid(),
+                    'name' => $stageData['name'],
+                    'order' => $stageData['order'],
+                    'description' => $stageData['description'] ?? null,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
             
-            // Create relationships with document requirements
-            if (!empty($requiredDocs)) {
-                $order = 1;
-                foreach ($requiredDocs as $docCode) {
-                    $docRequirement = DocumentRequirement::where('code', $docCode)->first();
-                    if ($docRequirement) {
-                        WorkflowStageRequirement::create([
-                            'id' => Str::uuid(),
-                            'workflow_stage_id' => $stage->id,
-                            'document_requirement_id' => $docRequirement->id,
-                            'is_required' => true,
-                            'order' => $order++
-                        ]);
+            if ($stage->wasRecentlyCreated) {
+                $this->command->info("✅ Created workflow stage: {$stageData['name']}");
+                
+                // Create relationships with document requirements
+                if (!empty($requiredDocs)) {
+                    $order = 1;
+                    foreach ($requiredDocs as $docCode) {
+                        $docRequirement = DocumentRequirement::where('code', $docCode)->first();
+                        if ($docRequirement) {
+                            WorkflowStageRequirement::firstOrCreate(
+                                [
+                                    'workflow_stage_id' => $stage->id,
+                                    'document_requirement_id' => $docRequirement->id,
+                                ],
+                                [
+                                    'id' => Str::uuid(),
+                                    'is_required' => true,
+                                    'order' => $order++,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]
+                            );
+                        }
                     }
                 }
+            } else {
+                $this->command->info("ℹ️ Workflow stage already exists: {$stageData['name']}");
             }
         }
     }
