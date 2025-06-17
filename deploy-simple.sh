@@ -126,10 +126,24 @@ apt install -y \
     nano \
     bc
 
+# Verify Node.js and npm installation
+log "🔧 Verifying Node.js installation..."
+node --version
+npm --version
+
+# Fix npm if corrupted
+log "🔧 Fixing npm installation if needed..."
+npm install -g npm@latest || {
+    warn "npm update failed, reinstalling..."
+    curl -L https://www.npmjs.com/install.sh | sh
+}
+
 # Verify installations
 log "✅ Verifying installations..."
 php --version | head -1
 composer --version | head -1
+node --version | head -1
+npm --version | head -1
 
 # ============================================================================
 # PHASE 2: SERVICES CONFIGURATION
@@ -278,7 +292,60 @@ composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node.js dependencies and build assets
 log "📦 Installing Node.js dependencies..."
-npm ci --production=false
+
+# Check Node.js/npm availability and fix if needed
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+    error "Node.js or npm not found, reinstalling..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+fi
+
+# Clean npm cache and install dependencies
+log "🧹 Cleaning npm cache..."
+npm cache clean --force || true
+
+# Remove node_modules if exists and reinstall
+if [ -d "node_modules" ]; then
+    log "🗑️ Removing existing node_modules..."
+    rm -rf node_modules
+fi
+
+if [ -f "package-lock.json" ]; then
+    log "🗑️ Removing existing package-lock.json..."
+    rm -f package-lock.json
+fi
+
+# Install dependencies with retry mechanism
+log "📦 Installing npm dependencies with retry..."
+npm_install_with_retry() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        log "📦 npm install attempt $attempt/$max_attempts"
+        
+        if npm install --production=false --legacy-peer-deps; then
+            log "✅ npm install successful"
+            return 0
+        else
+            warn "❌ npm install failed, attempt $attempt"
+            if [ $attempt -lt $max_attempts ]; then
+                log "🔄 Retrying in 5 seconds..."
+                sleep 5
+                npm cache clean --force || true
+            fi
+            ((attempt++))
+        fi
+    done
+    
+    error "npm install failed after $max_attempts attempts"
+    return 1
+}
+
+if ! npm_install_with_retry; then
+    error "Failed to install npm dependencies"
+    exit 1
+fi
 
 log "🎨 Building React Inertia frontend..."
 npm run build
