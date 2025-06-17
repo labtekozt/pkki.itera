@@ -129,8 +129,6 @@ apt install -y \
 # Verify installations
 log "✅ Verifying installations..."
 php --version | head -1
-node --version
-npm --version
 composer --version | head -1
 
 # ============================================================================
