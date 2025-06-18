@@ -111,33 +111,15 @@ for service in "${services[@]}"; do
 done
 
 # ============================================================================
-# STEP 3: CHECK FILE PERMISSIONS AND DIRECTORIES
+# STEP 3: CHECK FILE PERMISSIONS
 # ============================================================================
 
-step "3. Fixing File Permissions and Creating Missing Directories"
+step "3. Fixing File Permissions"
 
 if [ -d "$PROJECT_DIR" ]; then
-    log "Creating required directories..."
-    
-    # Create all required Laravel directories
-    mkdir -p $PROJECT_DIR/storage/logs
-    mkdir -p $PROJECT_DIR/storage/app/public
-    mkdir -p $PROJECT_DIR/storage/framework/cache/data
-    mkdir -p $PROJECT_DIR/storage/framework/sessions
-    mkdir -p $PROJECT_DIR/storage/framework/views
-    mkdir -p $PROJECT_DIR/storage/framework/testing
-    mkdir -p $PROJECT_DIR/bootstrap/cache
-    
-    # Create nested cache directories (Laravel creates nested folders like 85/5f/)
-    for i in {0..9} {a..f}; do
-        for j in {0..9} {a..f}; do
-            mkdir -p $PROJECT_DIR/storage/framework/cache/data/$i$j
-        done
-    done
-    
     log "Setting correct file permissions..."
     
-    # Set ownership first
+    # Set ownership
     chown -R www-data:www-data $PROJECT_DIR
     
     # Set directory permissions
@@ -149,22 +131,11 @@ if [ -d "$PROJECT_DIR" ]; then
     # Set executable permissions for specific files
     chmod +x $PROJECT_DIR/artisan
     
-    # Set special permissions for storage and cache (more permissive)
-    chmod -R 777 $PROJECT_DIR/storage
-    chmod -R 777 $PROJECT_DIR/bootstrap/cache
+    # Set special permissions for storage and cache
+    chmod -R 775 $PROJECT_DIR/storage
+    chmod -R 775 $PROJECT_DIR/bootstrap/cache
     
-    # Ensure www-data can write to these directories
-    chown -R www-data:www-data $PROJECT_DIR/storage
-    chown -R www-data:www-data $PROJECT_DIR/bootstrap/cache
-    
-    # Create log file if it doesn't exist
-    if [ ! -f "$PROJECT_DIR/storage/logs/laravel.log" ]; then
-        touch $PROJECT_DIR/storage/logs/laravel.log
-        chown www-data:www-data $PROJECT_DIR/storage/logs/laravel.log
-        chmod 664 $PROJECT_DIR/storage/logs/laravel.log
-    fi
-    
-    success "File permissions and directories fixed"
+    success "File permissions fixed"
 else
     error "Project directory not found at $PROJECT_DIR"
     exit 1
