@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# PKKI ITERA - Complete One-Click Deployment Script
-# Script deployment lengkap untuk mengatur semuanya dari awal hingga selesai
-# Usage: sudo ./deploy-complete.sh
+# PKKI ITERA - Complete All-in-One Deployment Script
+# Includes all fixes: permissions, logging, sessions, SSL, security
+# Usage: sudo ./deploy-simple.sh
 
 set -e
 
@@ -46,7 +46,7 @@ success() {
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
     error "Script ini harus dijalankan sebagai root atau dengan sudo"
-    echo "Usage: sudo ./deploy-complete.sh"
+    echo "Usage: sudo ./deploy-simple.sh"
     exit 1
 fi
 
@@ -126,97 +126,21 @@ apt install -y \
     nano \
     bc
 
-# Setup Node.js/npm (detect existing NVM installation or install system-wide)
-setup_nodejs() {
-    log "🔧 Setting up Node.js and npm..."
-    
-    # Check if Node.js is already available in system PATH
-    if command -v node &> /dev/null && command -v npm &> /dev/null; then
-        log "✅ Node.js and npm already available in system PATH"
-        node --version
-        npm --version
-        return 0
-    fi
-    
-    # Check for NVM installations for common users
-    local nvm_paths=(
-        "/home/$SUDO_USER/.nvm"
-        "/root/.nvm"
-        "/partikelxyz/.nvm"
-        "/home/partikelxyz/.nvm"
-    )
-    
-    local node_found=false
-    local node_path=""
-    local npm_path=""
-    
-    for nvm_path in "${nvm_paths[@]}"; do
-        if [ -d "$nvm_path" ]; then
-            log "🔍 Found NVM installation at: $nvm_path"
-            
-            # Find the latest Node.js version in NVM
-            local latest_version=$(find "$nvm_path/versions/node" -maxdepth 1 -type d -name "v*" 2>/dev/null | sort -V | tail -1)
-            
-            if [ -n "$latest_version" ] && [ -f "$latest_version/bin/node" ] && [ -f "$latest_version/bin/npm" ]; then
-                node_path="$latest_version/bin/node"
-                npm_path="$latest_version/bin/npm"
-                
-                log "✅ Found Node.js: $($node_path --version)"
-                log "✅ Found npm: $($npm_path --version)"
-                
-                # Create symlinks to make them available system-wide
-                ln -sf "$node_path" /usr/local/bin/node
-                ln -sf "$npm_path" /usr/local/bin/npm
-                
-                # Also create in /usr/bin for broader compatibility
-                ln -sf "$node_path" /usr/bin/node
-                ln -sf "$npm_path" /usr/bin/npm
-                
-                node_found=true
-                break
-            fi
-        fi
-    done
-    
-    if [ "$node_found" = true ]; then
-        success "✅ NVM Node.js installation linked to system PATH"
-        return 0
-    fi
-    
-    # If no NVM installation found, install Node.js system-wide
-    warn "No NVM installation found, installing Node.js system-wide..."
-    
-    # Remove any existing nodejs packages that might conflict
-    apt-get remove -y nodejs npm 2>/dev/null || true
-    apt-get autoremove -y || true
-    
-    # Install Node.js 20.x LTS
-    log "📦 Installing Node.js 20.x LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
-    
-    # Verify installation
-    if command -v node &> /dev/null && command -v npm &> /dev/null; then
-        log "✅ Node.js installed successfully"
-        node --version
-        npm --version
-        return 0
-    else
-        error "❌ Node.js installation failed"
-        return 1
-    fi
-}
+# Install Node.js 20.x LTS
+log "📦 Installing Node.js 20.x LTS..."
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
 
-# Setup Node.js
-if ! setup_nodejs; then
-    error "Node.js setup failed"
-    exit 1
-fi
+# Verify Node.js and npm installation
+log "🔧 Verifying Node.js installation..."
+node --version
+npm --version
 
-# Update npm to latest version
+# Fix npm if corrupted or update to latest
 log "🔧 Updating npm to latest version..."
 npm install -g npm@latest || {
-    warn "npm update failed, but continuing..."
+    warn "npm update failed, reinstalling..."
+    curl -L https://www.npmjs.com/install.sh | sh
 }
 
 # Verify installations
@@ -351,15 +275,12 @@ log "🔧 PHASE 3: Application Deployment"
 # Prepare project directory
 log "📁 Preparing project directory..."
 mkdir -p $PROJECT_DIR
-chown -R $USER:$USER $PROJECT_DIR
 
-# Clone or copy application
-if [ -d "/tmp/pkki-itera" ]; then
-    log "📁 Copying application from /tmp..."
-    cp -r /tmp/pkki-itera/* $PROJECT_DIR/
-elif [ -d "$(pwd)" ] && [ -f "$(pwd)/artisan" ]; then
+# Copy application from current directory if we're running from the project directory
+if [ -f "$(pwd)/artisan" ]; then
     log "📁 Copying application from current directory..."
     cp -r $(pwd)/* $PROJECT_DIR/
+    cp -r $(pwd)/.* $PROJECT_DIR/ 2>/dev/null || true
 else
     log "📁 Cloning application from GitHub..."
     git clone https://github.com/labtekozt/pkki.itera.git $PROJECT_DIR
@@ -373,99 +294,6 @@ composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node.js dependencies and build assets
 log "📦 Installing Node.js dependencies..."
-
-# Robust Node.js/npm setup function
-setup_nodejs_for_deployment() {
-    local max_attempts=3
-    local attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        log "🔄 Node.js setup attempt $attempt/$max_attempts"
-        
-        # Check if Node.js and npm are available
-        if command -v node &> /dev/null && command -v npm &> /dev/null; then
-            log "✅ Node.js and npm are available"
-            node --version
-            npm --version
-            return 0
-        else
-            warn "❌ Node.js or npm not found"
-            
-            # Try to use NVM installation if available
-            local nvm_paths=(
-                "/partikelxyz/.nvm"
-                "/home/partikelxyz/.nvm"
-                "/home/$SUDO_USER/.nvm"
-                "/root/.nvm"
-            )
-            
-            local node_found=false
-            for nvm_path in "${nvm_paths[@]}"; do
-                if [ -d "$nvm_path" ]; then
-                    log "🔍 Found NVM installation at: $nvm_path"
-                    local latest_version=$(find "$nvm_path/versions/node" -maxdepth 1 -type d -name "v*" 2>/dev/null | sort -V | tail -1)
-                    
-                    if [ -n "$latest_version" ] && [ -f "$latest_version/bin/node" ] && [ -f "$latest_version/bin/npm" ]; then
-                        log "🔗 Linking NVM Node.js installation..."
-                        ln -sf "$latest_version/bin/node" /usr/local/bin/node
-                        ln -sf "$latest_version/bin/npm" /usr/local/bin/npm
-                        ln -sf "$latest_version/bin/node" /usr/bin/node
-                        ln -sf "$latest_version/bin/npm" /usr/bin/npm
-                        
-                        # Fix npm permissions
-                        chmod +x /usr/local/bin/node /usr/local/bin/npm /usr/bin/node /usr/bin/npm
-                        
-                        node_found=true
-                        log "✅ Successfully linked NVM Node.js: $(node --version)"
-                        break
-                    fi
-                fi
-            done
-            
-            if [ "$node_found" = false ]; then
-                # Remove any existing Node.js installations
-                log "🗑️ Cleaning existing Node.js installations..."
-                apt-get remove -y nodejs npm || true
-                apt-get autoremove -y || true
-                
-                # Install Node.js
-                log "📦 Installing Node.js 20.x LTS..."
-                curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-                apt-get update
-                apt-get install -y nodejs
-            fi
-            
-            # Verify installation
-            sleep 2
-            if command -v node &> /dev/null && command -v npm &> /dev/null; then
-                log "✅ Node.js installation successful"
-                node --version
-                npm --version
-                return 0
-            else
-                warn "❌ Node.js installation failed, attempt $attempt"
-                ((attempt++))
-                sleep 5
-            fi
-        fi
-    done
-    
-    error "Failed to setup Node.js after $max_attempts attempts"
-    return 1
-}
-
-# Setup Node.js
-if ! setup_nodejs_for_deployment; then
-    error "Node.js setup failed"
-    exit 1
-fi
-
-# Check Node.js/npm availability and fix if needed
-if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    error "Node.js or npm not found, reinstalling..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
-fi
 
 # Clean npm cache and install dependencies
 log "🧹 Cleaning npm cache..."
@@ -483,36 +311,11 @@ if [ -f "package-lock.json" ]; then
 fi
 
 # Install dependencies with retry mechanism
-log "📦 Installing npm dependencies with retry..."
-npm_install_with_retry() {
-    local max_attempts=3
-    local attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        log "📦 npm install attempt $attempt/$max_attempts"
-        
-        if npm install --production=false --legacy-peer-deps; then
-            log "✅ npm install successful"
-            return 0
-        else
-            warn "❌ npm install failed, attempt $attempt"
-            if [ $attempt -lt $max_attempts ]; then
-                log "🔄 Retrying in 5 seconds..."
-                sleep 5
-                npm cache clean --force || true
-            fi
-            ((attempt++))
-        fi
-    done
-    
-    error "npm install failed after $max_attempts attempts"
-    return 1
+log "📦 Installing npm dependencies..."
+npm install --legacy-peer-deps || {
+    warn "First npm install failed, trying alternative method..."
+    npm install --force
 }
-
-if ! npm_install_with_retry; then
-    error "Failed to install npm dependencies"
-    exit 1
-fi
 
 log "🎨 Building React Inertia frontend..."
 npm run build
@@ -525,9 +328,6 @@ log "🔧 PHASE 4: Environment Configuration"
 
 # Create environment file
 log "⚙️ Creating environment configuration..."
-cp .env.example .env
-
-# Configure environment variables
 cat > .env << EOF
 # Application Configuration
 APP_NAME="PKKI ITERA"
@@ -538,8 +338,8 @@ APP_TIMEZONE=Asia/Jakarta
 APP_URL=https://$DOMAIN
 APP_LOCALE=id
 
-# Log Configuration
-LOG_CHANNEL=stack
+# Log Configuration - Using syslog to avoid permission issues
+LOG_CHANNEL=syslog
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=info
 
@@ -551,9 +351,12 @@ DB_DATABASE=$DB_NAME
 DB_USERNAME=$DB_USER
 DB_PASSWORD=$DB_PASS
 
-# Session & Cache Configuration
+# Session & Cache Configuration - Using database for sessions
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=.$DOMAIN
 CACHE_DRIVER=file
 QUEUE_CONNECTION=database
 
@@ -615,20 +418,43 @@ php artisan key:generate --force
 
 log "🔧 PHASE 5: Database Setup"
 
-# Create required directories
+# Create required directories with proper structure
 log "📁 Creating storage directories..."
 mkdir -p storage/logs
-mkdir -p storage/framework/{cache,sessions,views}
+mkdir -p storage/framework/{cache/data,sessions,views,testing}
 mkdir -p storage/app/public
 mkdir -p bootstrap/cache
+mkdir -p app/Policies
 
-# Set initial permissions
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+# Create nested cache directories (Laravel creates nested folders like 85/5f/)
+for i in {0..9} {a..f}; do
+    for j in {0..9} {a..f}; do
+        mkdir -p storage/framework/cache/data/$i$j
+    done
+done
+
+# Set proper ownership and permissions
+log "🔒 Setting proper file permissions..."
+chown -R www-data:www-data $PROJECT_DIR
+chmod -R 755 $PROJECT_DIR
+chmod -R 775 storage bootstrap/cache app/Policies
+chmod -R 777 storage/framework/cache
+
+# Create sessions table migration if it doesn't exist
+log "📋 Creating sessions table..."
+if ! php artisan migrate:status 2>/dev/null | grep -q "create_sessions_table"; then
+    php artisan session:table
+fi
 
 # Run migrations
 log "🗄️ Running database migrations..."
 php artisan migrate --force
+
+# Clear all caches before seeding
+log "🧹 Clearing caches before seeding..."
+php artisan config:clear || true
+php artisan cache:clear || true
+php artisan view:clear || true
 
 # Seed database
 log "🌱 Seeding database..."
@@ -641,9 +467,14 @@ php artisan db:seed --class=UsersTableSeeder --force
 log "🔗 Creating storage link..."
 php artisan storage:link
 
-# Generate Filament Shield
+# Generate Filament Shield with proper permissions
 log "🛡️ Generating Filament Shield..."
-php artisan shield:generate --all
+sudo -u www-data php artisan shield:generate --all || {
+    warn "Shield generation failed as www-data, trying as current user..."
+    php artisan shield:generate --all || {
+        warn "Shield generation failed, skipping..."
+    }
+}
 
 success "Database setup completed"
 
@@ -736,19 +567,15 @@ else
     warn "Domain $DOMAIN resolves to: $DOMAIN_IP"
     warn "Server IP is: $SERVER_IP"
     echo ""
-    read -p "Continue with SSL setup anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        warn "Skipping SSL setup. You can run it manually later:"
-        warn "sudo certbot --nginx -d $DOMAIN -d $WWW_DOMAIN"
-        SSL_SKIPPED=true
-    fi
+    warn "Skipping SSL setup. You can run it manually later:"
+    warn "sudo certbot --nginx -d $DOMAIN"
+    SSL_SKIPPED=true
 fi
 
 if [ "$SSL_SKIPPED" != "true" ]; then
     # Setup SSL certificate
     log "🔒 Setting up SSL certificate..."
-    certbot --nginx -d $DOMAIN -d $WWW_DOMAIN \
+    certbot --nginx -d $DOMAIN \
         --non-interactive \
         --agree-tos \
         --email admin@$DOMAIN \
@@ -831,15 +658,10 @@ log "⏰ Setting up cron job..."
 success "Optimization completed"
 
 # ============================================================================
-# PHASE 10: ADMIN USER CREATION
+# PHASE 10: FINAL VERIFICATION
 # ============================================================================
 
-
-# ============================================================================
-# PHASE 11: VERIFICATION
-# ============================================================================
-
-log "🔧 PHASE 11: Deployment Verification"
+log "🔧 PHASE 10: Deployment Verification"
 
 # Test application
 log "🧪 Testing application..."
@@ -928,7 +750,7 @@ echo -e "${YELLOW}⚠️ Important Next Steps:${NC}"
 echo "1. 🔑 Change admin password immediately"
 echo "2. 📧 Configure email settings in .env"
 echo "3. 🔒 $([ "$SSL_ENABLED" != "true" ] && echo "Setup SSL: sudo certbot --nginx -d $DOMAIN" || echo "SSL is already configured")"
-echo "4. 📊 Monitor logs: tail -f $PROJECT_DIR/storage/logs/laravel.log"
+echo "4. 📊 Monitor logs: tail -f /var/log/syslog | grep laravel"
 echo "5. 🔄 Setup regular backups"
 echo ""
 
@@ -940,10 +762,18 @@ echo "MySQL: $(mysql --version | head -1)"
 echo ""
 
 echo -e "${CYAN}🛠️ Useful Commands:${NC}"
-echo "View logs: tail -f $PROJECT_DIR/storage/logs/laravel.log"
+echo "View logs: tail -f /var/log/syslog | grep laravel"
 echo "Restart services: sudo systemctl restart nginx php8.2-fpm"
 echo "Update app: cd $PROJECT_DIR && git pull && composer install --no-dev"
 echo "Clear cache: cd $PROJECT_DIR && php artisan cache:clear"
+echo "Fix permissions: sudo chown -R www-data:www-data $PROJECT_DIR"
+echo ""
+
+echo -e "${CYAN}🔧 Quick Fixes:${NC}"
+echo "• If 500 error: Run ./emergency-fix.sh"
+echo "• If SSL issues: Run ./ssl-setup-manual.sh"
+echo "• If Shield fails: Run ./fix-shield-permissions.sh"
+echo "• If logging issues: Run ./fix-logging.sh"
 echo ""
 
 if [ "$SSL_ENABLED" = "true" ]; then

@@ -54,22 +54,21 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['syslog', 'stderr'],
             'ignore_exceptions' => false,
         ],
 
         'single' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
+            'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),
+            'facility' => LOG_USER,
             'replace_placeholders' => true,
         ],
 
         'daily' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 14,
+            'facility' => LOG_USER,
             'replace_placeholders' => true,
         ],
 
@@ -124,7 +123,9 @@ return [
         ],
 
         'emergency' => [
-            'path' => storage_path('logs/laravel.log'),
+            'driver' => 'syslog',
+            'level' => 'emergency',
+            'facility' => LOG_USER,
         ],
     ],
 
