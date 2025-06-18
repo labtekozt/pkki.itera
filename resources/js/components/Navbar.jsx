@@ -50,6 +50,7 @@ const Navbar = () => {
           <button onClick={handleInfografis} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Infografis</button>
           {/* <Link href={"#"} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`}>Berita</Link> */}
           <button onClick={handleKontak} className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} prefetch>Kontak</button>
+          <a href='https://docs.google.com/forms/d/e/1FAIpQLSeY9kAw3mCl7Q4OX0X6nOkpIQxvqhYPhzarVbqsF0W3NP9drQ/viewform?usp=dialog' className={`nav-link ${isSticky ? 'text-white' : 'text-white'}`} target="_blank"rel="noopener noreferrer">Lapor</a>
         </div>
 
         <div className="md:hidden">
@@ -69,6 +70,7 @@ const Navbar = () => {
           <button onClick={handleInfografis} className="block nav-link py-2 px-4" prefetch>Infografis</button>
           {/* <Link href={"#"} className="block nav-link py-2 px-4">Berita</Link> */}
           <button onClick={handleKontak} className="block nav-link py-2 px-4" prefetch>Kontak</button>
+          <a href='https://docs.google.com/forms/d/e/1FAIpQLSeY9kAw3mCl7Q4OX0X6nOkpIQxvqhYPhzarVbqsF0W3NP9drQ/viewform?usp=dialog' className="block nav-link py-2 px-4" target="_blank"rel="noopener noreferrer">Lapor</a>
         </div>
       )}
     </nav>
