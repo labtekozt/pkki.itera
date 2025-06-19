@@ -21,12 +21,12 @@ class WorkflowStageResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('resource.workflow_management');
+        return 'Workflow Management';
     }
     
     public static function getNavigationLabel(): string
     {
-        return __('resource.workflow_stages');
+        return 'Workflow Stages';
     }
     
     public static function getNavigationBadge(): ?string
