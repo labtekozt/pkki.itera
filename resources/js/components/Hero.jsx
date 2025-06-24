@@ -2,7 +2,7 @@ import { Link } from "@inertiajs/inertia-react";
 import heroImage from "../../../public/images/hero.png"; 
 
 const handleClick = () => {
-    window.location.href = "/kegiatan";
+    window.location.href = "/admin/login";
 };
 
 const Hero = () => {

@@ -38,6 +38,22 @@ Route::get('/kontak', function () {
 Route::get('/infografis', function () {
     return Inertia::render('Infografis');  
 });
+// Route::get('/kegiatan', function () {
+//     return Inertia::render('Kegiatan');
+// });
+Route::get('/kegiatan', function () {
+    return Inertia::render(component: 'Kegiatan');  
+});
+// Route::get('/news', function () {
+//     return Inertia::render(component:'news');  
+// });
+Route::get('/kontak', function () {
+    return Inertia::render(component: 'contact');  
+});
+Route::get('/infografis', function () {
+    return Inertia::render(component: 'Infografis');  
+});
+
 
 // Add a 'login' named route that redirects to Filament login
 Route::redirect('/login', '/admin/login')->name('login');
