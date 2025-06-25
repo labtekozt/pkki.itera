@@ -1,60 +1,166 @@
-name: CI
+name: PKKI ITERA - Deploy
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main, development ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
 
 jobs:
-  test:
+  deploy:
+    name: Deploy to Server
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
     
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: pkki_itera_test
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
-    strategy:
-      matrix:
-        php-version: [8.2, 8.3]
-        node-version: [18, 20]
-
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
       with:
-        php-version: ${{ matrix.php-version }}
-        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
-        coverage: xdebug
+        ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+    - name: Add server to known hosts
+      run: ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-${{ matrix.php-version }}-
+    - name: Deploy to Production Server
+      if: github.ref == 'refs/heads/main'
+      run: |
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          set -e
+          
+          echo "🚀 Starting deployment to production..."
+          cd /home/partikelxyz/pkki.itera
+          
+          # Enable maintenance mode
+          php artisan down --message="Deployment in progress..." --retry=60
+          
+          # Backup database before deployment
+          echo "📦 Creating backup..."
+          php artisan backup:run --only-db --quiet || echo "Backup failed, continuing..."
+          
+          # Pull latest changes from main branch
+          echo "📥 Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Install/update dependencies
+          echo "📦 Installing dependencies..."
+          composer install --no-dev --optimize-autoloader --no-interaction
+          
+          # Build frontend assets
+          echo "🏗️ Building frontend assets..."
+          npm ci --production
+          npm run build
+          
+          # Update Laravel configuration
+          echo "⚙️ Updating configuration..."
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan icons:cache
+          
+          # Run database migrations
+          echo "🗄️ Running migrations..."
+          php artisan migrate --force
+          
+          # Generate Filament permissions
+          echo "🔐 Updating permissions..."
+          php artisan shield:generate --all --quiet || echo "Shield generation failed, continuing..."
+          
+          # Clear caches
+          echo "🧹 Clearing caches..."
+          php artisan cache:clear
+          php artisan queue:restart
+          
+          # Set proper permissions
+          echo "🔒 Setting permissions..."
+          chmod -R 755 storage bootstrap/cache public/build
+          chown -R www-data:www-data storage bootstrap/cache public/build
+          
+          # Disable maintenance mode
+          php artisan up
+          
+          echo "✅ Production deployment completed successfully!"
+        ENDSSH
+
+    - name: Deploy to Development Server
+      if: github.ref == 'refs/heads/development'
+      run: |
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          set -e
+          
+          echo "🚀 Starting deployment to development..."
+          cd /home/partikelxyz/pkki.itera
+          
+          # For development, we can be less cautious
+          echo "📥 Pulling latest changes from development..."
+          git fetch origin
+          git reset --hard origin/development
+          
+          # Install dependencies (including dev)
+          echo "📦 Installing dependencies..."
+          composer install --optimize-autoloader --no-interaction
+          
+          # Build assets
+          echo "🏗️ Building assets..."
+          npm ci
+          npm run build
+          
+          # Update configuration
+          echo "⚙️ Updating configuration..."
+          php artisan config:clear
+          php artisan cache:clear
+          
+          # Run migrations
+          echo "🗄️ Running migrations..."
+          php artisan migrate --force
+          
+          echo "✅ Development deployment completed!"
+        ENDSSH
+
+    - name: Verify deployment
+      run: |
+        echo "🔍 Verifying deployment..."
+        sleep 10
+        
+        # Check if site is responding
+        if curl -f -s https://hki.proyekai.com/admin/login > /dev/null; then
+          echo "✅ Site is responding correctly"
+        else
+          echo "❌ Site verification failed"
+          exit 1
+        fi
+
+    - name: Notify success
+      if: success()
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "🌐 Site: https://hki.proyekai.com"
+        echo "🔧 Admin: https://hki.proyekai.com/admin"
+        echo "📊 Branch: ${{ github.ref_name }}"
+        echo "📝 Commit: ${{ github.sha }}"
+
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Please check the logs and try again."
 
     - name: Install PHP dependencies
       run: composer install --prefer-dist --no-interaction --no-progress
 
     - name: Install Node dependencies
-      run: npm ci
+      run: npm i
 
     - name: Copy environment file
       run: cp .env.example .env

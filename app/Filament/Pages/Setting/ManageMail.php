@@ -31,6 +31,16 @@ class ManageMail extends SettingsPage
 
     public function mount(): void
     {
+        // Ensure mail settings are loaded into config when accessing this page
+        try {
+            $settings = app(MailSettings::class);
+            if ($settings->isMailSettingsConfigured()) {
+                $settings->loadMailSettingsToConfig();
+            }
+        } catch (\Exception $e) {
+            // If there's an error loading settings, we'll continue with .env defaults
+        }
+        
         $this->fillForm();
     }
 
@@ -188,9 +198,12 @@ class ManageMail extends SettingsPage
             $settings->fill($data);
             $settings->save();
 
+            // Immediately load the new settings into the current config
+            $settings->loadMailSettingsToConfig();
+
             $this->callHook('afterSave');
 
-            $this->sendSuccessNotification('Mail Settings updated.');
+            $this->sendSuccessNotification('Mail Settings updated successfully! The new settings are now active.');
 
             $this->redirect(static::getUrl(), navigate: FilamentView::hasSpaMode() && is_app_url(static::getUrl()));
         } catch (\Throwable $th) {

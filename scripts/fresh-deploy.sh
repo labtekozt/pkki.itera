@@ -70,12 +70,11 @@ readonly WHITE='\033[1;37m'
 readonly NC='\033[0m' # No Color
 
 # Feature flags (can be overridden by environment variables)
-ENABLE_SSL="${ENABLE_SSL:-true}"
-ENABLE_BACKUP="${ENABLE_BACKUP:-true}"
-ENABLE_MONITORING="${ENABLE_MONITORING:-true}"
-SKIP_DEPS_CHECK="${SKIP_DEPS_CHECK:-false}"
-DRY_RUN="${DRY_RUN:-false}"
-DEBUG="${DEBUG:-false}"
+readonly ENABLE_SSL="${ENABLE_SSL:-true}"
+readonly ENABLE_BACKUP="${ENABLE_BACKUP:-true}"
+readonly ENABLE_MONITORING="${ENABLE_MONITORING:-true}"
+readonly SKIP_DEPS_CHECK="${SKIP_DEPS_CHECK:-false}"
+readonly DRY_RUN="${DRY_RUN:-false}"
 
 # =============================================================================
 # UTILITY FUNCTIONS

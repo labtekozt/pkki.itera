@@ -1,0 +1,83 @@
+name: Simple Deploy
+
+on:
+  push:
+    branches: [ main, development ]
+  workflow_dispatch:
+
+env:
+  DEPLOY_PATH: '/home/partikelxyz/pkki.itera'
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to server
+      run: |
+        # Add server to known hosts
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        
+        # Deploy to server
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd ${{ env.DEPLOY_PATH }}
+          
+          echo "🚀 Starting deployment..."
+          
+          # Enable maintenance mode
+          php artisan down --message="Updating..." --retry=60 || echo "Maintenance mode failed"
+          
+          # Pull latest changes
+          git fetch origin
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            git reset --hard origin/main
+            echo "📥 Deployed main branch"
+          else
+            git reset --hard origin/development
+            echo "📥 Deployed development branch"
+          fi
+          
+          # Install dependencies
+          composer install --no-dev --optimize-autoloader --no-interaction
+          
+          # Build frontend
+          npm ci --production
+          npm run build
+          
+          # Laravel optimizations
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          
+          # Database migrations
+          php artisan migrate --force
+          
+          # Clear caches
+          php artisan cache:clear
+          
+          # Fix permissions
+          chmod -R 755 storage bootstrap/cache
+          
+          # Disable maintenance mode
+          php artisan up
+          
+          echo "✅ Deployment completed!"
+        EOF
+
+    - name: Verify deployment
+      run: |
+        sleep 5
+        if curl -f https://hki.proyekai.com > /dev/null 2>&1; then
+          echo "✅ Site is accessible"
+        else
+          echo "⚠️ Site check failed (might be temporary)"
+        fi

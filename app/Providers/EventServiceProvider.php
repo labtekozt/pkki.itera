@@ -29,6 +29,11 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
         ],
         
+        // Mail Events
+        \Illuminate\Mail\Events\MessageSending::class => [
+            \App\Listeners\LoadMailSettingsListener::class,
+        ],
+        
         // Document Status Events
         DocumentStatusChanged::class => [
             CreateDocumentStatusTracker::class,

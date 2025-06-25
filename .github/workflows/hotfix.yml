@@ -1,0 +1,139 @@
+name: PKKI ITERA - Hotfix Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      description:
+        description: 'Hotfix description'
+        required: true
+        type: string
+      skip_tests:
+        description: 'Skip tests (emergency only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PHP_VERSION: '8.2'
+
+jobs:
+  emergency-deploy:
+    name: Emergency Hotfix Deployment
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate hotfix
+        run: |
+          echo "🚨 EMERGENCY HOTFIX DEPLOYMENT"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Description: ${{ inputs.description }}"
+          echo "Skip Tests: ${{ inputs.skip_tests }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+      - name: Setup PHP
+        if: ${{ !inputs.skip_tests }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+
+      - name: Quick tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          composer install --prefer-dist --no-interaction
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test --stop-on-failure
+
+      - name: Setup SSH for Production
+        if: inputs.environment == 'production'
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Deploy hotfix to Production
+        if: inputs.environment == 'production'
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/partikelxyz/pkki.itera
+            
+            # Quick backup
+            php artisan backup:run --only-db --quiet
+            
+            # Maintenance mode
+            php artisan down --message="Emergency hotfix in progress..." --retry=30
+            
+            # Pull changes
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Quick update
+            composer install --no-dev --optimize-autoloader --no-interaction
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan view:cache
+            php artisan cache:clear
+            
+            # Restart services
+            php artisan queue:restart
+            
+            # Remove maintenance mode
+            php artisan up
+            
+            echo "✅ Hotfix deployed successfully"
+          EOF
+
+      - name: Verify deployment
+        if: inputs.environment == 'production'
+        run: |
+          sleep 10
+          curl -f https://hki.proyekai.com/admin/login || exit 1
+          echo "✅ Application is responding correctly"
+
+      - name: Create deployment issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Emergency Hotfix Deployed - ${context.payload.inputs.description}`;
+            const body = `
+            ## Emergency Hotfix Deployment Report
+            
+            **Environment:** ${context.payload.inputs.environment}
+            **Branch:** ${context.ref.replace('refs/heads/', '')}
+            **Description:** ${context.payload.inputs.description}
+            **Deployed by:** @${context.actor}
+            **Timestamp:** ${new Date().toISOString()}
+            **Tests Skipped:** ${context.payload.inputs.skip_tests}
+            
+            ## Actions Required
+            - [ ] Verify application functionality
+            - [ ] Monitor error logs
+            - [ ] Create follow-up tasks if needed
+            - [ ] Document lessons learned
+            
+            ## Quick Links
+            - [Production Site](https://hki.proyekai.com)
+            - [Admin Panel](https://hki.proyekai.com/admin)
+            - [Server Logs](https://hki.proyekai.com/admin/logs)
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['hotfix', 'deployment', 'urgent']
+            });

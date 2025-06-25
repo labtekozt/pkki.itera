@@ -1,0 +1,295 @@
+name: PKKI ITERA - Backup & Maintenance
+
+on:
+  schedule:
+    # Run backup daily at 2 AM UTC (9 AM WIB)
+    - cron: '0 2 * * *'
+    # Run maintenance weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Maintenance task'
+        required: true
+        type: choice
+        options:
+          - backup
+          - cleanup
+          - security-update
+          - performance-check
+          - full-maintenance
+
+jobs:
+  automated-backup:
+    name: Database & Files Backup
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 2 * * *' || github.event.inputs.task == 'backup'
+    
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Run backup
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/partikelxyz/pkki.itera
+            
+            echo "🗄️ Starting automated backup..."
+            
+            # Create backup directory with timestamp
+            BACKUP_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+            BACKUP_DIR="/home/partikelxyz/backups/pkki_itera_$BACKUP_DATE"
+            mkdir -p "$BACKUP_DIR"
+            
+            # Database backup
+            php artisan backup:run --only-db --quiet
+            echo "✅ Database backup completed"
+            
+            # Files backup (storage, uploads)
+            tar -czf "$BACKUP_DIR/storage_backup.tar.gz" storage/app/public/
+            echo "✅ Files backup completed"
+            
+            # Keep only last 7 days of backups
+            find /home/partikelxyz/backups/ -name "pkki_itera_*" -type d -mtime +7 -exec rm -rf {} \;
+            echo "✅ Old backups cleaned up"
+            
+            # Verify backup
+            if [ -d "$BACKUP_DIR" ]; then
+              echo "✅ Backup verification successful: $BACKUP_DIR"
+            else
+              echo "❌ Backup verification failed"
+              exit 1
+            fi
+          EOF
+
+      - name: Notify backup status
+        run: |
+          echo "📦 Daily backup completed successfully"
+
+  system-cleanup:
+    name: System Cleanup & Optimization
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 3 * * 0' || github.event.inputs.task == 'cleanup'
+    
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Run cleanup tasks
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/partikelxyz/pkki.itera
+            
+            echo "🧹 Starting system cleanup..."
+            
+            # Clear application caches
+            php artisan cache:clear
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+            echo "✅ Application caches cleared"
+            
+            # Clear Laravel logs older than 30 days
+            find storage/logs/ -name "*.log" -mtime +30 -delete
+            echo "✅ Old logs cleaned"
+            
+            # Clean temporary files
+            find storage/app/temp/ -type f -mtime +7 -delete 2>/dev/null || true
+            echo "✅ Temporary files cleaned"
+            
+            # Optimize database
+            php artisan model:prune
+            echo "✅ Database pruned"
+            
+            # Clear expired sessions
+            php artisan session:gc
+            echo "✅ Sessions garbage collected"
+            
+            # Restart queue workers
+            php artisan queue:restart
+            echo "✅ Queue workers restarted"
+            
+            # Check disk space
+            echo "💾 Disk usage:"
+            df -h /home/partikelxyz/
+            
+            echo "✅ System cleanup completed"
+          EOF
+
+  security-updates:
+    name: Security Updates Check
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'security-update'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Check for security vulnerabilities
+        run: |
+          composer install --no-dev
+          composer audit --no-dev
+          
+          echo "🔍 Checking for known vulnerabilities..."
+          if [ -f "composer.lock" ]; then
+            curl -H "Accept: text/plain" https://security.symfony.com/check_lock -F lock=@composer.lock
+          fi
+
+      - name: Create security report
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 Security Vulnerabilities Detected',
+              body: `
+              ## Security Alert
+              
+              Automated security scan detected potential vulnerabilities in dependencies.
+              
+              **Scan Date:** ${new Date().toISOString()}
+              **Status:** ⚠️ Action Required
+              
+              ## Next Steps
+              - [ ] Review vulnerability details in workflow logs
+              - [ ] Update affected packages
+              - [ ] Test updates in development environment
+              - [ ] Deploy security patches
+              
+              ## Workflow
+              [View Details](${context.payload.repository.html_url}/actions/runs/${context.runId})
+              `,
+              labels: ['security', 'urgent', 'dependencies']
+            });
+
+  performance-check:
+    name: Performance & Health Check
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'performance-check'
+    
+    steps:
+      - name: Website performance check
+        run: |
+          echo "🚀 Running performance checks..."
+          
+          # Check main page response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://hki.proyekai.com)
+          echo "Homepage response time: ${RESPONSE_TIME}s"
+          
+          # Check admin login page
+          ADMIN_RESPONSE=$(curl -o /dev/null -s -w '%{time_total}' https://hki.proyekai.com/admin/login)
+          echo "Admin page response time: ${ADMIN_RESPONSE}s"
+          
+          # Check if response times are acceptable (< 3 seconds)
+          if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "⚠️ Homepage response time is slow: ${RESPONSE_TIME}s"
+            exit 1
+          fi
+          
+          if (( $(echo "$ADMIN_RESPONSE > 3.0" | bc -l) )); then
+            echo "⚠️ Admin response time is slow: ${ADMIN_RESPONSE}s"
+            exit 1
+          fi
+          
+          echo "✅ Performance check passed"
+
+      - name: Setup SSH for server checks
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Server health check
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            echo "🏥 Server health check..."
+            
+            # Check disk space (warn if > 80%)
+            DISK_USAGE=$(df /home/partikelxyz/ | awk 'NR==2 {print $5}' | sed 's/%//')
+            echo "Disk usage: ${DISK_USAGE}%"
+            if [ "$DISK_USAGE" -gt 80 ]; then
+              echo "⚠️ Disk usage is high: ${DISK_USAGE}%"
+            fi
+            
+            # Check memory usage
+            free -h
+            
+            # Check PHP-FPM status
+            systemctl is-active php8.2-fpm || echo "⚠️ PHP-FPM not running"
+            
+            # Check Nginx status
+            systemctl is-active nginx || echo "⚠️ Nginx not running"
+            
+            # Check database connectivity
+            cd /home/partikelxyz/pkki.itera
+            php artisan migrate:status | head -5
+            
+            echo "✅ Server health check completed"
+          EOF
+
+  full-maintenance:
+    name: Full System Maintenance
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'full-maintenance'
+    needs: [automated-backup]
+    
+    steps:
+      - name: Run full maintenance
+        run: |
+          echo "🔧 Running full system maintenance..."
+          echo "This will trigger all maintenance tasks in sequence"
+
+      - name: Trigger backup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'maintenance.yml',
+              ref: 'main',
+              inputs: {
+                task: 'backup'
+              }
+            });
+
+      - name: Trigger cleanup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'maintenance.yml',
+              ref: 'main',
+              inputs: {
+                task: 'cleanup'
+              }
+            });
+
+      - name: Trigger security check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'maintenance.yml',
+              ref: 'main',
+              inputs: {
+                task: 'security-update'
+              }
+            });

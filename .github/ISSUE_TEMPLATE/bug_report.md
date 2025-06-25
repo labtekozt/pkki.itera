@@ -1,10 +1,9 @@
 ---
-name: Bug Report
+name: 🐛 Bug Report
 about: Create a report to help us improve PKKI ITERA
 title: '[BUG] '
 labels: ['bug', 'needs-triage']
 assignees: ''
-
 ---
 
 ## 🐛 Bug Description
@@ -20,27 +19,36 @@ Steps to reproduce the behavior:
 ## ✅ Expected Behavior
 A clear and concise description of what you expected to happen.
 
+## ❌ Actual Behavior
+A clear and concise description of what actually happened.
+
+## 📱 Environment Information
+**User Role:** (e.g., admin, civitas, non-civitas)
+**Browser:** (e.g., Chrome 120, Firefox 121, Safari 17)
+**Device:** (e.g., Desktop, Mobile, Tablet)
+**Operating System:** (e.g., Windows 11, macOS 14, Android 13)
+
 ## 📸 Screenshots
 If applicable, add screenshots to help explain your problem.
-
-## 🖥️ Environment
-- **OS**: [e.g. Windows 10, macOS Big Sur, Ubuntu 20.04]
-- **Browser**: [e.g. Chrome 120, Firefox 119, Safari 17]
-- **PHP Version**: [e.g. 8.2.0]
-- **Laravel Version**: [e.g. 11.9]
-- **Device**: [e.g. Desktop, Mobile, Tablet]
 
 ## 📋 Additional Context
 Add any other context about the problem here.
 
-## 🔍 Error Logs
-If applicable, paste relevant error logs here:
+## 🔍 Error Logs (if available)
 ```
-[Paste error logs here]
+Paste any relevant error logs here
 ```
 
-## 💡 Possible Solution
-If you have any ideas about how to fix this bug, please describe them here.
+## 🎯 Priority Level
+- [ ] 🔴 Critical (System down, data loss)
+- [ ] 🟡 High (Feature broken, affects many users)
+- [ ] 🟢 Medium (Minor issue, workaround available)
+- [ ] 🔵 Low (Cosmetic issue, enhancement)
+
+## 📝 Additional Notes
+- Have you tried clearing browser cache?
+- Does this happen in incognito/private mode?
+- Is this a new issue or has it been happening for a while?
 
 ## ☑️ Checklist
 - [ ] I have searched for existing issues
