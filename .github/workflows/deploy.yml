@@ -17,6 +17,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Check if secrets are configured
+      run: |
+        if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] || [ -z "${{ secrets.SERVER_HOST }}" ] || [ -z "${{ secrets.SERVER_USER }}" ]; then
+          echo "❌ GitHub secrets not configured!"
+          echo ""
+          echo "Please add these secrets to your GitHub repository:"
+          echo "1. SSH_PRIVATE_KEY - Your private SSH key"
+          echo "2. SERVER_HOST - Your server IP (34.101.196.4)"
+          echo "3. SERVER_USER - Your server username (partikelxyz)"
+          echo ""
+          echo "Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+          echo ""
+          echo "📖 See GITHUB_SECRETS_SETUP.md for detailed instructions"
+          exit 1
+        else
+          echo "✅ All secrets are configured"
+        fi
+
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.8.0
       with:
