@@ -18,6 +18,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Temporarily disable activity logging during seeding
+        $originalEnabled = config('activitylog.enabled', true);
+        config(['activitylog.enabled' => false]);
+
         // Create permissions (check if exists first)
         $permission = Permission::firstOrCreate(['name' => 'access_log_viewer', 'guard_name' => 'web']);
 
@@ -37,5 +41,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 $roleCreated->givePermissionTo('access_log_viewer');
             }
         }
+        
+        // Re-enable activity logging
+        config(['activitylog.enabled' => $originalEnabled]);
     }
 }
