@@ -46,8 +46,7 @@
     
     <!-- Vite & Inertia -->
     @viteReactRefresh
-    @vite(['resources/css/app.css', 'resources/js/app.jsx'])
-    @vite(['resources/css/index.css', 'resources/js/index.jsx'])
+    @vite(['resources/css/app.css', 'resources/css/index.css', 'resources/js/app.jsx'])
     
     <!-- Styles -->
     <style>

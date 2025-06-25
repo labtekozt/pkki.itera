@@ -6,7 +6,12 @@ export default defineConfig({
     plugins: [
         react(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.jsx', 'resources/css/filament/admin/theme.css'],
+            input: [
+                'resources/css/app.css', 
+                'resources/css/index.css',
+                'resources/js/app.jsx', 
+                'resources/css/filament/admin/theme.css'
+            ],
             refresh: [
                 ...refreshPaths,
                 'app/Livewire/**',
