@@ -24,6 +24,9 @@ class SubmissionReviewResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    // Use the original SubmissionPolicy for review functionality
+    protected static ?string $policy = \App\Policies\SubmissionPolicy::class;
+
     public static function getNavigationLabel(): string
     {
         return __('resource.submission_review.navigation_label');

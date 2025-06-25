@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\Auth\FilamentVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Models\Contracts\HasName;
@@ -145,5 +146,13 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         $this->addMediaConversion('thumb')
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
+    }
+
+    /**
+     * Send the email verification notification using Filament-compatible routes.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new FilamentVerifyEmail);
     }
 }

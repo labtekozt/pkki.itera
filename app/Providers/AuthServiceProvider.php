@@ -27,6 +27,8 @@ class AuthServiceProvider extends ServiceProvider
         BlogPost::class => BlogPostPolicy::class,
         Exception::class => ExceptionPolicy::class,
         'Spatie\Permission\Models\Role' => 'App\Policies\RolePolicy',
+        // Note: SubmissionResourcePolicy is explicitly set in SubmissionResource
+        // SubmissionPolicy is explicitly set in SubmissionReviewResource
     ];
 
     /**

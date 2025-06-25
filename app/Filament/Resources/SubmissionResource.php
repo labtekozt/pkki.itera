@@ -31,6 +31,9 @@ class SubmissionResource extends Resource
 
     protected static ?string $navigationGroup = null;
 
+    // Use the specialized policy for SubmissionResource
+    protected static ?string $policy = \App\Policies\SubmissionResourcePolicy::class;
+
     public static function getNavigationLabel(): string
     {
         return __('resource.submission.navigation_label');
@@ -484,5 +487,17 @@ class SubmissionResource extends Resource
             'edit' => Pages\EditSubmission::route('/{record}/edit'),
             'process' => Pages\ProcessSubmission::route('/{record}/process'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // If user is not admin, only show their own submissions
+        if (!auth()->user()->hasRole(['super_admin', 'admin'])) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
     }
 }
