@@ -4,7 +4,24 @@ Simple, best-practices deployment scripts for PKKI ITERA Laravel application.
 
 ## 🚀 Quick Start
 
-### 1. Server Setup (Run once on new server)
+### Option 1: Fresh Deployment (Recommended)
+```bash
+# Complete fresh deployment from scratch
+./scripts/fresh-deploy.sh
+
+# With custom domain
+./scripts/fresh-deploy.sh --domain mydomain.com
+
+# Validation only (dry run)
+./scripts/fresh-deploy.sh --dry-run
+
+# Show all options
+./scripts/fresh-deploy.sh --help
+```
+
+### Option 2: Step-by-Step Deployment
+
+#### 1. Server Setup (Run once on new server)
 ```bash
 # Download and run server setup (as root)
 curl -fsSL https://raw.githubusercontent.com/your-repo/main/scripts/server-setup.sh | sudo bash
@@ -15,7 +32,7 @@ cd pkki.itera
 sudo ./scripts/server-setup.sh
 ```
 
-### 2. Application Setup (Run once per environment)
+#### 2. Application Setup (Run once per environment)
 ```bash
 # Setup environment and database
 ./scripts/setup.sh
@@ -27,7 +44,7 @@ sudo ./scripts/server-setup.sh
 # - Create admin user
 ```
 
-### 3. Deploy Application (Run for each deployment)
+#### 3. Deploy Application (Run for each deployment)
 ```bash
 # Deploy to production (default)
 ./scripts/deploy.sh
@@ -47,11 +64,62 @@ sudo ./scripts/server-setup.sh
 
 | Script | Purpose | When to Use |
 |--------|---------|-------------|
+| `fresh-deploy.sh` | **🌟 Complete fresh deployment** | **New server or complete rebuild** |
 | `server-setup.sh` | Install PHP, Nginx, PostgreSQL, etc. | Once per server |
 | `setup.sh` | Configure environment and database | Once per environment |
 | `deploy.sh` | Deploy application changes | Every deployment |
+| `deploy-test.sh` | Test deployment locally | Development testing |
+
+## 🌟 New: Fresh Deployment Script
+
+The `fresh-deploy.sh` script is a comprehensive, production-ready deployment solution that handles everything from server setup to application deployment in a single command.
+
+### Features
+- **Complete automation** - Zero-touch deployment from clean VPS
+- **Error handling** - Comprehensive error detection and rollback
+- **Security hardening** - Firewall, permissions, SSL configuration
+- **Monitoring setup** - Health checks, log rotation, system monitoring
+- **Backup/Rollback** - Automatic backup and restore capabilities
+- **Validation modes** - Dry-run and debug modes for testing
+
+### Advanced Options
+```bash
+# Show all available options
+./scripts/fresh-deploy.sh --help
+
+# Validate configuration without deploying
+./scripts/fresh-deploy.sh --dry-run
+
+# Enable verbose debugging
+./scripts/fresh-deploy.sh --debug
+
+# Deploy with custom domain
+./scripts/fresh-deploy.sh --domain myapp.example.com
+
+# Deploy without backup (not recommended)
+./scripts/fresh-deploy.sh --no-backup
+
+# Deploy without monitoring setup
+./scripts/fresh-deploy.sh --no-monitoring
+```
+
+### Documentation
+- **Complete Guide**: `DEPLOYMENT_SCRIPT_GUIDE.md`
+- **Current Status**: `DEPLOYMENT_STATUS.md`
 
 ## 🔧 What Each Script Does
+
+### fresh-deploy.sh ⭐ (NEW)
+- ✅ **System validation** - Checks requirements and connectivity
+- ✅ **Dependency installation** - PHP, Nginx, Node.js, Composer, etc.
+- ✅ **Application setup** - Git clone, Composer install, environment config
+- ✅ **Database setup** - Migrations, seeding, permissions
+- ✅ **Asset compilation** - Vite build, Livewire assets, optimization
+- ✅ **Service configuration** - Nginx, PHP-FPM optimization
+- ✅ **Security hardening** - Firewall, file permissions, headers
+- ✅ **Monitoring setup** - Health checks, log rotation, system monitoring
+- ✅ **SSL configuration** - Let's Encrypt certificate setup
+- ✅ **Comprehensive testing** - Health checks and verification
 
 ### server-setup.sh
 - ✅ Installs PHP 8.3+ with all required extensions
