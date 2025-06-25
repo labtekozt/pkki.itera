@@ -53,7 +53,7 @@ class EditUser extends EditRecord
                     ->extraAttributes(["class" => "border-b"]),
 
                 Actions\CreateAction::make()
-                    ->label('Create new user')
+                    ->label(__('resource.create_user'))
                     ->url(fn(): string => static::$resource::getNavigationUrl() . '/create'),
             ])
             ->icon('heroicon-m-ellipsis-horizontal')

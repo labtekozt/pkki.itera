@@ -102,7 +102,7 @@ class UserFeedbackResource extends Resource
                     ->falseColor(Color::Green),
                     
                 Tables\Columns\IconColumn::make('processed_at')
-                    ->label('Status')
+                    ->label(__('resource.submission.fields.status'))
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-clock')

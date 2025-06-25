@@ -51,83 +51,83 @@ class ManageSite extends SettingsPage
                     ->schema([
                         Forms\Components\Grid::make()->schema([
                             Forms\Components\Toggle::make('is_maintenance')
-                                ->label('Maintenance Mode')
-                                ->helperText('When enabled, your site will display a maintenance page to visitors')
+                                ->label(__('resource.settings.maintenance_mode'))
+                                ->helperText(__('resource.settings.maintenance_helper'))
                                 ->required(),
                             Forms\Components\TextInput::make('name')
-                                ->label('Site Name')
+                                ->label(__('resource.settings.site_name'))
                                 ->required()
                                 ->maxLength(100),
                             Forms\Components\TextInput::make('tagline')
-                                ->label('Site Tagline')
-                                ->helperText('A short phrase describing your site')
+                                ->label(__('resource.settings.site_tagline'))
+                                ->helperText(__('resource.settings.site_helper_tagline'))
                                 ->maxLength(150),
                             Forms\Components\Textarea::make('description')
-                                ->label('Site Description')
-                                ->helperText('A detailed description of your website')
+                                ->label(__('resource.settings.site_description'))
+                                ->helperText(__('resource.settings.site_helper_description'))
                                 ->rows(3)
                                 ->maxLength(500),
                         ])->columns(2),
                         Forms\Components\FileUpload::make('logo')
-                            ->label('Site Logo')
+                            ->label(__('resource.settings.site_logo'))
                             ->image()
                             ->directory('sites')
                             ->visibility('public')
                             ->imagePreviewHeight('100')
                             ->maxSize(1024)
-                            ->helperText('Recommended size: 200x50 pixels'),
+                            ->helperText(__('resource.settings.logo_helper')),
                     ]),
 
-                Forms\Components\Section::make('Company Information')
-                    ->description('Contact details and location information')
+                Forms\Components\Section::make(__('resource.settings.company_information'))
+                    ->description(__('resource.settings.company_description'))
                     ->icon('heroicon-o-building-office')
                     ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make()->schema([
                             Forms\Components\TextInput::make('company_name')
-                                ->label('Company Name')
+                                ->label(__('resource.settings.company_name'))
                                 ->required()
                                 ->maxLength(100),
                             Forms\Components\TextInput::make('company_email')
-                                ->label('Company Email')
+                                ->label(__('resource.settings.company_email'))
                                 ->email()
                                 ->required()
                                 ->maxLength(100),
                             Forms\Components\TextInput::make('company_phone')
-                                ->label('Company Phone')
+                                ->label(__('resource.settings.company_phone'))
                                 ->tel()
                                 ->maxLength(20),
                             Forms\Components\Textarea::make('company_address')
-                                ->label('Company Address')
+                                ->label(__('resource.settings.company_address'))
                                 ->rows(2)
                                 ->maxLength(200),
                         ])->columns(2),
                     ]),
 
-                Forms\Components\Section::make('Regional Settings')
-                    ->description('Language and time settings')
+                Forms\Components\Section::make(__('resource.settings.regional_settings'))
+                    ->description(__('resource.settings.language_time_settings'))
                     ->icon('heroicon-o-globe-alt')
                     ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make()->schema([
                             Forms\Components\Select::make('default_language')
-                                ->label('Default Language')
+                                ->label(__('resource.settings.default_language'))
                                 ->options([
-                                    'en' => 'English',
-                                    'fr' => 'French',
-                                    'es' => 'Spanish',
-                                    'de' => 'German',
-                                    'it' => 'Italian',
-                                    'pt' => 'Portuguese',
-                                    'ru' => 'Russian',
-                                    'zh' => 'Chinese',
-                                    'ja' => 'Japanese',
-                                    'ar' => 'Arabic',
+                                    'en' => __('resource.settings.languages.english'),
+                                    'fr' => __('resource.settings.languages.french'),
+                                    'es' => __('resource.settings.languages.spanish'),
+                                    'de' => __('resource.settings.languages.german'),
+                                    'it' => __('resource.settings.languages.italian'),
+                                    'pt' => __('resource.settings.languages.portuguese'),
+                                    'ru' => __('resource.settings.languages.russian'),
+                                    'zh' => __('resource.settings.languages.chinese'),
+                                    'ja' => __('resource.settings.languages.japanese'),
+                                    'ar' => __('resource.settings.languages.arabic'),
                                 ])
                                 ->searchable()
                                 ->required(),
                             Forms\Components\Select::make('timezone')
-                                ->label('Timezone')
+                                ->label(__('resource.settings.timezone'))
                                 ->options(function () {
                                     $timezones = [];
                                     foreach (timezone_identifiers_list() as $timezone) {
@@ -140,29 +140,29 @@ class ManageSite extends SettingsPage
                         ])->columns(2),
                     ]),
 
-                Forms\Components\Section::make('Legal Information')
-                    ->description('Copyright and legal page URLs')
+                Forms\Components\Section::make(__('resource.settings.legal_information'))
+                    ->description(__('resource.settings.legal_description'))
                     ->icon('heroicon-o-document-text')
                     ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make()->schema([
                             Forms\Components\TextInput::make('copyright_text')
-                                ->label('Copyright Text')
+                                ->label(__('resource.settings.copyright_text'))
                                 ->maxLength(200),
                             Forms\Components\TextInput::make('terms_url')
-                                ->label('Terms & Conditions URL')
+                                ->label(__('resource.settings.terms_url'))
                                 ->maxLength(100)
                                 ->prefix(function (Forms\Get $get) {
                                     return url('/');
                                 }),
                             Forms\Components\TextInput::make('privacy_url')
-                                ->label('Privacy Policy URL')
+                                ->label(__('resource.settings.privacy_url'))
                                 ->maxLength(100)
                                 ->prefix(function (Forms\Get $get) {
                                     return url('/');
                                 }),
                             Forms\Components\TextInput::make('cookie_policy_url')
-                                ->label('Cookie Policy URL')
+                                ->label(__('resource.settings.cookie_policy_url'))
                                 ->maxLength(100)
                                 ->prefix(function (Forms\Get $get) {
                                     return url('/');
@@ -170,18 +170,18 @@ class ManageSite extends SettingsPage
                         ])->columns(2),
                     ]),
 
-                Forms\Components\Section::make('Error Messages')
-                    ->description('Custom error messages for your website')
+                Forms\Components\Section::make(__('resource.settings.error_messages'))
+                    ->description(__('resource.settings.error_messages_description'))
                     ->icon('heroicon-o-exclamation-triangle')
                     ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make()->schema([
                             Forms\Components\Textarea::make('custom_404_message')
-                                ->label('404 Not Found Message')
+                                ->label(__('resource.settings.custom_404_message'))
                                 ->rows(2)
                                 ->maxLength(500),
                             Forms\Components\Textarea::make('custom_500_message')
-                                ->label('500 Server Error Message')
+                                ->label(__('resource.settings.custom_500_message'))
                                 ->rows(2)
                                 ->maxLength(500),
                         ])->columns(2),

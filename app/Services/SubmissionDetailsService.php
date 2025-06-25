@@ -20,34 +20,34 @@ class SubmissionDetailsService
      */
     public function getGeneralInfoSection(Submission $submission): InfolistSection
     {
-        return InfolistSection::make('General Information')
+        return InfolistSection::make(__('resource.submission.general_information'))
             ->schema([
                 TextEntry::make('title')
-                    ->label('Title')
+                    ->label(__('resource.submission.fields.title'))
                     ->getStateUsing(fn() => $submission->title),
                     
                 TextEntry::make('submissionType')
-                    ->label('Submission Type')
-                    ->getStateUsing(fn() => $submission->submissionType->name ?? 'N/A'),
+                    ->label(__('resource.submission.fields.submission_type'))
+                    ->getStateUsing(fn() => $submission->submissionType->name ?? __('resource.general.not_available')),
                     
                 TextEntry::make('submitter')
-                    ->label('Submitted By')
-                    ->getStateUsing(fn() => $submission->user->fullname ?? 'Unknown'),
+                    ->label(__('resource.submission.fields.submitted_by'))
+                    ->getStateUsing(fn() => $submission->user->fullname ?? __('resource.general.unknown')),
                     
                 TextEntry::make('created_at')
-                    ->label('Submission Date')
+                    ->label(__('resource.submission.fields.submission_date'))
                     ->dateTime()
                     ->getStateUsing(fn() => $submission->created_at),
                     
                 TextEntry::make('updated_at')
-                    ->label('Last Updated')
+                    ->label(__('resource.general.updated_at'))
                     ->dateTime()
                     ->getStateUsing(fn() => $submission->updated_at)
                     ->visible(fn() => $submission->updated_at->ne($submission->created_at)),
                     
                 TextEntry::make('certificate')
-                    ->label('Certificate')
-                    ->getStateUsing(fn() => $submission->certificate ?? 'Not issued yet'),
+                    ->label(__('resource.submission.fields.certificate'))
+                    ->getStateUsing(fn() => $submission->certificate ?? __('resource.submission.certificate_not_issued')),
                     
                 TextEntry::make('status')
                     ->badge()
@@ -72,35 +72,35 @@ class SubmissionDetailsService
      */
     public function getGeneralInfoFormSection(Submission $submission): FormsSection
     {
-        return FormsSection::make('General Information')
+        return FormsSection::make(__('resource.submission.general_information'))
             ->schema([
                 Placeholder::make('title')
-                    ->label('Title')
+                    ->label(__('resource.submission.fields.title'))
                     ->content(fn() => $submission->title),
                     
                 Placeholder::make('submissionType')
-                    ->label('Submission Type')
-                    ->content(fn() => $submission->submissionType->name ?? 'N/A'),
+                    ->label(__('resource.submission.fields.submission_type'))
+                    ->content(fn() => $submission->submissionType->name ?? __('resource.general.not_available')),
                     
                 Placeholder::make('submitter')
-                    ->label('Submitted By')
-                    ->content(fn() => $submission->user->fullname ?? 'Unknown'),
+                    ->label(__('resource.submission.fields.submitted_by'))
+                    ->content(fn() => $submission->user->fullname ?? __('resource.general.unknown')),
                     
                 Placeholder::make('created_at')
-                    ->label('Submission Date')
-                    ->content(fn() => $submission->created_at ? $submission->created_at->format('F j, Y H:i') : 'N/A'),
+                    ->label(__('resource.submission.fields.submission_date'))
+                    ->content(fn() => $submission->created_at ? $submission->created_at->format('F j, Y H:i') : __('resource.general.not_available')),
                     
                 Placeholder::make('updated_at')
-                    ->label('Last Updated')
-                    ->content(fn() => $submission->updated_at ? $submission->updated_at->format('F j, Y H:i') : 'N/A')
+                    ->label(__('resource.general.updated_at'))
+                    ->content(fn() => $submission->updated_at ? $submission->updated_at->format('F j, Y H:i') : __('resource.general.not_available'))
                     ->visible(fn() => $submission->updated_at->ne($submission->created_at)),
                     
                 Placeholder::make('certificate')
-                    ->label('Certificate')
-                    ->content(fn() => $submission->certificate ?? 'Not issued yet'),
+                    ->label(__('resource.submission.fields.certificate'))
+                    ->content(fn() => $submission->certificate ?? __('resource.submission.certificate_not_issued')),
                     
                 Placeholder::make('status')
-                    ->label('Status')
+                    ->label(__('resource.submission.fields.status'))
                     ->content(function() use ($submission) {
                         $status = $submission->status;
                         $statusColor = match ($status) {
@@ -136,10 +136,10 @@ class SubmissionDetailsService
         $details = $submission->getDetailsAttribute();
         
         if (!$details) {
-            return InfolistSection::make('Type-Specific Details')
+            return InfolistSection::make(__('resource.general.type_specific_details'))
                 ->schema([
                     InfolistPlaceholder::make('no_details')
-                        ->content('No specific details available for this submission')
+                        ->content(__('resource.general.no_details_available'))
                         ->columnSpanFull(),
                 ])
                 ->columns(2);
@@ -153,7 +153,7 @@ class SubmissionDetailsService
             default => [],
         };
         
-        return InfolistSection::make('Type-Specific Details')
+        return InfolistSection::make(__('resource.general.type_specific_details'))
             ->schema($schema)
             ->columns(2)
             ->collapsible();
@@ -172,10 +172,10 @@ class SubmissionDetailsService
         $details = $submission->getDetailsAttribute();
         
         if (!$details) {
-            return FormsSection::make('Type-Specific Details')
+            return FormsSection::make(__('resource.general.type_specific_details'))
                 ->schema([
                     Placeholder::make('no_details')
-                        ->content('No specific details available for this submission')
+                        ->content(__('resource.general.no_details_available'))
                         ->columnSpanFull(),
                 ])
                 ->columns(2);
@@ -189,7 +189,7 @@ class SubmissionDetailsService
             default => [],
         };
         
-        return FormsSection::make('Type-Specific Details')
+        return FormsSection::make(__('resource.general.type_specific_details'))
             ->schema($schema)
             ->columns(2)
             ->collapsible();
@@ -202,51 +202,51 @@ class SubmissionDetailsService
     {
         return [
             TextEntry::make('patent_type')
-                ->label('Patent Type')
+                ->label(__('resource.patent.patent_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'utility' => 'Utility Patent',
-                    'design' => 'Design Patent',
-                    'plant' => 'Plant Patent',
-                    'process' => 'Process Patent',
+                    'utility' => __('resource.patent.types.utility'),
+                    'design' => __('resource.patent.types.design'),
+                    'plant' => __('resource.patent.types.plant'),
+                    'process' => __('resource.patent.types.process'),
                     default => $state,
                 })
                 ->getStateUsing(fn() => $details->patent_type ?? ''),
                 
             TextEntry::make('application_type')
-                ->label('Application Type')
+                ->label(__('resource.patent.application_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'simple_patent' => 'Simple Patent',
-                    'patent' => 'Standard Patent',
+                    'simple_patent' => __('resource.patent.application_types.simple'),
+                    'patent' => __('resource.patent.application_types.standard'),
                     default => $state,
                 })
                 ->getStateUsing(fn() => $details->application_type ?? '')
                 ->visible(fn() => isset($details->application_type)),
                 
             TextEntry::make('patent_title')
-                ->label('Patent Title')
+                ->label(__('resource.patent.patent_title'))
                 ->getStateUsing(fn() => $details->patent_title ?? $details->invention_description ?? '')
                 ->columnSpanFull(),
                 
             TextEntry::make('technical_field')
-                ->label('Technical Field')
-                ->getStateUsing(fn() => $details->technical_field ?? 'N/A')
+                ->label(__('resource.patent.technical_field'))
+                ->getStateUsing(fn() => $details->technical_field ?? __('resource.general.not_available'))
                 ->columnSpanFull()
                 ->visible(fn() => isset($details->technical_field)),
                 
             TextEntry::make('inventors_name')
-                ->label('Inventors')
-                ->getStateUsing(fn() => $details->inventors_name ?? $details->inventor_details ?? 'N/A')
+                ->label(__('resource.patent.inventors'))
+                ->getStateUsing(fn() => $details->inventors_name ?? $details->inventor_details ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('from_grant_research')
-                ->label('From Grant Research')
-                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No')
+                ->label(__('resource.patent.from_grant_research'))
+                ->formatStateUsing(fn($state) => $state ? __('resource.general.yes') : __('resource.general.no'))
                 ->getStateUsing(fn() => $details->from_grant_research ?? null)
                 ->visible(fn() => isset($details->from_grant_research)),
                 
             TextEntry::make('self_funded')
-                ->label('Self Funded')
-                ->formatStateUsing(fn($state) => $state ? 'Yes' : 'No')
+                ->label(__('resource.patent.self_funded'))
+                ->formatStateUsing(fn($state) => $state ? __('resource.general.yes') : __('resource.general.no'))
                 ->getStateUsing(fn() => $details->self_funded ?? null)
                 ->visible(fn() => isset($details->self_funded)),
         ];
@@ -259,48 +259,48 @@ class SubmissionDetailsService
     {
         return [
             Placeholder::make('application_type')
-                ->label('Application Type')
+                ->label(__('resource.patent.application_type'))
                 ->content(match($details->application_type ?? '') {
-                    'simple_patent' => 'Simple Patent',
-                    'patent' => 'Standard Patent',
-                    default => $details->application_type ?? 'N/A'
+                    'simple_patent' => __('resource.patent.application_types.simple'),
+                    'patent' => __('resource.patent.application_types.standard'),
+                    default => $details->application_type ?? __('resource.general.not_available')
                 }),
                 
             Placeholder::make('patent_title')
-                ->label('Patent Title')
-                ->content($details->patent_title ?? 'N/A')
+                ->label(__('resource.patent.patent_title'))
+                ->content($details->patent_title ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('patent_description')
-                ->label('Patent Description')
-                ->content($details->patent_description ?? $details->invention_description ?? 'N/A')
+                ->label(__('resource.patent.patent_description'))
+                ->content($details->patent_description ?? $details->invention_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
 
             Placeholder::make('technical_field')
-                ->label('Technical Field')
-                ->content($details->technical_field ?? 'N/A')
+                ->label(__('resource.patent.technical_field'))
+                ->content($details->technical_field ?? __('resource.general.not_available'))
                 ->columnSpanFull()
                 ->visible(fn() => isset($details->technical_field)),
                 
             Placeholder::make('inventors_name')
-                ->label('Inventors')
-                ->content($details->inventors_name ?? 'N/A'),
+                ->label(__('resource.patent.inventors'))
+                ->content($details->inventors_name ?? __('resource.general.not_available')),
                 
             Placeholder::make('from_grant_research')
-                ->label('From Grant Research')
-                ->content($details->from_grant_research ? 'Yes' : 'No')
+                ->label(__('resource.patent.from_grant_research'))
+                ->content($details->from_grant_research ? __('resource.general.yes') : __('resource.general.no'))
                 ->visible(fn() => isset($details->from_grant_research)),
                 
             Placeholder::make('self_funded')
-                ->label('Self Funded')
-                ->content($details->self_funded ? 'Yes' : 'No')
+                ->label(__('resource.patent.self_funded'))
+                ->content($details->self_funded ? __('resource.general.yes') : __('resource.general.no'))
                 ->visible(fn() => isset($details->self_funded)),
                 
             Placeholder::make('media_link')
-                ->label('Media Link')
+                ->label(__('resource.patent.media_link'))
                 ->content(function() use ($details) {
                     if (!isset($details->media_link) || empty($details->media_link)) {
-                        return 'N/A';
+                        return __('resource.general.not_available');
                     }
                     
                     return new \Illuminate\Support\HtmlString(
@@ -321,39 +321,39 @@ class SubmissionDetailsService
     {
         return [
             TextEntry::make('trademark_type')
-                ->label('Trademark Type')
+                ->label(__('resource.brand.trademark_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'word' => 'Word Mark',
-                    'design' => 'Design Mark',
-                    'combined' => 'Combined Mark',
-                    'sound' => 'Sound Mark',
-                    'collective' => 'Collective Mark',
-                    'certification' => 'Certification Mark',
+                    'word' => __('resource.brand.types.word'),
+                    'design' => __('resource.brand.types.design'),
+                    'combined' => __('resource.brand.types.combined'),
+                    'sound' => __('resource.brand.types.sound'),
+                    'collective' => __('resource.brand.types.collective'),
+                    'certification' => __('resource.brand.types.certification'),
                     default => $state,
                 })
                 ->getStateUsing(fn() => $details->trademark_type ?? $details->brand_type ?? ''),
                 
             TextEntry::make('brand_name')
-                ->label('Brand Name')
+                ->label(__('resource.brand.brand_name'))
                 ->getStateUsing(fn() => $details->brand_name ?? '')
                 ->visible(fn() => isset($details->brand_name)),
                 
             TextEntry::make('description')
-                ->label('Description')
-                ->getStateUsing(fn() => $details->description ?? $details->brand_description ?? 'N/A')
+                ->label(__('resource.brand.description'))
+                ->getStateUsing(fn() => $details->description ?? $details->brand_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('goods_services')
-                ->label('Goods & Services')
-                ->getStateUsing(fn() => $details->goods_services_description ?? $details->goods_services ?? 'N/A')
+                ->label(__('resource.brand.goods_services'))
+                ->getStateUsing(fn() => $details->goods_services_description ?? $details->goods_services ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('nice_classes')
-                ->label('Nice Classes')
-                ->getStateUsing(fn() => $details->nice_classes ?? 'N/A'),
+                ->label(__('resource.brand.nice_classes'))
+                ->getStateUsing(fn() => $details->nice_classes ?? __('resource.general.not_available')),
                 
             TextEntry::make('inovators_name')
-                ->label('Innovators')
+                ->label(__('resource.brand.innovators'))
                 ->getStateUsing(fn() => $details->inovators_name ?? '')
                 ->visible(fn() => isset($details->inovators_name)),
         ];
@@ -366,94 +366,94 @@ class SubmissionDetailsService
     {
         return [
             Placeholder::make('brand_name')
-                ->label('Brand Name')
-                ->content($details->brand_name ?? 'N/A'),
+                ->label(__('resource.brand.brand_name'))
+                ->content($details->brand_name ?? __('resource.general.not_available')),
                 
             Placeholder::make('brand_type')
-                ->label('Brand Type')
+                ->label(__('resource.brand.brand_type'))
                 ->content(match($details->trademark_type ?? $details->brand_type ?? '') {
-                    'word' => 'Word Mark',
-                    'design' => 'Design Mark',
-                    'combined' => 'Combined Mark',
-                    'sound' => 'Sound Mark',
-                    'collective' => 'Collective Mark',
-                    'certification' => 'Certification Mark',
-                    default => $details->trademark_type ?? $details->brand_type ?? 'N/A'
+                    'word' => __('resource.brand.types.word'),
+                    'design' => __('resource.brand.types.design'),
+                    'combined' => __('resource.brand.types.combined'),
+                    'sound' => __('resource.brand.types.sound'),
+                    'collective' => __('resource.brand.types.collective'),
+                    'certification' => __('resource.brand.types.certification'),
+                    default => $details->trademark_type ?? $details->brand_type ?? __('resource.general.not_available')
                 }),
                 
             Placeholder::make('brand_description')
-                ->label('Description')
-                ->content($details->description ?? $details->brand_description ?? 'N/A')
+                ->label(__('resource.brand.description'))
+                ->content($details->description ?? $details->brand_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('inovators_name')
-                ->label('Innovators')
-                ->content($details->inovators_name ?? 'N/A'),
+                ->label(__('resource.brand.innovators'))
+                ->content($details->inovators_name ?? __('resource.general.not_available')),
                 
             Placeholder::make('application_type')
-                ->label('Application Type')
-                ->content($details->application_type ?? 'N/A'),
+                ->label(__('resource.brand.application_type'))
+                ->content($details->application_type ?? __('resource.general.not_available')),
                 
             Placeholder::make('application_date')
-                ->label('Application Date')
-                ->content(fn() => isset($details->application_date) ? $details->application_date->format('F j, Y') : 'N/A'),
+                ->label(__('resource.brand.application_date'))
+                ->content(fn() => isset($details->application_date) ? $details->application_date->format('F j, Y') : __('resource.general.not_available')),
                 
             Placeholder::make('application_origin')
-                ->label('Application Origin')
-                ->content($details->application_origin ?? 'N/A')
+                ->label(__('resource.brand.application_origin'))
+                ->content($details->application_origin ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->application_origin)),
                 
             Placeholder::make('application_category')
-                ->label('Application Category')
-                ->content($details->application_category ?? 'N/A')
+                ->label(__('resource.brand.application_category'))
+                ->content($details->application_category ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->application_category)),
                 
             Placeholder::make('brand_label')
-                ->label('Brand Label')
-                ->content($details->brand_label ?? 'N/A')
+                ->label(__('resource.brand.brand_label'))
+                ->content($details->brand_label ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->brand_label)),
                 
             Placeholder::make('brand_label_reference')
-                ->label('Brand Label Reference')
-                ->content($details->brand_label_reference ?? 'N/A')
+                ->label(__('resource.brand.brand_label_reference'))
+                ->content($details->brand_label_reference ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->brand_label_reference)),
                 
             Placeholder::make('brand_label_description')
-                ->label('Brand Label Description')
-                ->content($details->brand_label_description ?? 'N/A')
+                ->label(__('resource.brand.brand_label_description'))
+                ->content($details->brand_label_description ?? __('resource.general.not_available'))
                 ->columnSpanFull()
                 ->visible(fn() => isset($details->brand_label_description)),
                 
             Placeholder::make('brand_color_elements')
-                ->label('Brand Color Elements')
-                ->content($details->brand_color_elements ?? 'N/A')
+                ->label(__('resource.brand.brand_color_elements'))
+                ->content($details->brand_color_elements ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->brand_color_elements)),
                 
             Placeholder::make('foreign_language_translation')
-                ->label('Foreign Language Translation')
-                ->content($details->foreign_language_translation ?? 'N/A')
+                ->label(__('resource.brand.foreign_language_translation'))
+                ->content($details->foreign_language_translation ?? __('resource.general.not_available'))
                 ->columnSpanFull()
                 ->visible(fn() => isset($details->foreign_language_translation)),
                 
             Placeholder::make('disclaimer')
-                ->label('Disclaimer')
-                ->content($details->disclaimer ?? 'N/A')
+                ->label(__('resource.brand.disclaimer'))
+                ->content($details->disclaimer ?? __('resource.general.not_available'))
                 ->columnSpanFull()
                 ->visible(fn() => isset($details->disclaimer)),
                 
             Placeholder::make('priority_number')
-                ->label('Priority Number')
-                ->content($details->priority_number ?? 'N/A')
+                ->label(__('resource.brand.priority_number'))
+                ->content($details->priority_number ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->priority_number)),
                 
             Placeholder::make('nice_classes')
-                ->label('Nice Classification')
-                ->content($details->nice_classes ?? 'N/A')
+                ->label(__('resource.brand.nice_classification'))
+                ->content($details->nice_classes ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('goods_services_search')
-                ->label('Goods & Services')
-                ->content($details->goods_services_search ?? $details->goods_services ?? 'N/A')
+                ->label(__('resource.brand.goods_services'))
+                ->content($details->goods_services_search ?? $details->goods_services ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
         ];
     }
@@ -465,42 +465,42 @@ class SubmissionDetailsService
     {
         return [
             TextEntry::make('work_type')
-                ->label('Work Type')
+                ->label(__('resource.haki.work_type'))
                 ->formatStateUsing(fn(string $state): string => match ($state) {
-                    'literary' => 'Literary Work',
-                    'musical' => 'Musical Work',
-                    'dramatic' => 'Dramatic Work',
-                    'artistic' => 'Artistic Work',
-                    'audiovisual' => 'Audiovisual Work',
-                    'sound_recording' => 'Sound Recording',
-                    'architectural' => 'Architectural Work',
-                    'computer_program' => 'Computer Program',
+                    'literary' => __('resource.haki.types.literary'),
+                    'musical' => __('resource.haki.types.musical'),
+                    'dramatic' => __('resource.haki.types.dramatic'),
+                    'artistic' => __('resource.haki.types.artistic'),
+                    'audiovisual' => __('resource.haki.types.audiovisual'),
+                    'sound_recording' => __('resource.haki.types.sound_recording'),
+                    'architectural' => __('resource.haki.types.architectural'),
+                    'computer_program' => __('resource.haki.types.computer_program'),
                     default => $state,
                 })
                 ->getStateUsing(fn() => $details->work_type ?? ''),
                 
             TextEntry::make('haki_title')
-                ->label('Work Title')
+                ->label(__('resource.haki.work_title'))
                 ->getStateUsing(fn() => $details->haki_title ?? '')
                 ->visible(fn() => isset($details->haki_title))
                 ->columnSpanFull(),
                 
             TextEntry::make('work_description')
-                ->label('Work Description')
-                ->getStateUsing(fn() => $details->work_description ?? 'N/A')
+                ->label(__('resource.haki.work_description'))
+                ->getStateUsing(fn() => $details->work_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('creation_year')
-                ->label('Year of Creation')
-                ->getStateUsing(fn() => $details->creation_year ?? 'N/A'),
+                ->label(__('resource.haki.creation_year'))
+                ->getStateUsing(fn() => $details->creation_year ?? __('resource.general.not_available')),
                 
             TextEntry::make('is_published')
-                ->label('Publication Status')
-                ->formatStateUsing(fn($state) => $state ? 'Published' : 'Unpublished')
+                ->label(__('resource.haki.publication_status'))
+                ->formatStateUsing(fn($state) => $state ? __('resource.haki.published') : __('resource.haki.unpublished'))
                 ->getStateUsing(fn() => $details->is_published ?? false),
                 
             TextEntry::make('inventors_name')
-                ->label('Creators/Authors')
+                ->label(__('resource.haki.creators_authors'))
                 ->getStateUsing(fn() => $details->inventors_name ?? '')
                 ->visible(fn() => isset($details->inventors_name)),
         ];
@@ -513,73 +513,73 @@ class SubmissionDetailsService
     {
         return [
             Placeholder::make('work_type')
-                ->label('Work Type')
+                ->label(__('resource.haki.work_type'))
                 ->content(match($details->work_type ?? '') {
-                    'literary' => 'Literary Work',
-                    'musical' => 'Musical Work',
-                    'dramatic' => 'Dramatic Work',
-                    'artistic' => 'Artistic Work',
-                    'audiovisual' => 'Audiovisual Work',
-                    'sound_recording' => 'Sound Recording',
-                    'architectural' => 'Architectural Work',
-                    'computer_program' => 'Computer Program',
-                    default => $details->work_type ?? 'N/A'
+                    'literary' => __('resource.haki.types.literary'),
+                    'musical' => __('resource.haki.types.musical'),
+                    'dramatic' => __('resource.haki.types.dramatic'),
+                    'artistic' => __('resource.haki.types.artistic'),
+                    'audiovisual' => __('resource.haki.types.audiovisual'),
+                    'sound_recording' => __('resource.haki.types.sound_recording'),
+                    'architectural' => __('resource.haki.types.architectural'),
+                    'computer_program' => __('resource.haki.types.computer_program'),
+                    default => $details->work_type ?? __('resource.general.not_available')
                 }),
                 
             Placeholder::make('work_subtype')
-                ->label('Work Subtype')
-                ->content($details->work_subtype ?? 'N/A')
+                ->label(__('resource.haki.work_subtype'))
+                ->content($details->work_subtype ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->work_subtype)),
                 
             Placeholder::make('haki_category')
-                ->label('HAKI Category')
-                ->content($details->haki_category ?? 'N/A')
+                ->label(__('resource.haki.haki_category'))
+                ->content($details->haki_category ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->haki_category)),
                 
             Placeholder::make('haki_title')
-                ->label('Work Title')
-                ->content($details->haki_title ?? 'N/A')
+                ->label(__('resource.haki.work_title'))
+                ->content($details->haki_title ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('work_description')
-                ->label('Work Description')
-                ->content($details->work_description ?? 'N/A')
+                ->label(__('resource.haki.work_description'))
+                ->content($details->work_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('first_publication_date')
-                ->label('First Publication Date')
-                ->content(fn() => isset($details->first_publication_date) ? $details->first_publication_date->format('F j, Y') : 'N/A'),
+                ->label(__('resource.haki.first_publication_date'))
+                ->content(fn() => isset($details->first_publication_date) ? $details->first_publication_date->format('F j, Y') : __('resource.general.not_available')),
                 
             Placeholder::make('first_publication_place')
-                ->label('First Publication Place')
-                ->content($details->first_publication_place ?? 'N/A')
+                ->label(__('resource.haki.first_publication_place'))
+                ->content($details->first_publication_place ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->first_publication_place)),
                 
             Placeholder::make('is_kkn_output')
-                ->label('KKN Output')
-                ->content(fn() => isset($details->is_kkn_output) ? ($details->is_kkn_output ? 'Yes' : 'No') : 'N/A'),
+                ->label(__('resource.haki.kkn_output'))
+                ->content(fn() => isset($details->is_kkn_output) ? ($details->is_kkn_output ? __('resource.general.yes') : __('resource.general.no')) : __('resource.general.not_available')),
                 
             Placeholder::make('from_grant_research')
-                ->label('From Grant Research')
-                ->content(fn() => isset($details->from_grant_research) ? ($details->from_grant_research ? 'Yes' : 'No') : 'N/A'),
+                ->label(__('resource.haki.from_grant_research'))
+                ->content(fn() => isset($details->from_grant_research) ? ($details->from_grant_research ? __('resource.general.yes') : __('resource.general.no')) : __('resource.general.not_available')),
                 
             Placeholder::make('self_funded')
-                ->label('Self Funded')
-                ->content(fn() => isset($details->self_funded) ? ($details->self_funded ? 'Yes' : 'No') : 'N/A'),
+                ->label(__('resource.haki.self_funded'))
+                ->content(fn() => isset($details->self_funded) ? ($details->self_funded ? __('resource.general.yes') : __('resource.general.no')) : __('resource.general.not_available')),
                 
             Placeholder::make('registration_number')
-                ->label('Registration Number')
-                ->content($details->registration_number ?? 'N/A')
+                ->label(__('resource.haki.registration_number'))
+                ->content($details->registration_number ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->registration_number)),
                 
             Placeholder::make('registration_date')
-                ->label('Registration Date')
-                ->content(fn() => isset($details->registration_date) ? $details->registration_date->format('F j, Y') : 'N/A')
+                ->label(__('resource.haki.registration_date'))
+                ->content(fn() => isset($details->registration_date) ? $details->registration_date->format('F j, Y') : __('resource.general.not_available'))
                 ->visible(fn() => isset($details->registration_date)),
                 
             Placeholder::make('inventors_name')
-                ->label('Creators/Authors')
-                ->content($details->inventors_name ?? 'N/A')
+                ->label(__('resource.haki.creators_authors'))
+                ->content($details->inventors_name ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
         ];
     }
@@ -591,38 +591,38 @@ class SubmissionDetailsService
     {
         return [
             TextEntry::make('design_title')
-                ->label('Design Title')
+                ->label(__('resource.industrial_design.design_title'))
                 ->getStateUsing(fn() => $details->design_title ?? '')
                 ->visible(fn() => isset($details->design_title))
                 ->columnSpanFull(),
                 
             TextEntry::make('design_type')
-                ->label('Design Type')
-                ->getStateUsing(fn() => $details->design_type ?? 'N/A'),
+                ->label(__('resource.industrial_design.design_type'))
+                ->getStateUsing(fn() => $details->design_type ?? __('resource.general.not_available')),
                 
             TextEntry::make('design_description')
-                ->label('Design Description')
-                ->getStateUsing(fn() => $details->design_description ?? 'N/A')
+                ->label(__('resource.industrial_design.design_description'))
+                ->getStateUsing(fn() => $details->design_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('novelty_statement')
-                ->label('Novelty Statement')
-                ->getStateUsing(fn() => $details->novelty_statement ?? 'N/A')
+                ->label(__('resource.industrial_design.novelty_statement'))
+                ->getStateUsing(fn() => $details->novelty_statement ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('designer_information')
-                ->label('Designer Information')
-                ->getStateUsing(fn() => $details->designer_information ?? 'N/A')
+                ->label(__('resource.industrial_design.designer_information'))
+                ->getStateUsing(fn() => $details->designer_information ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             TextEntry::make('inventors_name')
-                ->label('Inventors')
+                ->label(__('resource.industrial_design.inventors'))
                 ->getStateUsing(fn() => $details->inventors_name ?? '')
                 ->visible(fn() => isset($details->inventors_name)),
                 
             TextEntry::make('locarno_class')
-                ->label('Locarno Classification')
-                ->getStateUsing(fn() => $details->locarno_class ?? 'N/A')
+                ->label(__('resource.industrial_design.locarno_classification'))
+                ->getStateUsing(fn() => $details->locarno_class ?? __('resource.general.not_available'))
                 ->visible(fn() => isset($details->locarno_class)),
         ];
     }
@@ -634,36 +634,36 @@ class SubmissionDetailsService
     {
         return [
             Placeholder::make('design_title')
-                ->label('Design Title')
-                ->content($details->design_title ?? 'N/A')
+                ->label(__('resource.industrial_design.design_title'))
+                ->content($details->design_title ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('design_type')
-                ->label('Design Type')
-                ->content($details->design_type ?? 'N/A'),
+                ->label(__('resource.industrial_design.design_type'))
+                ->content($details->design_type ?? __('resource.general.not_available')),
                 
             Placeholder::make('design_description')
-                ->label('Design Description')
-                ->content($details->design_description ?? 'N/A')
+                ->label(__('resource.industrial_design.design_description'))
+                ->content($details->design_description ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('novelty_statement')
-                ->label('Novelty Statement')
-                ->content($details->novelty_statement ?? 'N/A')
+                ->label(__('resource.industrial_design.novelty_statement'))
+                ->content($details->novelty_statement ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('designer_information')
-                ->label('Designer Information')
-                ->content($details->designer_information ?? 'N/A')
+                ->label(__('resource.industrial_design.designer_information'))
+                ->content($details->designer_information ?? __('resource.general.not_available'))
                 ->columnSpanFull(),
                 
             Placeholder::make('inventors_name')
-                ->label('Inventors')
-                ->content($details->inventors_name ?? 'N/A'),
+                ->label(__('resource.industrial_design.inventors'))
+                ->content($details->inventors_name ?? __('resource.general.not_available')),
                 
             Placeholder::make('locarno_class')
-                ->label('Locarno Classification')
-                ->content($details->locarno_class ?? 'N/A'),
+                ->label(__('resource.industrial_design.locarno_classification'))
+                ->content($details->locarno_class ?? __('resource.general.not_available')),
         ];
     }
 }

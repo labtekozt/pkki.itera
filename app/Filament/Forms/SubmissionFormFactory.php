@@ -33,7 +33,7 @@ class SubmissionFormFactory
                         $submissionTypeId = $get('submission_type_id');
                         
                         if (!$submissionTypeId) {
-                            return 'Please select a submission type first';
+                            return __('resource.submission.placeholders.select_type_first');
                         }
                         
                         return '';

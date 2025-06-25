@@ -23,7 +23,7 @@ class UserDetailRelationManager extends RelationManager
                 Forms\Components\Section::make('Contact Information')
                     ->schema([
                         Forms\Components\TextInput::make('phonenumber')
-                            ->label('Phone Number')
+                            ->label(__('resource.user_detail.phone_number'))
                             ->tel()
                             ->required()
                             ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')

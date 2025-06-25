@@ -195,7 +195,7 @@ class ManageGeneral extends SettingsPage
             $this->redirect(static::getUrl(), navigate: FilamentView::hasSpaMode() && is_app_url(static::getUrl()));
         } catch (\Throwable $th) {
             Notification::make()
-                ->title('Error saving settings')
+                ->title(__('resource.settings.error_saving'))
                 ->body($th->getMessage())
                 ->danger()
                 ->send();

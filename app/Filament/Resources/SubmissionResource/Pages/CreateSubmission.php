@@ -65,7 +65,7 @@ class CreateSubmission extends CreateRecord
                     if (!$submissionTypeId) {
                         return [
                             \Filament\Forms\Components\Placeholder::make('select_type')
-                                ->content('Please select a submission type first')
+                                ->content(__('resource.submission.placeholders.select_type_first'))
                                 ->columnSpanFull(),
                         ];
                     }
@@ -155,7 +155,7 @@ class CreateSubmission extends CreateRecord
                     \Filament\Forms\Components\Placeholder::make('submission_review')
                         ->content(function (Get $get) {
                             $typeId = $get('submission_type_id');
-                            if (!$typeId) return 'Please select a submission type first.';
+                            if (!$typeId) return __('resource.submission.placeholders.select_type_first');
 
                             $type = SubmissionType::find($typeId);
 

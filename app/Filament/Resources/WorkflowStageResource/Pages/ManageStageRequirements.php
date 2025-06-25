@@ -70,15 +70,15 @@ class ManageStageRequirements extends Page
             )
             ->columns([
                 Tables\Columns\TextColumn::make('documentRequirement.name')
-                    ->label('Document Name')
+                    ->label(__('resource.workflow_stage.requirements.document_name'))
                     ->searchable(),
                 
                 Tables\Columns\IconColumn::make('is_required')
-                    ->label('Required')
+                    ->label(__('resource.workflow_stage.requirements.required'))
                     ->boolean(),
                 
                 Tables\Columns\TextColumn::make('order')
-                    ->label('Display Order')
+                    ->label(__('resource.workflow_stage.display_order'))
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('created_at')
@@ -91,18 +91,18 @@ class ManageStageRequirements extends Page
                 Tables\Actions\EditAction::make()
                     ->form([
                         Forms\Components\Toggle::make('is_required')
-                            ->label('Required')
+                            ->label(__('resource.workflow_stage.requirements.required'))
                             ->default(true),
                         
                         Forms\Components\TextInput::make('order')
-                            ->label('Display Order')
+                            ->label(__('resource.workflow_stage.display_order'))
                             ->numeric(),
                     ])
-                    ->modalHeading('Edit Requirement'),
+                    ->modalHeading(__('resource.workflow_stage.requirements.edit_requirement')),
                 
                 Tables\Actions\DeleteAction::make()
-                    ->modalHeading('Remove Document Requirement')
-                    ->modalDescription('Are you sure you want to remove this document requirement from the stage?'),
+                    ->modalHeading(__('resource.workflow_stage.requirements.remove_document_requirement'))
+                    ->modalDescription(__('resource.workflow_stage.requirements.remove_confirmation')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -126,14 +126,14 @@ class ManageStageRequirements extends Page
             ]);
             
             Notification::make()
-                ->title('Document requirement added')
+                ->title(__('resource.workflow_stage.requirements.added_successfully'))
                 ->success()
                 ->send();
                 
             $this->form->fill();
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error adding document requirement')
+                ->title(__('resource.workflow_stage.requirements.error_adding'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -144,7 +144,7 @@ class ManageStageRequirements extends Page
     {
         return [
             \Filament\Actions\Action::make('back')
-                ->label('Back to Stages')
+                ->label(__('resource.workflow_stage.requirements.back_to_stages'))
                 ->url($this->getResource()::getUrl('index'))
                 ->color('gray')
                 ->icon('heroicon-o-arrow-left'),

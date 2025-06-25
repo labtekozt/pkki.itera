@@ -80,7 +80,7 @@ class BrandSubmissionForm
                         ->helperText('Kelas klasifikasi Nice untuk merek'),
                         
                     Forms\Components\Textarea::make('brandDetail.goods_services_search')
-                        ->label('Goods & Services')
+                        ->label(__('resource.brand.goods_services_search'))
                         ->helperText('Kata kunci untuk pencarian uraian barang/jasa')
                         ->columnSpanFull(),
                         
@@ -90,24 +90,24 @@ class BrandSubmissionForm
                         ->required(),
                         
                     Forms\Components\TextInput::make('brandDetail.brand_label_reference')
-                        ->label('Brand Label Reference')
+                        ->label(__('resource.brand.brand_label_reference'))
                         ->helperText('Nama referensi dari label merek'),
                         
                     Forms\Components\Textarea::make('brandDetail.brand_label_description')
-                        ->label('Brand Label Description')
+                        ->label(__('resource.brand.brand_label_description'))
                         ->helperText('Deskripsi rinci tentang label merek yang diajukan')
                         ->required(),
                         
                     Forms\Components\TextInput::make('brandDetail.brand_color_elements')
-                        ->label('Brand Color Elements')
+                        ->label(__('resource.brand.brand_color_elements'))
                         ->helperText('Elemen warna yang terdapat dalam label merek'),
                         
                     Forms\Components\TextInput::make('brandDetail.foreign_language_translation')
-                        ->label('Foreign Language Translation')
+                        ->label(__('resource.brand.foreign_language_translation'))
                         ->helperText('Terjemahan Bahasa Indonesia jika merek menggunakan bahasa asing'),
                         
                     Forms\Components\TextInput::make('brandDetail.disclaimer')
-                        ->label('Disclaimer')
+                        ->label(__('resource.brand.disclaimer'))
                         ->helperText('Pernyataan penolakan hak eksklusif atas elemen tertentu dalam merek'),
                         
                     Forms\Components\TextInput::make('brandDetail.priority_number')

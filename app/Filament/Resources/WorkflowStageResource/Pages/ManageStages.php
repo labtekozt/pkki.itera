@@ -31,21 +31,21 @@ class ManageStages extends Page
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Add Workflow Stage')
+                Forms\Components\Section::make(__('resource.workflow.add_stage'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Stage Name')
+                            ->label(__('resource.workflow.stage_name'))
                             ->required()
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('code')
-                            ->label('Stage Code')
+                            ->label(__('resource.workflow.stage_code'))
                             ->required()
                             ->unique(table: WorkflowStage::class, column: 'code')
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('order')
-                            ->label('Display Order')
+                            ->label(__('resource.workflow.display_order'))
                             ->numeric()
                             ->required()
                             ->default(function () {
@@ -55,14 +55,14 @@ class ManageStages extends Page
                             }),
                             
                         Forms\Components\Textarea::make('description')
-                            ->label('Description')
+                            ->label(__('resource.workflow.description'))
                             ->maxLength(65535)
                             ->columnSpanFull(),
                             
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Active')
+                            ->label(__('resource.workflow.active'))
                             ->default(true)
-                            ->helperText('Is this stage currently active in the workflow?'),
+                            ->helperText(__('resource.workflow.active_helper')),
                     ])
                     ->columns(3),
             ]);
@@ -77,19 +77,19 @@ class ManageStages extends Page
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Stage Name')
+                    ->label(__('resource.workflow.stage_name'))
                     ->searchable(),
                 
                 Tables\Columns\TextColumn::make('code')
-                    ->label('Code')
+                    ->label(__('resource.workflow.code'))
                     ->searchable(),
                 
                 Tables\Columns\TextColumn::make('order')
-                    ->label('Order')
+                    ->label(__('resource.workflow.order'))
                     ->sortable(),
                 
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('resource.workflow.active'))
                     ->boolean(),
                 
                 Tables\Columns\TextColumn::make('created_at')
@@ -104,50 +104,50 @@ class ManageStages extends Page
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_active')
-                    ->label('Status')
+                    ->label(__('resource.workflow_stage.status'))
                     ->options([
-                        '1' => 'Active',
-                        '0' => 'Inactive',
+                        '1' => __('resource.workflow_stage.filter_active'),
+                        '0' => __('resource.workflow_stage.filter_inactive'),
                     ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->form([
                         Forms\Components\TextInput::make('name')
-                            ->label('Stage Name')
+                            ->label(__('resource.workflow_stage.stage_name'))
                             ->required()
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('code')
-                            ->label('Stage Code')
+                            ->label(__('resource.workflow_stage.stage_code'))
                             ->required()
                             ->unique(table: WorkflowStage::class, column: 'code', ignoreRecord: true)
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('order')
-                            ->label('Display Order')
+                            ->label(__('resource.workflow_stage.display_order'))
                             ->numeric()
                             ->required(),
                             
                         Forms\Components\Textarea::make('description')
-                            ->label('Description')
+                            ->label(__('resource.workflow_stage.description'))
                             ->maxLength(65535)
                             ->columnSpanFull(),
                             
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Active')
+                            ->label(__('resource.workflow_stage.active'))
                             ->default(true),
                     ])
-                    ->modalHeading('Edit Workflow Stage'),
+                    ->modalHeading(__('resource.workflow_stage.edit_workflow_stage')),
                 
                 Tables\Actions\Action::make('manage_requirements')
-                    ->label('Manage Requirements')
+                    ->label(__('resource.workflow_stage.manage_requirements'))
                     ->icon('heroicon-o-document-check')
                     ->url(fn (WorkflowStage $record): string => route('filament.admin.resources.workflow-stages.manage-requirements', $record)),
                 
                 Tables\Actions\DeleteAction::make()
-                    ->modalHeading('Delete Workflow Stage')
-                    ->modalDescription('Are you sure you want to delete this workflow stage? This action cannot be undone if the stage is already in use.'),
+                    ->modalHeading(__('resource.workflow_stage.delete_workflow_stage'))
+                    ->modalDescription(__('resource.workflow_stage.delete_confirmation')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -174,14 +174,14 @@ class ManageStages extends Page
             ]);
             
             Notification::make()
-                ->title('Workflow stage added')
+                ->title(__('resource.workflow_stage.added_successfully'))
                 ->success()
                 ->send();
                 
             $this->form->fill();
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error adding workflow stage')
+                ->title(__('resource.workflow_stage.error_adding'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -192,7 +192,7 @@ class ManageStages extends Page
     {
         return [
             \Filament\Actions\Action::make('back')
-                ->label('Back to Submission Types')
+                ->label(__('resource.workflow_stage.back_to_submission_types'))
                 ->url(route('filament.admin.resources.submission-types.index'))
                 ->color('gray')
                 ->icon('heroicon-o-arrow-left'),

@@ -37,7 +37,7 @@ class WorkflowStagesRelationManager extends RelationManager
                             ->helperText('Unique identifier for this stage'),
                             
                         Forms\Components\TextInput::make('order')
-                            ->label('Stage Order')
+                            ->label(__('resource.workflow_stage_relation.stage_order'))
                             ->numeric()
                             ->default(function ($livewire) { 
                                 return $livewire->getOwnerRecord()->workflowStages()->count() + 1;
@@ -45,7 +45,7 @@ class WorkflowStagesRelationManager extends RelationManager
                             ->helperText('Order in the workflow sequence'),
                             
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Active Stage')
+                            ->label(__('resource.workflow_stage_relation.active_stage'))
                             ->helperText('Inactive stages will be skipped in the workflow')
                             ->default(true),
                             
@@ -123,10 +123,10 @@ class WorkflowStagesRelationManager extends RelationManager
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_active')
-                    ->label('Active Status')
+                    ->label(__('resource.workflow_stage_relation.active_status'))
                     ->options([
-                        '1' => 'Active Stages',
-                        '0' => 'Inactive Stages',
+                        '1' => __('resource.workflow_stage.filter_active'),
+                        '0' => __('resource.workflow_stage.filter_inactive'),
                     ])
                     ->query(function ($query, array $data) {
                         if (isset($data['value'])) {
@@ -161,7 +161,7 @@ class WorkflowStagesRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->modalDescription('Are you sure you want to delete this stage? This may affect ongoing submissions.'),
                 Tables\Actions\Action::make('manage_requirements')
-                    ->label('Stage Requirements')
+                    ->label(__('resource.workflow_stage_relation.stage_requirements'))
                     ->color('success')
                     ->icon('heroicon-o-document-text')
                     ->url(fn ($record) => SubmissionTypeResource::getUrl(
@@ -183,7 +183,7 @@ class WorkflowStagesRelationManager extends RelationManager
                         ->requiresConfirmation()
                         ->modalDescription('Are you sure you want to delete these stages? This may affect ongoing submissions.'),
                     Tables\Actions\BulkAction::make('activate')
-                        ->label('Activate Stages')
+                        ->label(__('resource.workflow_stage_relation.activate_stages'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(function ($records) {
@@ -192,7 +192,7 @@ class WorkflowStagesRelationManager extends RelationManager
                             }
                         }),
                     Tables\Actions\BulkAction::make('deactivate')
-                        ->label('Deactivate Stages')
+                        ->label(__('resource.workflow_stage_relation.deactivate_stages'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->action(function ($records) {
